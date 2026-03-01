@@ -46,6 +46,8 @@ client/dist/
 .env.test
 .env.production
 *.env
+!.env.example
+!.env.build
 
 # ==================================
 # Database

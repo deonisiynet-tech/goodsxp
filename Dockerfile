@@ -16,9 +16,11 @@ WORKDIR /app/server
 COPY --from=server-deps /app/server/node_modules ./node_modules
 COPY server .
 
-# Skip Prisma during build - will run at runtime
-RUN npx prisma generate --no-engine || true
+# Copy build-time env for Prisma
+COPY server/.env.build ./server/.env
 
+# Generate Prisma Client and build
+RUN npx prisma generate
 RUN npm run build
 
 FROM base AS server-runner
