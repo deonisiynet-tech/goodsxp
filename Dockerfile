@@ -15,7 +15,10 @@ FROM base AS server-builder
 WORKDIR /app/server
 COPY --from=server-deps /app/server/node_modules ./node_modules
 COPY server .
-RUN npm run prisma:generate
+
+# Generate Prisma Client without DATABASE_URL
+RUN npx prisma generate || true
+
 RUN npm run build
 
 FROM base AS server-runner
@@ -28,8 +31,8 @@ COPY --from=server-builder /app/server/node_modules ./node_modules
 COPY --from=server-builder /app/server/prisma ./prisma
 COPY --from=server-builder /app/server/package.json ./
 
-# Generate Prisma Client as root (before changing user)
-RUN npx prisma generate
+# Generate Prisma Client at runtime (when DATABASE_URL is available)
+RUN npx prisma generate || true
 
 # Create user and set permissions
 RUN addgroup --system --gid 1001 nodejs && \
