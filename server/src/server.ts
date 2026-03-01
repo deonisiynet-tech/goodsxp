@@ -20,6 +20,7 @@ import { errorHandler, notFound } from './middleware/errorHandler.js';
 console.log('✅ All imports completed successfully');
 
 const app = express();
+// Railway provides PORT environment variable, default to 5000 for local dev
 const PORT = Number(process.env.PORT) || 5000;
 
 console.log('🚀 Initializing Express app...');
@@ -56,6 +57,8 @@ app.get('/health', (_req: Request, res: Response) => {
   res.status(200).json({
     status: 'healthy',
     timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    port: PORT,
   });
 });
 
@@ -72,6 +75,7 @@ app.get('/', (_req: Request, res: Response) => {
     name: 'GoodsXP API',
     version: '1.0.0',
     status: 'running',
+    port: PORT,
   });
 });
 
@@ -90,24 +94,51 @@ app.use(errorHandler);
 // Start server on 0.0.0.0
 // ==================================
 console.log('🎧 Starting server listener...');
+
+// Handle server errors
 const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`🌐 Listening on 0.0.0.0:${PORT}`);
   console.log(`✅ Health check available at http://localhost:${PORT}/health`);
   console.log(`✅ Health check available at http://localhost:${PORT}/healthz`);
+}).on('error', (err: any) => {
+  if (err.code === 'EADDRINUSE') {
+    console.error(`❌ Port ${PORT} is already in use!`);
+    process.exit(1);
+  }
+  console.error('❌ Server error:', err);
+  process.exit(1);
 });
 
 // Graceful shutdown
 const shutdown = (signal: string) => {
   console.log(`${signal} received, shutting down...`);
-  server.close(() => process.exit(0));
-  setTimeout(() => process.exit(1), 10000);
+  server.close(() => {
+    console.log('HTTP server closed');
+    process.exit(0);
+  });
+  // Force close after 10 seconds
+  setTimeout(() => {
+    console.error('Could not close connections in time, forcefully shutting down');
+    process.exit(1);
+  }, 10000);
 };
 
 console.log('✅ Server initialization complete');
 console.log('📡 Registering process handlers...');
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
+
+// Handle uncaught exceptions
+process.on('uncaughtException', (err) => {
+  console.error('❌ Uncaught Exception:', err);
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
+  process.exit(1);
+});
 
 console.log('✅ All startup procedures completed');
 
