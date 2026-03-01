@@ -12,11 +12,17 @@ COPY package*.json ./
 # Install dependencies
 RUN npm install
 
-# Copy prisma schema for Prisma generation
+# Copy prisma schema
 COPY prisma ./prisma
+
+# Create temporary .env for Prisma generate (DATABASE_URL not needed for client generation)
+RUN echo 'DATABASE_URL="postgresql://temp:temp@localhost:5432/temp"' > .env
 
 # Generate Prisma Client
 RUN npx prisma generate
+
+# Remove temporary .env
+RUN rm -f .env
 
 # Copy all source code
 COPY . .
