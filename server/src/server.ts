@@ -10,16 +10,13 @@ console.log('📦 NODE_ENV:', process.env.NODE_ENV);
 console.log('📦 PORT:', process.env.PORT);
 console.log('📦 DATABASE_URL:', process.env.DATABASE_URL ? '***' : 'NOT SET');
 
-// Import routes
-console.log('📥 Importing routes...');
+// Import routes - these will execute before any code runs
+// If Prisma is not generated, this will throw an error
+console.log('📥 Importing routes and middleware...');
 import authRoutes from './routes/auth.routes.js';
 import productRoutes from './routes/product.routes.js';
 import orderRoutes from './routes/order.routes.js';
-
-// Import middleware
-console.log('📥 Importing middleware...');
 import { errorHandler, notFound } from './middleware/errorHandler.js';
-
 console.log('✅ All imports completed successfully');
 
 const app = express();
@@ -31,7 +28,6 @@ console.log('🚀 Initializing Express app...');
 app.use(helmet());
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests from Railway healthcheck hostname
     const allowedOrigins = [
       process.env.CLIENT_URL,
       'https://healthcheck.railway.app',
@@ -53,7 +49,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // ==================================
-// CRITICAL: Health check MUST be defined FIRST (before API routes)
+// CRITICAL: Health check MUST be defined FIRST
 // ==================================
 console.log('✅ Registering /health endpoint...');
 app.get('/health', (_req: Request, res: Response) => {
@@ -63,7 +59,7 @@ app.get('/health', (_req: Request, res: Response) => {
   });
 });
 
-// Alternative health check endpoint (Railway compatible)
+// Alternative health check endpoint
 console.log('✅ Registering /healthz endpoint...');
 app.get('/healthz', (_req: Request, res: Response) => {
   res.status(200).send('OK');

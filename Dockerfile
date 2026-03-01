@@ -32,7 +32,6 @@ ENV PORT=5000
 HEALTHCHECK --interval=10s --timeout=5s --start-period=120s --retries=3 \
   CMD wget --no-verbose --tries=1 --spider http://localhost:5000/health || exit 1
 
-# Run migrations and start server
-# Use --skip-generate because we already generated during build
-# Use --skip-seed to avoid duplicate seed errors
-CMD ["sh", "-c", "npx prisma migrate deploy --skip-generate && node dist/server.js"]
+# Run migrations and start server with error handling
+# Redirect all output to capture errors
+CMD ["sh", "-c", "npx prisma migrate deploy --skip-generate 2>&1 && echo '✅ Migrations complete' && node dist/server.js 2>&1"]
