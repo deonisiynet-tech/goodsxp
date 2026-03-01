@@ -1,55 +1,29 @@
-# Dockerfile for Railway - Server only
-FROM node:20-alpine AS base
+# Railway Dockerfile - Full build
+FROM node:20-alpine
 
 WORKDIR /app
 
-# Install system dependencies for Prisma
+# Install OpenSSL for Prisma
 RUN apk add --no-cache openssl
 
-# Copy server package files first
-COPY server/package.json server/package-lock.json ./
+# Copy ALL files from server directory
+COPY server/ ./
 
 # Install dependencies
 RUN npm install
 
-# Copy prisma schema for generation
-COPY server/prisma ./prisma
-
-# Create temporary .env for Prisma generate (required at build time)
-RUN printf 'DATABASE_URL="postgresql://temp:temp@localhost:5432/temp"\n' > .env
-
-# Generate Prisma Client
-RUN npx prisma generate
-
-# Remove temporary .env
-RUN rm -f .env
-
-# Copy all server source code
-COPY server ./
+# Generate Prisma Client with temp DATABASE_URL
+RUN echo 'DATABASE_URL="postgresql://u:p@localhost:5432/db"' > .env && \
+    npx prisma generate && \
+    rm -f .env
 
 # Build TypeScript
 RUN npm run build
 
-# Production image
-FROM node:20-alpine AS runner
-
-WORKDIR /app
-
 ENV NODE_ENV=production
+EXPOSE 5000
 
-# Copy built artifacts
-COPY --from=base /app/node_modules ./node_modules
-COPY --from=base /app/dist ./dist
-COPY --from=base /app/prisma ./prisma
-COPY --from=base /app/package.json ./
-
-# Install dotenv-cli for runtime
-RUN npm install -g dotenv-cli
-
-# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD node -e "require('http').get('http://localhost:5000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
-
-EXPOSE 5000
 
 CMD ["sh", "-c", "npx prisma migrate deploy && npm run seed && node dist/server.js"]
