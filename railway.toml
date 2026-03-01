@@ -1,7 +1,6 @@
 [build]
 builder = "DOCKERFILE"
-dockerfilePath = "server/Dockerfile"
-rootDirectory = "server"
+dockerfilePath = "Dockerfile.railway"
 
 [deploy]
 healthcheckPath = "/health"

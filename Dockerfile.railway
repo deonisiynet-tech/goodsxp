@@ -1,0 +1,47 @@
+# Dockerfile for Railway - Server only
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install system dependencies for Prisma
+RUN apk add --no-cache openssl
+
+# Go to server directory
+WORKDIR /app/server
+
+# Copy package files
+COPY server/package*.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy prisma schema
+COPY server/prisma ./prisma
+
+# Create temporary .env for Prisma generate
+RUN echo 'DATABASE_URL="postgresql://temp:temp@localhost:5432/temp"' > .env
+
+# Generate Prisma Client
+RUN npx prisma generate
+
+# Remove temporary .env
+RUN rm -f .env
+
+# Copy all server source code
+COPY server .
+
+# Build TypeScript
+RUN npm run build
+
+# Set production environment
+ENV NODE_ENV=production
+
+# Expose port
+EXPOSE 5000
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:5000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+
+# Start command
+CMD ["sh", "-c", "npx prisma migrate deploy && npm run seed && node dist/server.js"]
