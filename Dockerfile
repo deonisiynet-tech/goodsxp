@@ -16,8 +16,8 @@ WORKDIR /app/server
 COPY --from=server-deps /app/server/node_modules ./node_modules
 COPY server .
 
-# Generate Prisma Client without DATABASE_URL
-RUN npx prisma generate || true
+# Skip Prisma during build - will run at runtime
+RUN npx prisma generate --no-engine || true
 
 RUN npm run build
 
