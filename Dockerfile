@@ -22,15 +22,19 @@ FROM base AS server-runner
 WORKDIR /app
 ENV NODE_ENV production
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nodejs
-
+# Copy files first
 COPY --from=server-builder /app/server/dist ./dist
 COPY --from=server-builder /app/server/node_modules ./node_modules
 COPY --from=server-builder /app/server/prisma ./prisma
 COPY --from=server-builder /app/server/package.json ./
 
+# Generate Prisma Client as root (before changing user)
 RUN npx prisma generate
+
+# Create user and set permissions
+RUN addgroup --system --gid 1001 nodejs && \
+    adduser --system --uid 1001 nodejs && \
+    chown -R nodejs:nodejs /app
 
 USER nodejs
 EXPOSE 5000
