@@ -1,39 +1,43 @@
-# ✅ Исправления для Railway Healthcheck
+# ✅ Виправлення для Railway Healthcheck
 
-## 📋 Что было исправлено
+## 📋 Що було виправлено
 
 ### 1. **Dockerfile**
-- ✅ Убрано `ENV PORT=5000` (Railway сам инжектит PORT)
-- ✅ HEALTHCHECK теперь использует `${PORT:-5000}` для динамического порта
-- ✅ Добавлен `--skip-generate` к prisma migrate для оптимизации
+- ✅ Прибрано `ENV PORT=5000` (Railway сам інжектить PORT)
+- ✅ Прибрано HEALTHCHECK з Dockerfile (Railway використовує свій)
+- ✅ Спрощено CMD для запуску сервера
 
 ### 2. **.railway.json**
-- ✅ Добавлен `dockerfilePath: "Dockerfile"`
-- ✅ Увеличен `healthcheckTimeout` до 600 секунд
-- ✅ Добавлен `initialDelay: 60` (вместо 30)
-- ✅ Добавлены `interval: 30` и `retries: 3`
+- ✅ Додано `dockerfilePath: "Dockerfile"`
+- ✅ Збільшено `healthcheckTimeout` до 600 секунд
+- ✅ Прибрано секцію `healthcheck` (Railway ігнорує її)
 
 ### 3. **railway.toml**
-- ✅ Синхронизирован с .railway.json
-- ✅ Добавлена секция `[healthcheck]`
-- ✅ Увеличен timeout до 600 секунд
+- ✅ Синхронізовано з .railway.json
+- ✅ Додана секція `[healthcheck]`
 
 ### 4. **server/src/server.ts**
-- ✅ Улучшен healthcheck endpoint (добавлены uptime и port)
-- ✅ Добавлена обработка ошибок сервера (`.on('error')`)
-- ✅ Добавлена обработка `uncaughtException` и `unhandledRejection`
-- ✅ Улучшен graceful shutdown
+- ✅ Покращено healthcheck endpoint (додано uptime і port)
+- ✅ Додана обробка помилок сервера (`.on('error')`)
+- ✅ Додана обробка `uncaughtException` і `unhandledRejection`
+- ✅ Додано перевірку `DATABASE_URL`
+- ✅ Покращено graceful shutdown
 
-### 5. **server/.env.railway**
-- ✅ Убрано `PORT=5000` (Railway сам инжектит)
-- ✅ Обновлён JWT_SECRET на более безопасный
-- ✅ Добавлены комментарии для переменных
+### 5. **server/src/prisma/client.ts**
+- ✅ Додано лениву ініціалізацію Prisma Client
+- ✅ Додано логірування для відладки
+- ✅ Додано підтримку глобального кешу для hot-reload
+
+### 6. **server/.env.railway**
+- ✅ Прибрано `PORT=5000` (Railway сам інжектить)
+- ✅ Оновлено JWT_SECRET на більш безпечний
+- ✅ Додано коментарі для змінних
 
 ---
 
-## 🚀 Инструкция по деплою
+## 🚀 Інструкція з деплою
 
-### Шаг 1: Закоммитьте изменения
+### Крок 1: Закоммітьте зміни
 
 ```bash
 cd c:\Users\User\Desktop\shop-mvp
@@ -42,47 +46,46 @@ git commit -m "Fix: Railway healthcheck configuration and error handling"
 git push origin main
 ```
 
-### Шаг 2: Проверьте переменные окружения в Railway Dashboard
+### Крок 2: Перевірте змінні оточення в Railway Dashboard
 
-1. Откройте ваш проект на [railway.app](https://railway.app)
-2. Перейдите в **Variables**
-3. Убедитесь, что установлены следующие переменные:
+**⚠️ КРИТИЧНО ВАЖЛИВО!**
 
-| Переменная | Значение | Обязательно |
-|------------|----------|-------------|
+Railway **НЕ** використовує `.env` файли з репозиторію!
+Змінні повинні бути в **Railway Dashboard → Variables**:
+
+1. Відкрийте ваш проект на [railway.app](https://railway.app)
+2. Перейдіть у **Variables**
+3. Переконайтеся, що встановлені:
+
+| Змінна | Значення | Обов'язково |
+|--------|----------|-------------|
 | `NODE_ENV` | `production` | ✅ |
-| `DATABASE_URL` | (автоматически из PostgreSQL) | ✅ |
-| `JWT_SECRET` | `goodsxp-super-secret-jwt-key-2026-change-this-in-production` | ✅ |
+| `DATABASE_URL` | (автоматично з PostgreSQL) | ✅ |
+| `JWT_SECRET` | `goodsxp-super-secret-jwt-key-2026` | ✅ |
 | `ADMIN_EMAIL` | `goodsxp.net@gmail.com` | ✅ |
-| `ADMIN_PASSWORD` | ваш надёжный пароль (минимум 12 символов) | ✅ |
+| `ADMIN_PASSWORD` | ваш надійний пароль | ✅ |
 | `CLIENT_URL` | `${{RAILWAY_PUBLIC_DOMAIN}}` | ✅ |
 
-### Шаг 3: Проверьте настройки Railway
+**Якщо `DATABASE_URL` немає:**
+1. Додайте PostgreSQL: **New** → **Database** → **PostgreSQL**
+2. Railway автоматично додасть `DATABASE_URL` у змінні
 
-1. Откройте **Settings** вашего сервиса
-2. Убедитесь, что:
-   - **Root Directory**: пусто (используем Dockerfile)
-   - **Build Command**: автоматически из Dockerfile
-   - **Start Command**: автоматически из Dockerfile
-   - **Healthcheck Path**: `/health`
-   - **Healthcheck Timeout**: 600
-   - **Healthcheck Initial Delay**: 60
+### Крок 3: Перезапустіть деплой
 
-### Шаг 4: Задеплойте изменения
+1. **Railway Dashboard → Deployments**
+2. Натисніть **Restart Deployment**
+3. Зачекайте 3-5 хвилин
 
-Railway автоматически задеплоит после push в GitHub.
+### Крок 4: Перевірте логи
 
-Или вручную: **Railway Dashboard → Deployments → Restart Deployment**
-
-### Шаг 5: Проверьте логи
-
-Откройте **Deploy Logs** и убедитесь, что видите:
+Відкрийте **Deploy Logs** і переконайтеся, що бачите:
 
 ```
 🔧 Loading environment variables...
 📦 NODE_ENV: production
 📦 PORT: <число>
-📦 DATABASE_URL: ***
+📦 DATABASE_URL: *** SET ***
+📥 Importing routes and middleware...
 ✅ All imports completed successfully
 ✅ Registering /health endpoint...
 ✅ Registering /healthz endpoint...
@@ -91,14 +94,14 @@ Railway автоматически задеплоит после push в GitHub.
 ✅ Health check available at http://localhost:<PORT>/health
 ```
 
-### Шаг 6: Проверьте health check
+### Крок 5: Перевірте health check
 
-Откройте в браузере:
+Відкрийте у браузері:
 ```
 https://your-app.railway.app/health
 ```
 
-Должны увидеть:
+Повинні побачити:
 ```json
 {
   "status": "healthy",
@@ -108,120 +111,102 @@ https://your-app.railway.app/health
 }
 ```
 
-Или альтернативный:
-```
-https://your-app.railway.app/healthz
-```
-Должны увидеть: `OK`
-
 ---
 
-## 🔧 Создание администратора (seed)
+## 🔧 Створення адміністратора (seed)
 
-После успешного деплоя выполните seed для создания администратора:
+Після успішного деплою виконайте seed для створення адміністратора:
 
-### Вариант 1: Через Railway Shell
-1. Откройте **Shell** в Railway Dashboard
-2. Выполните:
+### Варіант 1: Через Railway Shell
+1. Відкрийте **Shell** в Railway Dashboard
+2. Виконайте:
 ```bash
 npm run seed
 ```
 
-### Вариант 2: Через Railway CLI (локально)
+### Варіант 2: Через Railway CLI (локально)
 ```bash
-# Установите CLI если ещё нет
+# Встановіть CLI якщо ще немає
 npm install -g @railway/cli
 
-# Войдите
+# Увійдіть
 railway login
 
-# Выполните seed
+# Виконайте seed
 railway run npm run seed
 ```
 
 ---
 
-## 🐛 Отладка
+## 🐛 Відладка
 
-### Проблема 1: Healthcheck всё ещё fails
+### Проблема 1: Healthcheck все ще fail'иться
 
-**Проверьте Deploy Logs:**
-- Ищите ошибки подключения к БД
-- Ищите ошибки Prisma migrate
+**Перевірте Deploy Logs:**
+- Шукайте `📦 DATABASE_URL: ❌ NOT SET`
+- Шукайте помилки підключення до БД
 
-**Проверьте DATABASE_URL:**
-- Убедитесь, что PostgreSQL подключен в Railway
-- Проверьте что DATABASE_URL корректен
-
-**Увеличьте timeout:**
-Добавьте переменную окружения:
-```
-RAILWAY_HEALTHCHECK_TIMEOUT_SEC=600
-```
-
-**Временно отключите healthcheck:**
-1. Railway Dashboard → Settings → Healthchecks
-2. Удалите путь health check
-3. Сохраните
-4. Если сайт запустился — проблема в настройках проверки
+**Якщо `DATABASE_URL` не встановлено:**
+1. Переконайтеся, що PostgreSQL додано у проект
+2. Додайте `DATABASE_URL` у Variables
 
 ### Проблема 2: Prisma migrate fails
 
-**Проверьте схему БД:**
+**Перевірте схему БД:**
 ```bash
 # В Railway Shell
 npx prisma migrate deploy
 ```
 
-**Если есть ошибки миграции:**
+**Якщо є помилки міграції:**
 ```bash
 # В Railway Shell
 npx prisma migrate resolve --applied "<migration-name>"
 ```
 
-### Проблема 3: PORT не определяется
+### Проблема 3: PORT не визначається
 
-**Проверьте логи:**
-Должно быть: `📦 PORT: <число>`
+**Перевірте логи:**
+Повинно бути: `📦 PORT: <число>`
 
-**Проверьте Dockerfile:**
-Убедитесь, что нет `ENV PORT=5000` (только `ENV NODE_ENV=production`)
-
----
-
-## ✅ Чеклист успешного деплоя
-
-- [ ] Изменения закоммичены и запушены в GitHub
-- [ ] PostgreSQL база подключена в Railway
-- [ ] Переменные окружения установлены в Railway Dashboard
-- [ ] `JWT_SECRET` установлен (минимум 32 символа)
-- [ ] `ADMIN_PASSWORD` установлен (минимум 12 символов)
-- [ ] Deploy Logs показывают успешный запуск сервера
-- [ ] Health check endpoint возвращает 200 OK
-- [ ] Сайт открывается по домену Railway
+**Перевірте Dockerfile:**
+Переконайтеся, що немає `ENV PORT=5000`
 
 ---
 
-## 📊 Ожидаемое время запуска
+## ✅ Чекліст успішного деплою
 
-| Этап | Время |
-|------|-------|
-| Build Docker image | 2-5 мин |
+- [ ] Зміни закоммічені і запушені в GitHub
+- [ ] PostgreSQL база додана в Railway
+- [ ] `DATABASE_URL` є у Variables
+- [ ] `JWT_SECRET` встановлено (мінімум 32 символи)
+- [ ] `ADMIN_PASSWORD` встановлено (мінімум 12 символів)
+- [ ] Deploy Logs показують `DATABASE_URL: *** SET ***`
+- [ ] Health check endpoint повертає 200 OK
+- [ ] Сайт відкривається по домену Railway
+
+---
+
+## 📊 Очікуваний час запуску
+
+| Етап | Час |
+|------|-----|
+| Build Docker image | 2-5 хв |
 | Prisma migrate deploy | 10-30 сек |
 | Server startup | 5-10 сек |
 | Health check pass | 10-60 сек |
-| **Итого** | **3-7 мин** |
+| **Разом** | **3-7 хв** |
 
 ---
 
-## 🔗 Полезные ссылки
+## 🔗 Корисні посилання
 
-- [Railway Healthchecks Docs](https://docs.railway.app/deployments/healthchecks)
-- [Railway PORT Variable](https://docs.railway.app/deployments/variables)
-- [Railway Dockerfile Deploy](https://docs.railway.app/deployments/dockerfiles)
+- [Railway Variables](https://docs.railway.app/deployments/variables)
+- [Railway Healthchecks](https://docs.railway.app/deployments/healthchecks)
+- [Railway PostgreSQL](https://docs.railway.app/databases/postgresql)
 - [Prisma Deploy to Production](https://www.prisma.io/docs/guides/database/developing-with-prisma-migrate/deployment-to-production)
 
 ---
 
-**Дата исправления**: 1 марта 2026 г.  
-**Разработчик**: GoodsXP Team
+**Дата виправлення**: 1 березня 2026 р.  
+**Розробник**: GoodsXP Team

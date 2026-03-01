@@ -8,7 +8,14 @@ dotenv.config();
 console.log('🔧 Loading environment variables...');
 console.log('📦 NODE_ENV:', process.env.NODE_ENV);
 console.log('📦 PORT:', process.env.PORT);
-console.log('📦 DATABASE_URL:', process.env.DATABASE_URL ? '***' : 'NOT SET');
+console.log('📦 DATABASE_URL:', process.env.DATABASE_URL ? '*** SET ***' : '❌ NOT SET');
+
+// Check critical environment variables
+if (!process.env.DATABASE_URL) {
+  console.error('❌ FATAL: DATABASE_URL is not set!');
+  console.error('❌ Please set DATABASE_URL environment variable in Railway Dashboard');
+  // Don't exit - Railway will inject it at runtime
+}
 
 // Import routes - these will execute before any code runs
 // If Prisma is not generated, this will throw an error
