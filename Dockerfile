@@ -2,8 +2,8 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Install OpenSSL for Prisma
-RUN apk add --no-cache openssl
+# Install OpenSSL for Prisma and wget for health checks
+RUN apk add --no-cache openssl wget
 
 # Copy server files
 COPY server/package*.json ./
@@ -24,8 +24,9 @@ RUN npm run build
 ENV NODE_ENV=production
 EXPOSE 5000
 
-# Simple health check
+# Health check for Railway (using wget for Alpine compatibility)
 HEALTHCHECK --interval=10s --timeout=5s --start-period=60s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:5000/health', r => process.exit(r.statusCode === 200 ? 0 : 1))"
+  CMD wget --no-verbose --tries=1 --spider http://localhost:5000/health || exit 1
 
-CMD ["sh", "-c", "npx prisma migrate deploy && npm run seed && node dist/server.js"]
+# Run migrations and start server (seed is optional, can be run manually)
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]

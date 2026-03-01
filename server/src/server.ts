@@ -30,7 +30,7 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // ==================================
-// CRITICAL: Health check MUST work immediately
+// CRITICAL: Health check MUST be defined FIRST (before API routes)
 // ==================================
 app.get('/health', (_req: Request, res: Response) => {
   res.status(200).json({
@@ -63,6 +63,7 @@ app.use(errorHandler);
 const server = app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running on port ${PORT}`);
   console.log(`🌐 Listening on 0.0.0.0:${PORT}`);
+  console.log(`✅ Health check available at http://localhost:${PORT}/health`);
 });
 
 // Graceful shutdown
