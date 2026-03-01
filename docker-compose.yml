@@ -1,36 +1,6 @@
 version: '3.8'
 
 services:
-  postgres:
-    image: postgres:15-alpine
-    container_name: shop-postgres
-    environment:
-      POSTGRES_USER: shop_user
-      POSTGRES_PASSWORD: shop_password
-      POSTGRES_DB: shop_db
-    ports:
-      - '5432:5432'
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U shop_user -d shop_db']
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  redis:
-    image: redis:7-alpine
-    container_name: shop-redis
-    ports:
-      - '6379:6379'
-    volumes:
-      - redis_data:/data
-    healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
   server:
     build:
       context: ./server
@@ -38,18 +8,13 @@ services:
     container_name: shop-server
     environment:
       - NODE_ENV=production
-      - DATABASE_URL=postgresql://shop_user:shop_password@postgres:5432/shop_db?schema=public
-      - REDIS_URL=redis://redis:6379
-      - CLIENT_URL=http://localhost:3000
-      - JWT_SECRET=your-super-secret-jwt-key-change-in-production
+      - DATABASE_URL=${DATABASE_URL}
+      - REDIS_URL=${REDIS_URL}
+      - CLIENT_URL=${CLIENT_URL}
+      - JWT_SECRET=${JWT_SECRET}
       - PORT=5000
     ports:
       - '5000:5000'
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
     command: sh -c "npx prisma migrate deploy && npx prisma db seed && node dist/server.js"
 
   client:
@@ -58,12 +23,8 @@ services:
       dockerfile: Dockerfile
     container_name: shop-client
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:5000/api
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
     ports:
       - '3000:3000'
     depends_on:
       - server
-
-volumes:
-  postgres_data:
-  redis_data:
