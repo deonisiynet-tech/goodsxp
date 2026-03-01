@@ -34,7 +34,10 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/package.json ./
 
-# Generate Prisma Client
+# Install dotenv-cli for env loading
+RUN npm install -g dotenv-cli
+
+# Generate Prisma Client (uses env vars from Railway)
 RUN npx prisma generate
 
 USER nodejs
