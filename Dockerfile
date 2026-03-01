@@ -8,8 +8,8 @@ FROM node:20-alpine AS base
 # ==================================
 FROM base AS server-deps
 WORKDIR /app/server
-COPY server/package.json server/package-lock.json* ./
-RUN npm ci
+COPY server/package.json ./
+RUN npm install
 
 FROM base AS server-builder
 WORKDIR /app/server
