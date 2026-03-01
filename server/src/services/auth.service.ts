@@ -67,12 +67,12 @@ export class AuthService {
   }
 
   private generateToken(id: string, email: string, role: string) {
-    const secret = process.env.JWT_SECRET as string || 'default-secret';
-    const expiresIn = process.env.JWT_EXPIRES_IN || '7d';
+    const secret = (process.env.JWT_SECRET as string) || 'default-secret';
+    const expiresIn = (process.env.JWT_EXPIRES_IN as string) || '7d';
 
     return jwt.sign({ id, email, role }, secret, {
-      expiresIn
-    });
+      expiresIn: expiresIn
+    } as any);
   }
 
   async getProfile(userId: string) {
