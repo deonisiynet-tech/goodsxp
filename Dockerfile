@@ -16,8 +16,10 @@ WORKDIR /app/server
 COPY --from=server-deps /app/server/node_modules ./node_modules
 COPY server .
 
-# Copy build-time env for Prisma
-COPY server/.env.build ./server/.env
+# Create .env file with dummy DATABASE_URL for Prisma build
+RUN echo 'DATABASE_URL="postgresql://user:password@localhost:5432/shop_db"' > .env
+RUN echo 'JWT_SECRET=build-secret' >> .env
+RUN echo 'JWT_EXPIRES_IN=7d' >> .env
 
 # Generate Prisma Client and build
 RUN npx prisma generate
