@@ -1,53 +1,35 @@
-# Multi-stage Dockerfile for GoodsXP
-# This builds both server and client
+# Root Dockerfile for Railway
+FROM node:20-alpine
 
-FROM node:20-alpine AS base
+WORKDIR /app
 
-# ==================================
-# SERVER BUILD
-# ==================================
-FROM base AS server-deps
-WORKDIR /app/server
-COPY server/package.json ./
+# Install OpenSSL for Prisma
+RUN apk add --no-cache openssl
+
+# Copy server package files
+COPY server/package*.json ./
+
+# Install dependencies
 RUN npm install
 
-FROM base AS server-builder
-WORKDIR /app/server
-COPY --from=server-deps /app/server/node_modules ./node_modules
-COPY server .
+# Copy server prisma schema
+COPY server/prisma ./prisma
 
-# Create .env file with dummy DATABASE_URL for Prisma build
-RUN echo 'DATABASE_URL="postgresql://user:password@localhost:5432/shop_db"' > .env
-RUN echo 'JWT_SECRET=build-secret' >> .env
-RUN echo 'JWT_EXPIRES_IN=7d' >> .env
+# Generate Prisma Client with temp DATABASE_URL
+RUN echo 'DATABASE_URL="postgresql://u:p@localhost:5432/db"' > .env && \
+    npx prisma generate && \
+    rm -f .env
 
-# Generate Prisma Client and build
-RUN npx prisma generate
+# Copy all server source code
+COPY server/ ./
+
+# Build TypeScript
 RUN npm run build
 
-FROM base AS server-runner
-WORKDIR /app
-ENV NODE_ENV production
-
-# Copy files first
-COPY --from=server-builder /app/server/dist ./dist
-COPY --from=server-builder /app/server/node_modules ./node_modules
-COPY --from=server-builder /app/server/prisma ./prisma
-COPY --from=server-builder /app/server/package.json ./
-
-# Generate Prisma Client at runtime (when DATABASE_URL is available)
-RUN npx prisma generate || true
-
-# Create user and set permissions
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 nodejs && \
-    chown -R nodejs:nodejs /app
-
-USER nodejs
+ENV NODE_ENV=production
 EXPOSE 5000
 
-# Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD node -e "require('http').get('http://localhost:5000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && npm run seed && node dist/server.js"]
