@@ -3,7 +3,7 @@ FROM node:20-alpine
 
 WORKDIR /app
 
-# Install system dependencies
+# Install system dependencies for Prisma
 RUN apk add --no-cache openssl
 
 # Copy package files
@@ -12,13 +12,13 @@ COPY package*.json ./
 # Install dependencies
 RUN npm install
 
-# Copy prisma schema first for Prisma generation
+# Copy prisma schema for Prisma generation
 COPY prisma ./prisma
 
 # Generate Prisma Client
 RUN npx prisma generate
 
-# Copy source code
+# Copy all source code
 COPY . .
 
 # Build TypeScript
@@ -34,5 +34,5 @@ EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD node -e "require('http').get('http://localhost:5000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-# Start command (Railway will override this)
+# Start command
 CMD ["sh", "-c", "npx prisma migrate deploy && npm run seed && node dist/server.js"]
