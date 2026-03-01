@@ -2,6 +2,15 @@
 builder = "DOCKERFILE"
 dockerfilePath = "Dockerfile"
 
+[watch]
+paths = [
+  "/server/**",
+  "/Dockerfile",
+  "/.railway.json",
+  "/railway.toml",
+  "/package.json"
+]
+
 [deploy]
 startCommand = "npx prisma migrate deploy && node dist/server.js"
 healthcheckPath = "/health"
