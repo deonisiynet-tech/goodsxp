@@ -27,4 +27,4 @@ ENV NODE_ENV=production
 # Server listens on 0.0.0.0:${PORT}
 
 # Run migrations and start server
-CMD ["sh", "-c", "npx prisma migrate deploy --skip-generate && node dist/server.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]
