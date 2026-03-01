@@ -70,7 +70,9 @@ export class AuthService {
     const secret = process.env.JWT_SECRET || 'default-secret';
     const expiresIn = process.env.JWT_EXPIRES_IN || '7d';
 
-    return jwt.sign({ id, email, role }, secret, { expiresIn });
+    return jwt.sign({ id, email, role }, secret, { 
+      expiresIn: expiresIn as string 
+    });
   }
 
   async getProfile(userId: string) {

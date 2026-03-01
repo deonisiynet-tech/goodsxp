@@ -53,7 +53,7 @@ export class ProductController {
     try {
       const { title, description, price, stock, isActive } = req.body;
       
-      let imageUrl = '';
+      let imageUrl: string | undefined = undefined;
 
       // Handle image upload
       if (req.files?.image) {
@@ -65,7 +65,7 @@ export class ProductController {
         title,
         description,
         price: Number(price),
-        imageUrl: imageUrl || null,
+        imageUrl: imageUrl || undefined,
         images: imageUrl ? [imageUrl] : [],
         stock: stock ? Number(stock) : 0,
         isActive: isActive === 'true',

@@ -86,7 +86,7 @@ export class ProductService {
     title: string;
     description: string;
     price: number;
-    imageUrl?: string;
+    imageUrl?: string | null;
     images?: string[];
     stock?: number;
     isActive?: boolean;
@@ -98,8 +98,8 @@ export class ProductService {
         title: validated.title,
         description: validated.description,
         price: validated.price,
-        imageUrl: validated.imageUrl || null,
-        images: validated.images || [],
+        imageUrl: validated.imageUrl ?? null,
+        images: validated.images ?? [],
         stock: validated.stock,
         isActive: validated.isActive,
       },

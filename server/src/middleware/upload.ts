@@ -20,16 +20,6 @@ export const uploadMiddleware = fileUpload({
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB limit
   },
-  fileFilter: (req, file) => {
-    const allowedTypes = /jpeg|jpg|png|webp/;
-    const extname = allowedTypes.test(file.name.toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-
-    if (extname && mimetype) {
-      return true;
-    }
-    throw new AppError('Дозволені тільки зображення (JPEG, PNG, WebP)', 400);
-  },
 });
 
 export const uploadToCloudinary = async (filePath: string): Promise<string> => {
