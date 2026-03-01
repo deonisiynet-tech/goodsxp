@@ -12,7 +12,7 @@
 - ✅ Збільшено `healthcheckTimeout` до 600 секунд
 - ✅ Прибрано секцію `healthcheck` (Railway ігнорує її)
 
-### 3. **railway.toml**
+### 3. ****
 - ✅ Синхронізовано з .railway.json
 - ✅ Додана секція `[healthcheck]`
 
