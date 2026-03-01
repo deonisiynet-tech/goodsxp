@@ -91,17 +91,15 @@ export class ProductService {
     stock?: number;
     isActive?: boolean;
   }) {
-    const validated = productSchema.parse(data);
-
     const product = await prisma.product.create({
       data: {
-        title: validated.title,
-        description: validated.description,
-        price: validated.price,
-        imageUrl: validated.imageUrl ?? null,
-        images: validated.images ?? [],
-        stock: validated.stock,
-        isActive: validated.isActive,
+        title: data.title,
+        description: data.description,
+        price: data.price,
+        imageUrl: data.imageUrl ?? null,
+        images: data.images ?? [],
+        stock: data.stock ?? 0,
+        isActive: data.isActive ?? true,
       },
     });
 

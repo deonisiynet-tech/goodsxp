@@ -13,8 +13,10 @@ export const loginSchema = z.object({
 export const productSchema = z.object({
   title: z.string().min(1, 'Назва обов\'язкова').max(200),
   description: z.string().min(1, 'Опис обов\'язковий').max(5000),
-  price: z.number().positive('Ціна має бути додатною'),
-  stock: z.number().int().nonnegative().optional().default(0),
+  price: z.coerce.number().positive('Ціна має бути додатною'),
+  imageUrl: z.string().optional().nullable(),
+  images: z.array(z.string()).optional().default([]),
+  stock: z.coerce.number().int().nonnegative().optional().default(0),
   isActive: z.boolean().optional().default(true),
 });
 
@@ -39,8 +41,8 @@ export const orderStatusSchema = z.object({
 });
 
 export const paginationSchema = z.object({
-  page: z.string().transform((val) => parseInt(val, 10)).pipe(z.number().positive().int()).optional().default(1),
-  limit: z.string().transform((val) => parseInt(val, 10)).pipe(z.number().positive().int().max(100)).optional().default(20),
+  page: z.coerce.number().positive().int().optional().default(1),
+  limit: z.coerce.number().positive().int().max(100).optional().default(20),
   search: z.string().optional(),
   sortBy: z.enum(['createdAt', 'price', 'title']).optional().default('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
