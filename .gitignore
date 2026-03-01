@@ -48,14 +48,14 @@ client/dist/
 # ==================================
 # Database
 # ==================================
-# Prisma
+# Prisma - ignore only database files, NOT schema
 prisma/*.db
 prisma/*.db-journal
 *.db
 *.sqlite
 *.sqlite3
 
-# Migrations (optional - uncomment if you don't want to commit migrations)
+# Migrations ARE committed
 # prisma/migrations/
 
 # ==================================
