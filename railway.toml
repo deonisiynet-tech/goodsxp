@@ -1,5 +1,3 @@
-# Railway configuration for GoodsXP
-
 [build]
 builder = "DOCKERFILE"
 
