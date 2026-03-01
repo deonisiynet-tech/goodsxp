@@ -51,6 +51,11 @@ app.get('/health', (_req: Request, res: Response) => {
   });
 });
 
+// Alternative health check endpoint (Railway compatible)
+app.get('/healthz', (_req: Request, res: Response) => {
+  res.status(200).send('OK');
+});
+
 // Root endpoint
 app.get('/', (_req: Request, res: Response) => {
   res.json({
