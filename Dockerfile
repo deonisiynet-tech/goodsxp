@@ -1,4 +1,4 @@
-# Root Dockerfile for Railway
+# Railway Dockerfile for GoodsXP Backend
 FROM node:20-alpine
 
 WORKDIR /app
@@ -6,16 +6,16 @@ WORKDIR /app
 # Install OpenSSL for Prisma
 RUN apk add --no-cache openssl
 
-# Copy server package files
+# Copy package files from server directory
 COPY server/package*.json ./
 
 # Install dependencies
 RUN npm install
 
-# Copy server prisma schema
+# Copy Prisma schema
 COPY server/prisma ./prisma
 
-# Generate Prisma Client with temp DATABASE_URL
+# Generate Prisma Client (with temp DATABASE_URL for build)
 RUN echo 'DATABASE_URL="postgresql://u:p@localhost:5432/db"' > .env && \
     npx prisma generate && \
     rm -f .env
@@ -26,10 +26,15 @@ COPY server/ ./
 # Build TypeScript
 RUN npm run build
 
+# Production environment
 ENV NODE_ENV=production
+
+# Expose port
 EXPOSE 5000
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+# Health check for Railway - увеличенный start-period
+HEALTHCHECK --interval=10s --timeout=5s --start-period=120s --retries=3 \
   CMD node -e "require('http').get('http://localhost:5000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
+# Start command: migrate, seed, start
 CMD ["sh", "-c", "npx prisma migrate deploy && npm run seed && node dist/server.js"]
