@@ -5,16 +5,21 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-console.log('🔧 Loading environment variables...');
+// ==================================
+// DIAGNOSTIC: Step 1 - File loaded
+// ==================================
+console.log('='.repeat(60));
+console.log('🔧 SERVER FILE LOADED');
+console.log('='.repeat(60));
 console.log('📦 NODE_ENV:', process.env.NODE_ENV);
 console.log('📦 PORT:', process.env.PORT);
 console.log('📦 DATABASE_URL:', process.env.DATABASE_URL ? '*** SET ***' : '❌ NOT SET');
+console.log('='.repeat(60));
 
 // Check critical environment variables
 if (!process.env.DATABASE_URL) {
   console.error('❌ FATAL: DATABASE_URL is not set!');
   console.error('❌ Please set DATABASE_URL environment variable in Railway Dashboard');
-  // Don't exit - Railway will inject it at runtime
 }
 
 // Import routes - these will execute before any code runs
@@ -98,19 +103,30 @@ app.use(notFound);
 app.use(errorHandler);
 
 // ==================================
+// DIAGNOSTIC: Step 2 - Before listen
+// ==================================
+console.log('='.repeat(60));
+console.log('🎧 ABOUT TO LISTEN on port', PORT);
+console.log('🌐 Binding to 0.0.0.0:', PORT);
+console.log('='.repeat(60));
+
+// ==================================
 // Start server on 0.0.0.0
 // ==================================
-console.log('🎧 Starting server listener...');
-
-// Handle server errors
 const server = app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`🌐 Listening on 0.0.0.0:${PORT}`);
-  console.log(`✅ Health check available at http://localhost:${PORT}/health`);
-  console.log(`✅ Health check available at http://localhost:${PORT}/healthz`);
+  // ==================================
+  // DIAGNOSTIC: Step 3 - Server started
+  // ==================================
+  console.log('='.repeat(60));
+  console.log('✅ SERVER STARTED');
+  console.log('🚀 Server running on port', PORT);
+  console.log('🌐 Listening on 0.0.0.0:', PORT);
+  console.log('✅ Health check available at http://localhost:' + PORT + '/health');
+  console.log('✅ Health check available at http://localhost:' + PORT + '/healthz');
+  console.log('='.repeat(60));
 }).on('error', (err: any) => {
   if (err.code === 'EADDRINUSE') {
-    console.error(`❌ Port ${PORT} is already in use!`);
+    console.error('❌ Port', PORT, 'is already in use!');
     process.exit(1);
   }
   console.error('❌ Server error:', err);
@@ -119,19 +135,17 @@ const server = app.listen(PORT, '0.0.0.0', () => {
 
 // Graceful shutdown
 const shutdown = (signal: string) => {
-  console.log(`${signal} received, shutting down...`);
+  console.log(signal, 'received, shutting down...');
   server.close(() => {
     console.log('HTTP server closed');
     process.exit(0);
   });
-  // Force close after 10 seconds
   setTimeout(() => {
     console.error('Could not close connections in time, forcefully shutting down');
     process.exit(1);
   }, 10000);
 };
 
-console.log('✅ Server initialization complete');
 console.log('📡 Registering process handlers...');
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT', () => shutdown('SIGINT'));
@@ -148,5 +162,6 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 console.log('✅ All startup procedures completed');
+console.log('='.repeat(60));
 
 export default app;
