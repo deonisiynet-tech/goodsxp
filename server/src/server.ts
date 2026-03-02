@@ -4,6 +4,7 @@ import helmet from 'helmet';
 import dotenv from 'dotenv';
 import { createServer } from 'next';
 import { parse } from 'url';
+import path from 'path';
 
 dotenv.config();
 
@@ -20,11 +21,18 @@ if (!process.env.DATABASE_URL) {
 // Ініціалізація Next.js
 // ==================================
 console.log('📦 Initializing Next.js...');
+
+// Визначаємо шлях до client directory
+const clientDir = process.env.NEXT_DIR 
+  ? path.resolve(process.cwd(), process.env.NEXT_DIR) 
+  : path.resolve(process.cwd(), '../client');
+
+console.log('📁 Client directory:', clientDir);
+
 const nextApp = createServer({
   dev: process.env.NODE_ENV === 'development',
-  dir: process.env.NEXT_DIR || './client', // Шлях до папки client
+  dir: clientDir,
   conf: {
-    // Конфігурація Next.js
     distDir: '.next',
   },
 });
@@ -101,11 +109,6 @@ app.use('/api/orders', orderRoutes);
 // Next.js Handler - обробляє ВСІ інші запити
 // ==================================
 console.log('✅ Registering Next.js handler...');
-
-// Обробка запитів з API префіксом для Next.js (якщо потрібно)
-app.use('/api/next', (req, res) => {
-  return res.status(404).json({ error: 'API endpoint not found' });
-});
 
 // Всі інші запити → Next.js
 app.all('*', (req: Request, res: Response) => {

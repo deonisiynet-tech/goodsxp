@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  output: 'standalone',
+  // Вимикаємо standalone для інтеграції з Express
+  // output: 'standalone',
+  
   images: {
     remotePatterns: [
       {
@@ -22,12 +24,19 @@ const nextConfig = {
         pathname: '/uploads/**',
       },
     ],
+    unoptimized: process.env.NODE_ENV === 'production',
   },
   eslint: {
     ignoreDuringBuilds: true,
   },
   typescript: {
     ignoreBuildErrors: true,
+  },
+  // Вимикаємо power verbosity для чистішого логу
+  logging: {
+    fetches: {
+      fullUrl: true,
+    },
   },
 };
 

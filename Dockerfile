@@ -44,6 +44,7 @@ WORKDIR /app/server
 RUN npm run build
 
 ENV NODE_ENV=production
+ENV NEXT_DIR=./client
 
 # Railway will inject PORT environment variable at runtime
 # Server listens on 0.0.0.0:${PORT}
