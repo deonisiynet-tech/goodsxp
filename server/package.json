@@ -1,11 +1,13 @@
 {
   "name": "shop-server",
   "version": "1.0.0",
-  "description": "E-commerce backend API",
+  "description": "E-commerce backend with Next.js frontend",
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
+    "build:client": "cd ../client && npm install && npm run build",
+    "build:all": "npm run build:client && npm run build",
     "start": "node dist/server.js",
     "prisma:generate": "dotenv -e .env -- prisma generate",
     "prisma:migrate": "dotenv -e .env -- prisma migrate dev",
@@ -27,6 +29,9 @@
     "express-rate-limit": "^7.1.5",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
+    "next": "^14.1.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
     "redis": "^4.6.12",
     "uuid": "^9.0.1",
     "zod": "^3.22.4"
@@ -38,6 +43,8 @@
     "@types/express-fileupload": "^1.4.4",
     "@types/jsonwebtoken": "^9.0.5",
     "@types/node": "^20.11.16",
+    "@types/react": "^18.2.55",
+    "@types/react-dom": "^18.2.19",
     "@types/uuid": "^9.0.7",
     "dotenv-cli": "^11.0.0",
     "prisma": "^5.22.0",
