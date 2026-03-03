@@ -6,11 +6,22 @@ WORKDIR /app
 # Install OpenSSL for Prisma
 RUN apk add --no-cache openssl
 
-# Copy package files
+# Copy root package files for client build
+COPY ../client/package*.json ./client-package.json
+
+# Copy server package files
 COPY package*.json ./
 
-# Install dependencies
+# Install server dependencies
 RUN npm install
+
+# Install client dependencies and build
+RUN cd .. && \
+    cp client-package.json client/ && \
+    cd client && \
+    npm install && \
+    npm run build && \
+    cd ..
 
 # Copy prisma schema (relative to server/)
 COPY prisma ./prisma
@@ -27,6 +38,7 @@ COPY . .
 RUN npm run build
 
 ENV NODE_ENV=production
+ENV CLIENT_DIR=/app/client
 EXPOSE 5000
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
