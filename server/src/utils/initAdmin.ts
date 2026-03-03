@@ -1,6 +1,5 @@
 import prisma from '../prisma/client.js';
 import bcrypt from 'bcryptjs';
-import { Role } from '@prisma/client';
 
 export async function initializeAdmin() {
   try {
@@ -10,22 +9,29 @@ export async function initializeAdmin() {
     console.log('🔧 Initializing admin user...');
     console.log('📧 Admin email:', adminEmail);
 
+    // Використовуємо select щоб уникнути помилки з відсутніми полями
     const existingAdmin = await prisma.user.findUnique({
       where: { email: adminEmail },
+      select: {
+        id: true,
+        email: true,
+        password: true,
+        role: true,
+      },
     });
 
     if (existingAdmin) {
       // Перевіряємо чи потрібно оновити пароль
       const isPasswordValid = await bcrypt.compare(adminPassword, existingAdmin.password);
-      
-      if (!isPasswordValid || existingAdmin.role !== Role.ADMIN) {
+
+      if (!isPasswordValid || existingAdmin.role !== 'ADMIN') {
         console.log('🔄 Updating admin password and role...');
         const hashedPassword = await bcrypt.hash(adminPassword, 12);
         await prisma.user.update({
           where: { id: existingAdmin.id },
           data: {
             password: hashedPassword,
-            role: Role.ADMIN,
+            role: 'ADMIN',
           },
         });
         console.log('✅ Admin updated successfully');
@@ -40,7 +46,7 @@ export async function initializeAdmin() {
         data: {
           email: adminEmail,
           password: hashedPassword,
-          role: Role.ADMIN,
+          role: 'ADMIN',
         },
       });
       console.log('✅ Admin created successfully');
