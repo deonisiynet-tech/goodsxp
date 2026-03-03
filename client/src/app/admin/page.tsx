@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { authApi, productsApi, ordersApi } from '@/lib/api';
+import { authApi, productsApi, ordersApi, adminApi } from '@/lib/api';
 import toast from 'react-hot-toast';
 import { Package, Plus, Edit, Trash2, Search, LogOut, Eye, EyeOff, ShoppingCart, DollarSign, TrendingUp, CheckCircle } from 'lucide-react';
-import Header from '@/components/Header';
+import AdminLayout from '@/components/admin/AdminLayout';
+import Dashboard from '@/components/admin/Dashboard';
 import ProductModal from '@/components/admin/ProductModal';
 
 interface Product {
@@ -222,193 +223,84 @@ export default function AdminPage() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <Header />
+    <AdminLayout onLogout={handleLogout}>
+      {/* Dashboard */}
+      <Dashboard stats={stats} loading={loading} />
 
-      <main className="flex-1 pt-20">
-        {/* Hero */}
-        <section className="relative py-12 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-purple-500/10" />
-          <div className="container mx-auto px-4 relative z-10">
-            <div className="flex justify-between items-center">
-              <div>
-                <h1 className="text-4xl md:text-5xl font-bold mb-2">Панель керування</h1>
-                <p className="text-muted">Управління товарами магазину</p>
+      {/* Products Section */}
+      <section className="mt-8">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-2xl font-bold text-primary">Останні товари</h2>
+          <button onClick={handleCreate} className="btn-primary flex items-center gap-2">
+            <Plus size={20} />
+            Додати товар
+          </button>
+        </div>
+
+        {/* Products Grid */}
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[...Array(6)].map((_, i) => (
+              <div key={i} className="card animate-pulse">
+                <div className="h-48 bg-surfaceLight" />
+                <div className="p-4 space-y-3">
+                  <div className="h-4 bg-surfaceLight rounded w-3/4" />
+                  <div className="h-4 bg-surfaceLight rounded w-1/2" />
+                </div>
               </div>
-              <button
-                onClick={handleLogout}
-                className="flex items-center gap-2 px-4 py-2 border border-border rounded-xl hover:bg-surface transition-colors"
-              >
-                <LogOut size={18} />
-                <span className="hidden md:inline">Вийти</span>
-              </button>
-            </div>
+            ))}
           </div>
-        </section>
-
-        {/* Stats Section */}
-        {stats && (
-          <section className="py-8">
-            <div className="container mx-auto px-4">
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="card p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/30">
-                      <ShoppingCart className="text-blue-400" size={24} />
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {products.slice(0, 6).map((product) => (
+              <div key={product.id} className="card overflow-hidden group hover:shadow-lg transition-all duration-300">
+                <div className="relative h-48 overflow-hidden">
+                  <img
+                    src={product.imageUrl || '/placeholder.jpg'}
+                    alt={product.title}
+                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                  />
+                  {!product.isActive && (
+                    <div className="absolute top-2 right-2 px-2 py-1 bg-red-500/90 rounded-lg text-xs text-white">
+                      Неактивний
                     </div>
-                    <div>
-                      <p className="text-muted text-sm">Всього замовлень</p>
-                      <p className="text-2xl font-bold">{stats.total}</p>
-                    </div>
-                  </div>
+                  )}
                 </div>
-
-                <div className="card p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-xl bg-green-500/10 border border-green-500/30">
-                      <DollarSign className="text-green-400" size={24} />
-                    </div>
-                    <div>
-                      <p className="text-muted text-sm">Дохід</p>
-                      <p className="text-2xl font-bold">{stats.revenue.toLocaleString('uk-UA')} ₴</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="card p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/30">
-                      <CheckCircle className="text-yellow-400" size={24} />
-                    </div>
-                    <div>
-                      <p className="text-muted text-sm">Нові</p>
-                      <p className="text-2xl font-bold">{stats.new}</p>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="card p-6">
-                  <div className="flex items-center gap-4">
-                    <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/30">
-                      <TrendingUp className="text-purple-400" size={24} />
-                    </div>
-                    <div>
-                      <p className="text-muted text-sm">В обробці</p>
-                      <p className="text-2xl font-bold">{stats.processing}</p>
+                <div className="p-4">
+                  <h3 className="font-semibold text-primary mb-2 truncate">{product.title}</h3>
+                  <p className="text-2xl font-bold text-primary mb-3">
+                    {product.price.toLocaleString('uk-UA')} ₴
+                  </p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted">{product.stock} шт. на складі</span>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleEdit(product)}
+                        className="p-2 text-primary hover:bg-surfaceLight rounded-lg transition-colors"
+                      >
+                        <Edit size={16} />
+                      </button>
+                      <button
+                        onClick={() => handleDelete(product.id)}
+                        className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
                   </div>
                 </div>
               </div>
-            </div>
-          </section>
+            ))}
+          </div>
         )}
 
-        {/* Products Section */}
-        <section className="py-8">
-          <div className="container mx-auto px-4">
-            {/* Actions Bar */}
-            <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-8">
-              <div className="relative flex-1 max-w-md">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" size={20} />
-                <input
-                  type="text"
-                  placeholder="Пошук товарів..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="input-field pl-12"
-                />
-              </div>
-              <button onClick={handleCreate} className="btn-primary flex items-center gap-2">
-                <Plus size={20} />
-                Додати товар
-              </button>
-            </div>
-
-            {/* Products Grid */}
-            {loading ? (
-              <div className="flex justify-center py-20">
-                <div className="w-12 h-12 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-              </div>
-            ) : (
-              <div className="card overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-surfaceLight">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Фото</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Назва</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Ціна</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Залишок</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Статус</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">Дії</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-border">
-                    {products.map((product) => (
-                      <tr key={product.id} className="hover:bg-surfaceLight transition-colors">
-                        <td className="px-6 py-4">
-                          <div className="w-12 h-12 rounded-lg overflow-hidden bg-surfaceLight">
-                            <img
-                              src={product.imageUrl || '/placeholder.jpg'}
-                              alt={product.title}
-                              className="w-full h-full object-cover"
-                            />
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 font-medium">{product.title}</td>
-                        <td className="px-6 py-4">{product.price.toLocaleString('uk-UA')} ₴</td>
-                        <td className="px-6 py-4">{product.stock} шт.</td>
-                        <td className="px-6 py-4">
-                          <span
-                            className={`px-2 py-1 rounded-full text-xs ${
-                              product.isActive
-                                ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                                : 'bg-red-500/20 text-red-400 border border-red-500/30'
-                            }`}
-                          >
-                            {product.isActive ? 'Активний' : 'Неактивний'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4 text-right">
-                          <div className="flex justify-end gap-2">
-                            <button
-                              onClick={() => handleEdit(product)}
-                              className="p-2 text-primary hover:bg-surfaceLight rounded-lg transition-colors"
-                              title="Редагувати"
-                            >
-                              <Edit size={18} />
-                            </button>
-                            <button
-                              onClick={() => handleDelete(product.id)}
-                              className="p-2 text-red-400 hover:bg-red-500/10 rounded-lg transition-colors"
-                              title="Видалити"
-                            >
-                              <Trash2 size={18} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-
-                {products.length === 0 && (
-                  <div className="text-center py-20 text-muted">
-                    Товари не знайдені
-                  </div>
-                )}
-              </div>
-            )}
+        {products.length === 0 && !loading && (
+          <div className="text-center py-20 text-muted">
+            <Package size={48} className="mx-auto mb-4 opacity-50" />
+            <p>Товари не знайдені</p>
           </div>
-        </section>
-      </main>
-
-      {/* Product Modal */}
-      {modalOpen && (
-        <ProductModal
-          product={editingProduct}
-          onClose={handleModalClose}
-        />
-      )}
-    </div>
+        )}
+      </section>
+    </AdminLayout>
   );
 }
