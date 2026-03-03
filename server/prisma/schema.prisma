@@ -7,6 +7,122 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id        String     @id @default(uuid())
+  email     String     @unique
+  password  String
+  role      Role       @default(USER)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+  logs      AdminLog[]
+  orders    Order[]
+
+  @@index([email])
+  @@index([role])
+}
+
+model Product {
+  id          String      @id @default(uuid())
+  title       String
+  description String
+  price       Decimal     @db.Decimal(10, 2)
+  imageUrl    String?
+  images      String[]
+  stock       Int         @default(0)
+  isActive    Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+  categoryId  String?
+  orderItems  OrderItem[]
+  category    Category?   @relation(fields: [categoryId], references: [id])
+
+  @@index([isActive])
+  @@index([createdAt])
+  @@index([title])
+  @@index([categoryId])
+}
+
+model Category {
+  id          String     @id @default(uuid())
+  name        String
+  slug        String     @unique
+  description String?
+  imageUrl    String?
+  parentId    String?
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+  children    Category[] @relation("CategoryHierarchy")
+  products    Product[]
+
+  @@index([slug])
+  @@index([parentId])
+}
+
+model Order {
+  id         String      @id @default(uuid())
+  userId     String?
+  name       String
+  phone      String
+  email      String
+  address    String
+  totalPrice Decimal     @db.Decimal(10, 2)
+  status     OrderStatus @default(NEW)
+  comment    String?
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  user       User?       @relation(fields: [userId], references: [id])
+  items      OrderItem[]
+
+  @@index([status])
+  @@index([createdAt])
+  @@index([email])
+  @@index([userId])
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String
+  productId String
+  quantity  Int
+  price     Decimal @db.Decimal(10, 2)
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product @relation(fields: [productId], references: [id])
+
+  @@index([orderId])
+  @@index([productId])
+}
+
+model AdminLog {
+  id        String     @id @default(uuid())
+  adminId   String
+  action    ActionType
+  entity    String?
+  entityId  String?
+  details   String?
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime   @default(now())
+  admin     User       @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId])
+  @@index([action])
+  @@index([createdAt])
+  @@index([entity])
+}
+
+model SiteSettings {
+  id          String   @id @default(uuid())
+  key         String   @unique
+  value       String
+  description String?
+  type        String   @default("text")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([key])
+}
+
 enum Role {
   USER
   ADMIN
@@ -28,126 +144,4 @@ enum ActionType {
   LOGOUT
   PASSWORD_RESET
   SETTINGS_UPDATE
-}
-
-model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  role      Role     @default(USER)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  orders Order[]
-  logs   AdminLog[]
-
-  @@index([email])
-  @@index([role])
-}
-
-model Product {
-  id          String   @id @default(uuid())
-  title       String
-  description String
-  price       Decimal  @db.Decimal(10, 2)
-  imageUrl    String?
-  images      String[]
-  stock       Int      @default(0)
-  isActive    Boolean  @default(true)
-  categoryId  String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  category   Category? @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  orderItems OrderItem[]
-
-  @@index([isActive])
-  @@index([createdAt])
-  @@index([title])
-  @@index([categoryId])
-}
-
-model Category {
-  id          String   @id @default(uuid())
-  name        String
-  slug        String   @unique
-  description String?
-  imageUrl    String?
-  parentId    String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  parent     Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
-  children   Category[] @relation("CategoryHierarchy")
-  products   Product[]
-
-  @@index([slug])
-  @@index([parentId])
-}
-
-model Order {
-  id         String      @id @default(uuid())
-  userId     String?
-  name       String
-  phone      String
-  email      String
-  address    String
-  totalPrice Decimal     @db.Decimal(10, 2)
-  status     OrderStatus @default(NEW)
-  comment    String?
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
-
-  user  User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
-  items OrderItem[]
-
-  @@index([status])
-  @@index([createdAt])
-  @@index([email])
-  @@index([userId])
-}
-
-model OrderItem {
-  id        String  @id @default(uuid())
-  orderId   String
-  productId String
-  quantity  Int
-  price     Decimal @db.Decimal(10, 2)
-
-  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product Product @relation(fields: [productId], references: [id], onDelete: Restrict)
-
-  @@index([orderId])
-  @@index([productId])
-}
-
-model AdminLog {
-  id         String     @id @default(uuid())
-  adminId    String
-  action     ActionType
-  entity     String?
-  entityId   String?
-  details    String?
-  ipAddress  String?
-  userAgent  String?
-  createdAt  DateTime   @default(now())
-
-  admin User @relation(fields: [adminId], references: [id], onDelete: Cascade)
-
-  @@index([adminId])
-  @@index([action])
-  @@index([createdAt])
-  @@index([entity])
-}
-
-model SiteSettings {
-  id          String   @id @default(uuid())
-  key         String   @unique
-  value       String
-  description String?
-  type        String   @default("text") // text, json, boolean, number
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  @@index([key])
 }
