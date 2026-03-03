@@ -24,7 +24,6 @@ export class CategoryService {
         include: {
           _count: {
             select: {
-              products: true,
               children: true,
             },
           },
@@ -65,14 +64,6 @@ export class CategoryService {
     const category = await prisma.category.findUnique({
       where: { id },
       include: {
-        products: {
-          select: {
-            id: true,
-            title: true,
-            price: true,
-            isActive: true,
-          },
-        },
         children: true,
         parent: true,
       },
@@ -135,20 +126,12 @@ export class CategoryService {
     const existing = await prisma.category.findUnique({
       where: { id },
       include: {
-        products: true,
         children: true,
       },
     });
 
     if (!existing) {
       throw new AppError('Категорію не знайдено', 404);
-    }
-
-    if (existing.products.length > 0) {
-      throw new AppError(
-        'Неможливо видалити категорію з товарами. Спочатку видаліть або перемістіть товари.',
-        400
-      );
     }
 
     return prisma.category.delete({
