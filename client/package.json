@@ -6,7 +6,10 @@
     "dev": "next dev --turbo",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint --fix"
+    "lint": "next lint --fix",
+    "clean": "node -e \"const fs=require('fs');const path=require('path');const p=path.join(process.cwd(),'.next');if(fs.existsSync(p))fs.rmSync(p,{recursive:true,force:true});console.log('✅ .next видалено')\"",
+    "clean:all": "node -e \"const fs=require('fs');const path=require('path');const p=path.join(process.cwd(),'.next');const n=path.join(process.cwd(),'node_modules');if(fs.existsSync(p))fs.rmSync(p,{recursive:true,force:true});if(fs.existsSync(n))fs.rmSync(n,{recursive:true,force:true});console.log('✅ .next і node_modules видалено')\"",
+    "rebuild": "npm run clean:all && npm install && npm run build"
   },
   "dependencies": {
     "next": "14.1.0",
