@@ -35,8 +35,6 @@ model User {
   email     String   @unique
   password  String
   role      Role     @default(USER)
-  twoFactorSecret String?
-  twoFactorEnabled Boolean @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

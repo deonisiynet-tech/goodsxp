@@ -35,7 +35,6 @@ export class AdminService {
           id: true,
           email: true,
           role: true,
-          twoFactorEnabled: true,
           createdAt: true,
           orders: {
             select: {
@@ -75,7 +74,6 @@ export class AdminService {
         id: true,
         email: true,
         role: true,
-        twoFactorEnabled: true,
         createdAt: true,
         orders: {
           select: {
