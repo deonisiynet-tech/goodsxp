@@ -26,14 +26,14 @@ WORKDIR /app
 # Copy prisma schema
 COPY prisma ./prisma
 
+# Copy server source files
+COPY tsconfig.json ./
+COPY src ./src
+
 # Generate Prisma Client
 RUN echo 'DATABASE_URL="postgresql://u:p@localhost:5432/db"' > .env && \
     npx prisma generate && \
     rm -f .env
-
-# Copy ONLY server source files
-COPY src ./src
-COPY tsconfig.json ./
 
 # Build TypeScript server
 RUN npm run build
