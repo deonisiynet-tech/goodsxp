@@ -22,19 +22,14 @@ if (!process.env.DATABASE_URL) {
 // ==================================
 console.log('📦 Initializing Next.js...');
 
-// Визначаємо шлях до client directory
-const clientDir = process.env.NEXT_DIR 
-  ? path.resolve(process.cwd(), process.env.NEXT_DIR) 
-  : path.resolve(process.cwd(), '../client');
+// Шлях до client directory (відносно server/dist)
+const clientDir = path.resolve(__dirname, '../../client');
 
 console.log('📁 Client directory:', clientDir);
 
 const nextApp = createServer({
-  dev: process.env.NODE_ENV === 'development',
+  dev: false,
   dir: clientDir,
-  conf: {
-    distDir: '.next',
-  },
 });
 
 const nextHandle = nextApp.getRequestHandler();
