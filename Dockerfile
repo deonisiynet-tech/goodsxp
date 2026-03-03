@@ -10,10 +10,18 @@ RUN apk add --no-cache openssl
 COPY server/package*.json ./
 RUN npm install
 
-# Build client (Next.js)
-COPY client/package*.json ./client/
-RUN cd client && npm install && npm run build
-# Тепер /app/client/.next існує з CSS/JS файлами
+# Build client (Next.js) - Копіюємо ВЕСЬ client перед збіркою
+WORKDIR /client
+COPY client/package*.json ./
+RUN npm install
+COPY client/ ./
+# Тепер всі файли client (src, app, pages, etc.) доступні
+RUN npm run build
+# Перевірка: .next має існувати
+RUN ls -la /client/.next && echo "✅ .next directory exists at /client/.next"
+
+# Return to server directory
+WORKDIR /app
 
 # Copy prisma schema
 COPY server/prisma ./prisma
@@ -32,7 +40,7 @@ RUN npm run build
 
 # Set production environment
 ENV NODE_ENV=production
-ENV CLIENT_DIR=/app/client
+ENV CLIENT_DIR=/client
 EXPOSE 5000
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
