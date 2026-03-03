@@ -19,10 +19,10 @@ RUN npm install
 COPY ../client/ ./
 RUN npm run build
 
-# Return to server and continue
+# Return to server and copy server source
 WORKDIR /app
 
-# Copy prisma schema (relative to server/)
+# Copy prisma schema
 COPY prisma ./prisma
 
 # Generate Prisma Client with temp DATABASE_URL
@@ -30,14 +30,15 @@ RUN echo 'DATABASE_URL="postgresql://u:p@localhost:5432/db"' > .env && \
     npx prisma generate && \
     rm -f .env
 
-# Copy source code
-COPY . .
+# Copy ONLY server source files (not client!)
+COPY src ./src
+COPY tsconfig.json ./
 
 # Build TypeScript
 RUN npm run build
 
 ENV NODE_ENV=production
-ENV CLIENT_DIR=/app/client
+ENV CLIENT_DIR=/client
 EXPOSE 5000
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \

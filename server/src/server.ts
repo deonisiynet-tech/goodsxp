@@ -2,9 +2,10 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
-import createServer from 'next';
+import next from 'next';
 import { parse } from 'url';
 import path from 'path';
+import fs from 'fs';
 
 dotenv.config();
 
@@ -23,15 +24,26 @@ if (!process.env.DATABASE_URL) {
 console.log('📦 Initializing Next.js...');
 
 // Шлях до client directory
-// У production (Docker): /app/client
+// У production (Docker/Railway): /client
 // У development: ../../client відносно dist/server.js
-const clientDir = process.env.NODE_ENV === 'production' && process.env.CLIENT_DIR
+const clientDir = process.env.CLIENT_DIR
   ? path.resolve(process.env.CLIENT_DIR)
   : path.resolve(__dirname, '../../client');
 
 console.log('📁 Client directory:', clientDir);
+console.log('📁 CLIENT_DIR env:', process.env.CLIENT_DIR);
+console.log('📁 NODE_ENV:', process.env.NODE_ENV);
 
-const nextApp = createServer({
+// Перевірка існування .next directory
+const nextDir = path.join(clientDir, '.next');
+console.log('📁 .next exists:', fs.existsSync(nextDir));
+if (fs.existsSync(nextDir)) {
+  console.log('📁 .next contents:', fs.readdirSync(nextDir).slice(0, 10));
+} else {
+  console.error('❌ ERROR: .next directory not found at', nextDir);
+}
+
+const nextApp = next({
   dev: false,
   dir: clientDir,
 });
