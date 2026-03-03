@@ -65,6 +65,7 @@ import productRoutes from './routes/product.routes.js';
 import orderRoutes from './routes/order.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
+import { initializeAdmin } from './utils/initAdmin.js';
 console.log('✅ All imports completed successfully');
 
 // ==================================
@@ -164,9 +165,12 @@ app.use(errorHandler);
 console.log('🎧 ABOUT TO LISTEN on port', PORT);
 
 // Спочатку готуємо Next.js, потім запускаємо сервер
-nextApp.prepare().then(() => {
+nextApp.prepare().then(async () => {
   console.log('✅ Next.js prepared successfully');
-  
+
+  // Ініціалізація адміна (створення або оновлення)
+  await initializeAdmin();
+
   const server = app.listen(PORT, '0.0.0.0', () => {
     console.log('='.repeat(60));
     console.log('✅ SERVER STARTED');
