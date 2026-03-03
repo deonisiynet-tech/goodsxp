@@ -74,45 +74,50 @@ const PORT = Number(process.env.PORT) || 5000;
 
 console.log('🚀 Initializing Express app...');
 
-// Security middleware
-app.use(helmet());
-app.use(cors({
-  origin: (origin, callback) => {
-    const allowedOrigins = [
-      process.env.CLIENT_URL,
-      'https://healthcheck.railway.app',
-      '*',
-    ];
-    // Дозволяємо запити без origin (статичні файли, curl, тощо)
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
+// ==================================
+// CORS Middleware - ДО ВСІХ інших middleware
+// ==================================
+console.log('✅ Setting up CORS...');
 
-// Дозволяємо запити до /_next без CORS обмежень
-app.use('/_next', (_req: Request, res: Response, next) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+// Логірування для діагностики
+app.use((req, _res, next) => {
+  if (req.path.startsWith('/api')) {
+    console.log('📡 API Request:', req.method, req.path, '| Origin:', req.headers.origin);
+  }
   next();
 });
+
+// CORS для API - дозволяємо всі джерела
+app.use('/api', cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: false,
+}));
+
+// Helmet для безпеки (після CORS для API)
+app.use(helmet({
+  contentSecurityPolicy: false,
+  crossOriginEmbedderPolicy: false,
+}));
+
+// CORS для статичних файлів Next.js - дозволяємо всі запити
+app.use('/_next', cors({
+  origin: '*',
+  methods: ['GET', 'OPTIONS'],
+}));
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // ==================================
-// Next.js Static Assets - обробляються ПЕРШИМИ (ДО API)
+// Next.js Static Assets Handler
 // ==================================
 console.log('✅ Registering Next.js static handler...');
 
-// Статичні файли з public/* (favicon, images, тощо) та CSS
-app.use((req: Request, res: Response, next) => {
+// Всі запити до Next.js (статика, сторінки, CSS, JS)
+app.all('*', (req: Request, res: Response, next) => {
   const urlPath = req.path;
   
   // Пропускаємо API запити
@@ -120,13 +125,13 @@ app.use((req: Request, res: Response, next) => {
     return next();
   }
   
-  // Для статичних файлів та _next передаємо Next.js
+  // Обробляємо через Next.js
   const parsedUrl = parse(req.url!, true);
   return nextHandle(req, res, parsedUrl);
 });
 
 // ==================================
-// API Routes - обробляються ПІСЛЯ статичних файлів
+// API Routes - обробляються ПІСЛЯ Next.js handler
 // ==================================
 console.log('✅ Registering API routes...');
 
@@ -150,17 +155,8 @@ app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 
 // ==================================
-// Next.js Handler - обробляє ВСІ інші запити
-// ==================================
-console.log('✅ Registering Next.js handler...');
-
-// Всі інші запити → Next.js
-app.all('*', (req: Request, res: Response) => {
-  const parsedUrl = parse(req.url!, true);
-  return nextHandle(req, res, parsedUrl);
-});
-
 // Error handling
+// ==================================
 app.use(notFound);
 app.use(errorHandler);
 
