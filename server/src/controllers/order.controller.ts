@@ -46,6 +46,21 @@ export class OrderController {
     }
   }
 
+  async getAllAdmin(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { page, limit, status, email } = req.query;
+      const result = await orderService.getAll({
+        page: page ? Number(page) : 1,
+        limit: limit ? Number(limit) : 100,
+        status: status as string,
+        email: email as string,
+      });
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async updateStatus(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
