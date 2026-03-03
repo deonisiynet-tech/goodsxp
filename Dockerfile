@@ -1,3 +1,4 @@
+# Root Dockerfile for Railway
 FROM node:20-alpine
 
 WORKDIR /app
@@ -5,52 +6,37 @@ WORKDIR /app
 # Install OpenSSL for Prisma
 RUN apk add --no-cache openssl
 
-# ==================================
-# Крок 1: Встановлення залежностей client
-# ==================================
+# Copy and install server dependencies
+COPY server/package*.json ./
+RUN npm install
+
+# Build client (Next.js)
 COPY client/package*.json ./client/
-RUN cd client && npm install
+RUN cd client && npm install && npm run build
+# Тепер /app/client/.next існує з CSS/JS файлами
 
-# ==================================
-# Крок 2: Встановлення залежностей server
-# ==================================
-COPY server/package*.json ./server/
-RUN cd server && npm install
+# Copy prisma schema
+COPY server/prisma ./prisma
 
-# ==================================
-# Крок 3: Копіювання всіх файлів
-# ==================================
-COPY client/ ./client/
-COPY server/ ./server/
-
-# ==================================
-# Крок 4: Генерація Prisma Client
-# ==================================
-WORKDIR /app/server
+# Generate Prisma Client
 RUN echo 'DATABASE_URL="postgresql://u:p@localhost:5432/db"' > .env && \
     npx prisma generate && \
     rm -f .env
 
-# ==================================
-# Крок 5: Збірка Next.js (client)
-# ==================================
-WORKDIR /app/client
+# Copy server source files
+COPY server/tsconfig.json ./
+COPY server/src ./src
+
+# Build TypeScript server
 RUN npm run build
 
-# ==================================
-# Крок 6: Збірка TypeScript (server)
-# ==================================
-WORKDIR /app/server
-RUN npm run build
-
+# Set production environment
 ENV NODE_ENV=production
-ENV NEXT_DIR=./client
+ENV CLIENT_DIR=/app/client
+EXPOSE 5000
 
-# Railway will inject PORT environment variable at runtime
-# Server listens on 0.0.0.0:${PORT}
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:5000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-# ==================================
-# Крок 7: Запуск сервера
-# ==================================
-WORKDIR /app/server
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]
+# Start the custom Express server with Next.js
+CMD ["npm", "run", "start"]
