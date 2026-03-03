@@ -12,13 +12,13 @@ COPY package*.json ./
 # Install server dependencies
 RUN npm install
 
-# Build client first
+# Build client first (Next.js)
 WORKDIR /client
 COPY ../client/package*.json ./
 RUN npm install
 COPY ../client/ ./
 RUN npm run build
-# Тепер /client/.next існує з CSS файлами
+# Тепер /client/.next існує з CSS/JS файлами
 
 # Return to server
 WORKDIR /app
@@ -35,9 +35,10 @@ RUN echo 'DATABASE_URL="postgresql://u:p@localhost:5432/db"' > .env && \
 COPY src ./src
 COPY tsconfig.json ./
 
-# Build TypeScript
+# Build TypeScript server
 RUN npm run build
 
+# Set production environment
 ENV NODE_ENV=production
 ENV CLIENT_DIR=/client
 EXPOSE 5000
@@ -45,4 +46,5 @@ EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD node -e "require('http').get('http://localhost:5000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-CMD ["sh", "-c", "npx prisma migrate deploy && npm run seed && node dist/server.js"]
+# Start the custom Express server with Next.js
+CMD ["npm", "run", "start"]
