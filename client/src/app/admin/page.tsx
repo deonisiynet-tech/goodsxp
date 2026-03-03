@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { authApi, productsApi } from '@/lib/api';
+import { authApi, productsApi, ordersApi } from '@/lib/api';
 import toast from 'react-hot-toast';
-import { Package, Plus, Edit, Trash2, Search, LogOut, Eye, EyeOff } from 'lucide-react';
+import { Package, Plus, Edit, Trash2, Search, LogOut, Eye, EyeOff, ShoppingCart, DollarSign, TrendingUp, CheckCircle } from 'lucide-react';
 import Header from '@/components/Header';
 import ProductModal from '@/components/admin/ProductModal';
 
@@ -21,6 +21,15 @@ interface Product {
   updatedAt: string;
 }
 
+interface OrderStats {
+  total: number;
+  new: number;
+  processing: number;
+  shipped: number;
+  delivered: number;
+  revenue: number;
+}
+
 export default function AdminPage() {
   const router = useRouter();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -30,7 +39,8 @@ export default function AdminPage() {
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  
+  const [stats, setStats] = useState<OrderStats | null>(null);
+
   // Login form state
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
@@ -43,13 +53,14 @@ export default function AdminPage() {
   useEffect(() => {
     if (isAuthenticated) {
       loadProducts();
+      loadStats();
     }
   }, [isAuthenticated, search]);
 
   const checkAuth = () => {
     const token = localStorage.getItem('token');
     const user = localStorage.getItem('user');
-    
+
     if (token && user) {
       const userData = JSON.parse(user);
       if (userData.role === 'ADMIN') {
@@ -68,7 +79,7 @@ export default function AdminPage() {
 
     try {
       const response = await authApi.login(loginForm.email, loginForm.password);
-      
+
       if (response.data.user.role !== 'ADMIN') {
         toast.error('Недостатньо прав для доступу до адмін-панелі');
         return;
@@ -101,6 +112,15 @@ export default function AdminPage() {
       toast.error('Помилка завантаження товарів');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadStats = async () => {
+    try {
+      const response = await ordersApi.getStats();
+      setStats(response.data);
+    } catch (error) {
+      console.error('Failed to load stats:', error);
     }
   };
 
@@ -204,7 +224,7 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
-      
+
       <main className="flex-1 pt-20">
         {/* Hero */}
         <section className="relative py-12 overflow-hidden">
@@ -225,6 +245,63 @@ export default function AdminPage() {
             </div>
           </div>
         </section>
+
+        {/* Stats Section */}
+        {stats && (
+          <section className="py-8">
+            <div className="container mx-auto px-4">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="card p-6">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/30">
+                      <ShoppingCart className="text-blue-400" size={24} />
+                    </div>
+                    <div>
+                      <p className="text-muted text-sm">Всього замовлень</p>
+                      <p className="text-2xl font-bold">{stats.total}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="card p-6">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 rounded-xl bg-green-500/10 border border-green-500/30">
+                      <DollarSign className="text-green-400" size={24} />
+                    </div>
+                    <div>
+                      <p className="text-muted text-sm">Дохід</p>
+                      <p className="text-2xl font-bold">{stats.revenue.toLocaleString('uk-UA')} ₴</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="card p-6">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/30">
+                      <CheckCircle className="text-yellow-400" size={24} />
+                    </div>
+                    <div>
+                      <p className="text-muted text-sm">Нові</p>
+                      <p className="text-2xl font-bold">{stats.new}</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="card p-6">
+                  <div className="flex items-center gap-4">
+                    <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/30">
+                      <TrendingUp className="text-purple-400" size={24} />
+                    </div>
+                    <div>
+                      <p className="text-muted text-sm">В обробці</p>
+                      <p className="text-2xl font-bold">{stats.processing}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Products Section */}
         <section className="py-8">

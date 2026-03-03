@@ -52,16 +52,16 @@ export const productsApi = {
     api.get('/products', { params }),
   getById: (id: string) => api.get(`/products/${id}`),
   getAllAdmin: (params?: { page?: number; limit?: number; search?: string }) =>
-    api.get('/products/admin/all', { params }),
+    api.get('/admin/products', { params }),
   create: (data: FormData) =>
-    api.post('/products', data, {
+    api.post('/admin/products', data, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
   update: (id: string, data: FormData) =>
-    api.put(`/products/${id}`, data, {
+    api.put(`/admin/products/${id}`, data, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
-  delete: (id: string) => api.delete(`/products/${id}`),
+  delete: (id: string) => api.delete(`/admin/products/${id}`),
 };
 
 // Orders API
@@ -71,9 +71,9 @@ export const ordersApi = {
   getAll: (params?: { page?: number; limit?: number; status?: string }) =>
     api.get('/orders', { params }),
   getAllAdmin: (params?: { page?: number; limit?: number; status?: string }) =>
-    api.get('/orders/admin/all', { params }),
+    api.get('/admin/orders', { params }),
   updateStatus: (id: string, status: string) =>
-    api.patch(`/orders/${id}/status`, { status }),
-  delete: (id: string) => api.delete(`/orders/${id}`),
-  getStats: () => api.get('/orders/admin/stats'),
+    api.patch(`/admin/orders/${id}/status`, { status }),
+  delete: (id: string) => api.delete(`/admin/orders/${id}`),
+  getStats: () => api.get('/admin/orders/stats'),
 };

@@ -63,6 +63,7 @@ console.log('📥 Importing API routes...');
 import authRoutes from './routes/auth.routes.js';
 import productRoutes from './routes/product.routes.js';
 import orderRoutes from './routes/order.routes.js';
+import adminRoutes from './routes/admin.routes.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 console.log('✅ All imports completed successfully');
 
@@ -149,6 +150,7 @@ app.get('/healthz', (_req: Request, res: Response) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/admin', adminRoutes);
 
 // ==================================
 // Error handling
