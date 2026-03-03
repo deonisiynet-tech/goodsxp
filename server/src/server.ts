@@ -75,36 +75,32 @@ const PORT = Number(process.env.PORT) || 5000;
 console.log('🚀 Initializing Express app...');
 
 // ==================================
-// CORS Middleware - ДО ВСІХ інших middleware
+// CORS Middleware - ПЕРШИМ (до всіх інших)
 // ==================================
 console.log('✅ Setting up CORS...');
 
-// Логірування для діагностики
-app.use((req, _res, next) => {
-  if (req.path.startsWith('/api')) {
-    console.log('📡 API Request:', req.method, req.path, '| Origin:', req.headers.origin);
-  }
+// Глобальне CORS налаштування - дозволяє ВСІ джерела
+// Це має бути ПЕРШИМ middleware, до будь-яких route handlers
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  credentials: false,
+  optionsSuccessStatus: 200,
+}));
+
+// Логірування для діагностики (після CORS)
+app.use((req, res, next) => {
+  console.log(`📡 ${req.method} ${req.path} | Origin: ${req.headers.origin || 'no-origin'}`);
   next();
 });
 
-// CORS для API - дозволяємо всі джерела
-app.use('/api', cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: false,
-}));
-
-// Helmet для безпеки (після CORS для API)
+// Helmet для безпеки (після CORS, щоб не конфліктувати)
 app.use(helmet({
   contentSecurityPolicy: false,
   crossOriginEmbedderPolicy: false,
-}));
-
-// CORS для статичних файлів Next.js - дозволяємо всі запити
-app.use('/_next', cors({
-  origin: '*',
-  methods: ['GET', 'OPTIONS'],
+  crossOriginOpenerPolicy: false,
+  crossOriginResourcePolicy: false,
 }));
 
 // Body parsing middleware
