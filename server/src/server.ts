@@ -111,8 +111,16 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // ==================================
 console.log('✅ Registering Next.js static handler...');
 
-// Запити до /_next/* обробляються напряму Next.js
-app.use('/_next', (req: Request, res: Response) => {
+// Статичні файли з public/* (favicon, images, тощо) та CSS
+app.use((req: Request, res: Response, next) => {
+  const urlPath = req.path;
+  
+  // Пропускаємо API запити
+  if (urlPath.startsWith('/api')) {
+    return next();
+  }
+  
+  // Для статичних файлів та _next передаємо Next.js
   const parsedUrl = parse(req.url!, true);
   return nextHandle(req, res, parsedUrl);
 });

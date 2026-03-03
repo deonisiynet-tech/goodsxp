@@ -1,8 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Вимикаємо standalone для інтеграції з Express
-  // output: 'standalone',
-  
   images: {
     remotePatterns: [
       {
@@ -32,12 +29,13 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  // Вимикаємо power verbosity для чистішого логу
   logging: {
     fetches: {
       fullUrl: true,
     },
   },
+  // Вимикаємо мінімізацію для відладки
+  productionBrowserSourceMaps: false,
 };
 
 export default nextConfig;
