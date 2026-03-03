@@ -2,7 +2,7 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
-import { createServer } from 'next';
+import createServer from 'next';
 import { parse } from 'url';
 import path from 'path';
 
@@ -138,7 +138,7 @@ nextApp.prepare().then(() => {
     console.log('🏠 Frontend available at http://localhost:' + PORT);
     console.log('✅ Health check: http://localhost:' + PORT + '/health');
     console.log('='.repeat(60));
-  }).on('error', (err: any) => {
+  }).on('error', (err: NodeJS.ErrnoException) => {
     if (err.code === 'EADDRINUSE') {
       console.error('❌ Port', PORT, 'is already in use!');
       process.exit(1);
@@ -175,7 +175,7 @@ nextApp.prepare().then(() => {
   });
 
   console.log('✅ All startup procedures completed');
-}).catch((err) => {
+}).catch((err: unknown) => {
   console.error('❌ Failed to prepare Next.js:', err);
   process.exit(1);
 });
