@@ -65,6 +65,7 @@ app.use(cors({
       'https://healthcheck.railway.app',
       '*',
     ];
+    // Дозволяємо запити без origin (статичні файли, curl, тощо)
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -75,6 +76,13 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
+
+// Дозволяємо запити до /_next без CORS обмежень
+app.use('/_next', (_req: Request, res: Response, next) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, OPTIONS');
+  next();
+});
 
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
@@ -103,6 +111,17 @@ app.get('/healthz', (_req: Request, res: Response) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
+
+// ==================================
+// Next.js Static Assets - обробляються ДО всіх інших
+// ==================================
+console.log('✅ Registering Next.js static handler...');
+
+// Запити до /_next/* обробляються напряму Next.js
+app.all('/_next/*', (req: Request, res: Response) => {
+  const parsedUrl = parse(req.url!, true);
+  return nextHandle(req, res, parsedUrl);
+});
 
 // ==================================
 // Next.js Handler - обробляє ВСІ інші запити
