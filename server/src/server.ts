@@ -101,7 +101,18 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // ==================================
-// API Routes - обробляються ПЕРШИМИ
+// Next.js Static Assets - обробляються ПЕРШИМИ (ДО API)
+// ==================================
+console.log('✅ Registering Next.js static handler...');
+
+// Запити до /_next/* обробляються напряму Next.js
+app.use('/_next', (req: Request, res: Response) => {
+  const parsedUrl = parse(req.url!, true);
+  return nextHandle(req, res, parsedUrl);
+});
+
+// ==================================
+// API Routes - обробляються ПІСЛЯ статичних файлів
 // ==================================
 console.log('✅ Registering API routes...');
 
@@ -123,17 +134,6 @@ app.get('/healthz', (_req: Request, res: Response) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
-
-// ==================================
-// Next.js Static Assets - обробляються ДО всіх інших
-// ==================================
-console.log('✅ Registering Next.js static handler...');
-
-// Запити до /_next/* обробляються напряму Next.js
-app.all('/_next/*', (req: Request, res: Response) => {
-  const parsedUrl = parse(req.url!, true);
-  return nextHandle(req, res, parsedUrl);
-});
 
 // ==================================
 // Next.js Handler - обробляє ВСІ інші запити

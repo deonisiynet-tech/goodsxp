@@ -12,25 +12,26 @@ COPY package*.json ./
 # Install server dependencies
 RUN npm install
 
-# Install client dependencies and build
+# Build client first
 WORKDIR /client
 COPY ../client/package*.json ./
 RUN npm install
 COPY ../client/ ./
 RUN npm run build
+# Тепер /client/.next існує з CSS файлами
 
-# Return to server and copy server source
+# Return to server
 WORKDIR /app
 
 # Copy prisma schema
 COPY prisma ./prisma
 
-# Generate Prisma Client with temp DATABASE_URL
+# Generate Prisma Client
 RUN echo 'DATABASE_URL="postgresql://u:p@localhost:5432/db"' > .env && \
     npx prisma generate && \
     rm -f .env
 
-# Copy ONLY server source files (not client!)
+# Copy ONLY server source files
 COPY src ./src
 COPY tsconfig.json ./
 
