@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { authApi, productsApi, ordersApi, adminApi } from '@/lib/api';
 import toast from 'react-hot-toast';
-import { Package, Plus, Edit, Trash2, Search, LogOut, Eye, EyeOff, ShoppingCart, DollarSign, TrendingUp, CheckCircle } from 'lucide-react';
+import { Package, Plus, Edit, Trash2, Search, LogOut, Eye, EyeOff } from 'lucide-react';
 import AdminLayout from '@/components/admin/AdminLayout';
 import Dashboard from '@/components/admin/Dashboard';
 import ProductModal from '@/components/admin/ProductModal';
@@ -22,13 +22,16 @@ interface Product {
   updatedAt: string;
 }
 
-interface OrderStats {
-  total: number;
+interface DashboardStats {
+  totalUsers: number;
+  totalOrders: number;
+  totalRevenue: number;
+  totalProducts: number;
+  ordersToday: number;
   new: number;
   processing: number;
-  shipped: number;
   delivered: number;
-  revenue: number;
+  dailyOrders: { date: string; orders: number }[];
 }
 
 export default function AdminPage() {
@@ -40,7 +43,7 @@ export default function AdminPage() {
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-  const [stats, setStats] = useState<OrderStats | null>(null);
+  const [stats, setStats] = useState<DashboardStats | null>(null);
 
   // Login form state
   const [loginForm, setLoginForm] = useState({ email: '', password: '' });
@@ -118,7 +121,7 @@ export default function AdminPage() {
 
   const loadStats = async () => {
     try {
-      const response = await ordersApi.getStats();
+      const response = await adminApi.getDashboardStats(7);
       setStats(response.data);
     } catch (error) {
       console.error('Failed to load stats:', error);

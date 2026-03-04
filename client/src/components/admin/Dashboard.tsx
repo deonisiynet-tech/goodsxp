@@ -1,12 +1,12 @@
 'use client';
 
-import { ShoppingCart, Users, Package, DollarSign, TrendingUp, CheckCircle, Clock, AlertCircle } from 'lucide-react';
+import { ShoppingCart, Users, Package, DollarSign, TrendingUp, CheckCircle, Clock, AlertCircle, Tag } from 'lucide-react';
 
 interface StatCardProps {
   title: string;
   value: string | number;
   icon: React.ElementType;
-  color: 'blue' | 'green' | 'purple' | 'yellow' | 'red';
+  color: 'blue' | 'green' | 'purple' | 'yellow' | 'red' | 'cyan';
   trend?: string;
 }
 
@@ -17,6 +17,7 @@ function StatCard({ title, value, icon: Icon, color, trend }: StatCardProps) {
     purple: 'bg-purple-500/10 border-purple-500/30 text-purple-400',
     yellow: 'bg-yellow-500/10 border-yellow-500/30 text-yellow-400',
     red: 'bg-red-500/10 border-red-500/30 text-red-400',
+    cyan: 'bg-cyan-500/10 border-cyan-500/30 text-cyan-400',
   };
 
   return (
@@ -40,6 +41,11 @@ function StatCard({ title, value, icon: Icon, color, trend }: StatCardProps) {
   );
 }
 
+interface DailyOrder {
+  date: string;
+  orders: number;
+}
+
 interface DashboardStats {
   total?: number;
   revenue?: number;
@@ -50,6 +56,9 @@ interface DashboardStats {
   totalUsers?: number;
   totalOrders?: number;
   totalRevenue?: number;
+  totalProducts?: number;
+  ordersToday?: number;
+  dailyOrders?: DailyOrder[];
 }
 
 interface DashboardProps {
@@ -80,11 +89,25 @@ export default function Dashboard({ stats, loading }: DashboardProps) {
     totalUsers: 0,
     totalOrders: 0,
     totalRevenue: 0,
+    totalProducts: 0,
+    ordersToday: 0,
     new: 0,
     processing: 0,
+    delivered: 0,
+    shipped: 0,
+    dailyOrders: [],
   };
 
   const data = { ...defaultStats, ...stats };
+
+  // Prepare chart data - last 7 days
+  const chartData = Array.isArray(data.dailyOrders) 
+    ? data.dailyOrders.slice(0, 7).reverse()
+    : [];
+  
+  const maxOrders = chartData.length > 0 
+    ? Math.max(...chartData.map(d => d.orders), 1) 
+    : 1;
 
   return (
     <div className="space-y-6">
@@ -104,6 +127,13 @@ export default function Dashboard({ stats, loading }: DashboardProps) {
         />
 
         <StatCard
+          title="Всього товарів"
+          value={data.totalProducts.toLocaleString('uk-UA')}
+          icon={Tag}
+          color="cyan"
+        />
+
+        <StatCard
           title="Всього замовлень"
           value={data.totalOrders.toLocaleString('uk-UA')}
           icon={ShoppingCart}
@@ -115,19 +145,23 @@ export default function Dashboard({ stats, loading }: DashboardProps) {
           value={`${data.totalRevenue.toLocaleString('uk-UA')} ₴`}
           icon={DollarSign}
           color="purple"
-          trend="+12% цього місяця"
-        />
-
-        <StatCard
-          title="Нових замовлень"
-          value={data.new.toLocaleString('uk-UA')}
-          icon={Package}
-          color="yellow"
         />
       </div>
 
-      {/* Order Status Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-6">
+      {/* Secondary Stats Row */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="card p-6">
+          <div className="flex items-center gap-4">
+            <div className="p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/30">
+              <Clock className="text-yellow-400" size={24} />
+            </div>
+            <div>
+              <p className="text-sm text-muted">Замовлень сьогодні</p>
+              <p className="text-2xl font-bold text-primary">{data.ordersToday}</p>
+            </div>
+          </div>
+        </div>
+
         <div className="card p-6">
           <div className="flex items-center gap-4">
             <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/30">
@@ -147,22 +181,50 @@ export default function Dashboard({ stats, loading }: DashboardProps) {
             </div>
             <div>
               <p className="text-sm text-muted">Виконані</p>
-              <p className="text-2xl font-bold text-primary">{data.delivered || 0}</p>
+              <p className="text-2xl font-bold text-primary">{data.delivered}</p>
             </div>
           </div>
         </div>
+      </div>
 
-        <div className="card p-6">
-          <div className="flex items-center gap-4">
-            <div className="p-3 rounded-xl bg-red-500/10 border border-red-500/30">
-              <AlertCircle className="text-red-400" size={24} />
-            </div>
-            <div>
-              <p className="text-sm text-muted">Скасовані</p>
-              <p className="text-2xl font-bold text-primary">{data.shipped || 0}</p>
-            </div>
+      {/* Chart */}
+      <div className="card p-6">
+        <h2 className="text-lg font-semibold text-primary mb-6">Замовлення по дням (останні 7 днів)</h2>
+        {chartData.length > 0 ? (
+          <div className="flex items-end justify-between gap-2 h-48">
+            {chartData.map((day, index) => {
+              const height = (day.orders / maxOrders) * 100;
+              const date = new Date(day.date);
+              const dayName = date.toLocaleDateString('uk-UA', { weekday: 'short' });
+              const dayDate = date.toLocaleDateString('uk-UA', { day: 'numeric', month: 'numeric' });
+              
+              return (
+                <div key={index} className="flex-1 flex flex-col items-center gap-2">
+                  <div className="w-full relative flex items-end justify-center h-full">
+                    <div
+                      className="w-full max-w-[60px] bg-gradient-to-t from-primary/80 to-primary/40 rounded-t-lg transition-all duration-300 hover:from-primary hover:to-primary/60"
+                      style={{ height: `${height}%`, minHeight: height > 0 ? '8px' : '0' }}
+                    />
+                    {day.orders > 0 && (
+                      <span className="absolute -top-6 text-xs font-medium text-primary">
+                        {day.orders}
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-center">
+                    <p className="text-xs text-muted font-medium">{dayName}</p>
+                    <p className="text-xs text-muted">{dayDate}</p>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-        </div>
+        ) : (
+          <div className="text-center py-12 text-muted">
+            <ShoppingCart size={48} className="mx-auto mb-4 opacity-50" />
+            <p>Немає даних про замовлення</p>
+          </div>
+        )}
       </div>
     </div>
   );
