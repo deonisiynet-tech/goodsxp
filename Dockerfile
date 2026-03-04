@@ -23,15 +23,16 @@ RUN npm install
 COPY server/prisma ./prisma
 
 # 4. Generate Prisma Client in /client/node_modules
-#    @prisma/client уже установлен в /client/node_modules
-#    schema.prisma доступна в /client/prisma
-#    generate создаст /client/node_modules/.prisma
-RUN npx prisma generate
+#    ВАЖНО: Prisma generate требует DATABASE_URL для парсинга схемы,
+#    но НЕ подключается к базе при генерации.
+#    Используем фиктивный URL — достаточно для генерации клиента.
+RUN DATABASE_URL="postgresql://user:pass@localhost:5432/db" npx prisma generate
 
 # 5. Copy rest of client source code
 COPY client .
 
-# 6. Build Next.js (Prisma Client вже існує в node_modules)
+# 6. Build Next.js (Prisma Client вже згенеровано)
+#    Server Actions імпортують @prisma/client, який вже існує
 RUN npm run build
 
 # Verify .next exists
