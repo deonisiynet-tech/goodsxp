@@ -10,20 +10,31 @@ RUN apk add --no-cache openssl
 COPY server/package*.json ./
 RUN npm install
 
-# Copy prisma schema and generate Prisma Client BEFORE client build
-COPY server/prisma ./prisma
-RUN echo 'DATABASE_URL="postgresql://u:p@localhost:5432/db"' > .env && \
-    npx prisma generate && \
-    rm -f .env
-
-# Build client (Next.js) - Копіюємо ВЕСЬ client перед збіркою
+# Build client (Next.js)
 WORKDIR /client
+
+# 1. Copy client package files
 COPY client/package*.json ./
+
+# 2. Install client dependencies (includes @prisma/client)
 RUN npm install
-COPY client/ ./
-# Тепер всі файли client (src, app, pages, etc.) доступні
+
+# 3. Copy Prisma schema from server
+COPY server/prisma ./prisma
+
+# 4. Generate Prisma Client in /client/node_modules
+#    @prisma/client уже установлен в /client/node_modules
+#    schema.prisma доступна в /client/prisma
+#    generate создаст /client/node_modules/.prisma
+RUN npx prisma generate
+
+# 5. Copy rest of client source code
+COPY client .
+
+# 6. Build Next.js (Prisma Client вже існує в node_modules)
 RUN npm run build
-# Перевірка: .next має існувати
+
+# Verify .next exists
 RUN ls -la /client/.next && echo "✅ .next directory exists at /client/.next"
 
 # Return to server directory
