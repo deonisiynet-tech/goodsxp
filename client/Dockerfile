@@ -3,7 +3,7 @@ FROM node:20-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
-RUN apk add --no-cache libc6-compat
+RUN apk add --no-cache libc6-compat openssl
 WORKDIR /app
 
 COPY client/package.json client/package-lock.json* ./
@@ -14,6 +14,10 @@ FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY client .
+
+# Copy prisma schema and generate Prisma Client BEFORE build
+COPY server/prisma ./prisma
+RUN npx prisma generate
 
 ENV NEXT_TELEMETRY_DISABLED 1
 
