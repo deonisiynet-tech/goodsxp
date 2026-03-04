@@ -151,12 +151,21 @@ export class AdminService {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
+    // Today's start and end
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    const todayEnd = new Date();
+    todayEnd.setHours(23, 59, 59, 999);
+
     const [
       totalUsers,
       totalOrders,
       totalRevenue,
+      totalProducts,
+      ordersToday,
       newOrdersCount,
       processingOrdersCount,
+      deliveredOrdersCount,
       ordersByStatus,
       dailyRevenue,
       dailyOrders,
@@ -167,14 +176,24 @@ export class AdminService {
       prisma.order.aggregate({
         _sum: { totalPrice: true },
       }),
+      prisma.product.count(),
+      prisma.order.count({
+        where: {
+          createdAt: {
+            gte: todayStart,
+            lte: todayEnd,
+          },
+        },
+      }),
       prisma.order.count({ where: { status: 'NEW' } }),
       prisma.order.count({ where: { status: 'PROCESSING' } }),
+      prisma.order.count({ where: { status: 'DELIVERED' } }),
       prisma.order.groupBy({
         by: ['status'],
         _count: true,
       }),
       prisma.$queryRaw`
-        SELECT 
+        SELECT
           DATE("createdAt") as date,
           SUM("totalPrice") as revenue
         FROM "Order"
@@ -184,7 +203,7 @@ export class AdminService {
         LIMIT ${days}
       `,
       prisma.$queryRaw`
-        SELECT 
+        SELECT
           DATE("createdAt") as date,
           COUNT(*) as orders
         FROM "Order"
@@ -215,13 +234,14 @@ export class AdminService {
     }));
 
     return {
-      overview: {
-        totalUsers,
-        totalOrders,
-        totalRevenue: Number(totalRevenue._sum.totalPrice || 0),
-        newOrders: newOrdersCount,
-        processingOrders: processingOrdersCount,
-      },
+      totalUsers,
+      totalOrders,
+      totalRevenue: Number(totalRevenue._sum.totalPrice || 0),
+      totalProducts,
+      ordersToday,
+      new: newOrdersCount,
+      processing: processingOrdersCount,
+      delivered: deliveredOrdersCount,
       ordersByStatus: ordersByStatus.map((s) => ({
         status: s.status,
         count: s._count,
