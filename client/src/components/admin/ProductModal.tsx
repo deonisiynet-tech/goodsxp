@@ -1,30 +1,20 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import { useForm } from 'react-hook-form';
-import { productsApi } from '@/lib/api';
-import toast from 'react-hot-toast';
-import { X, Upload } from 'lucide-react';
-
-interface Product {
-  id: string;
-  title: string;
-  description: string;
-  price: number;
-  stock: number;
-  isActive: boolean;
-  imageUrl: string | null;
-}
+import { useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { createProduct, updateProduct, Product } from '@/actions/products'
+import toast from 'react-hot-toast'
+import { X, Upload } from 'lucide-react'
 
 interface ProductModalProps {
-  product: Product | null;
-  onClose: () => void;
+  product: Product | null
+  onClose: () => void
 }
 
 export default function ProductModal({ product, onClose }: ProductModalProps) {
-  const [loading, setLoading] = useState(false);
-  const [imageFile, setImageFile] = useState<File | null>(null);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false)
+  const [imageFile, setImageFile] = useState<File | null>(null)
+  const [imagePreview, setImagePreview] = useState<string | null>(null)
 
   const {
     register,
@@ -42,50 +32,54 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
       : {
           isActive: true,
         },
-  });
+  })
 
   const onSubmit = async (data: any) => {
     try {
-      setLoading(true);
+      setLoading(true)
 
-      const formData = new FormData();
-      formData.append('title', data.title);
-      formData.append('description', data.description);
-      formData.append('price', data.price.toString());
-      formData.append('stock', data.stock.toString());
-      formData.append('isActive', data.isActive.toString());
-
-      if (imageFile) {
-        formData.append('image', imageFile);
-      }
+      const formData = new FormData()
+      formData.append('title', data.title)
+      formData.append('description', data.description)
+      formData.append('price', data.price.toString())
+      formData.append('stock', data.stock.toString())
+      formData.append('isActive', data.isActive ? 'on' : 'off')
 
       if (product) {
-        await productsApi.update(product.id, formData);
-        toast.success('Товар оновлено');
+        const result = await updateProduct(product.id, formData)
+        if (result.success) {
+          toast.success('Товар оновлено')
+        } else {
+          toast.error(result.error || 'Помилка при оновленні')
+        }
       } else {
-        await productsApi.create(formData);
-        toast.success('Товар створено');
+        const result = await createProduct(formData)
+        if (result.success) {
+          toast.success('Товар створено')
+        } else {
+          toast.error(result.error || 'Помилка при створенні')
+        }
       }
 
-      onClose();
+      onClose()
     } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Помилка при збереженні');
+      toast.error('Помилка при збереженні')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+    const file = e.target.files?.[0]
     if (file) {
       if (file.size > 5 * 1024 * 1024) {
-        toast.error('Розмір файлу не повинен перевищувати 5MB');
-        return;
+        toast.error('Розмір файлу не повинен перевищувати 5MB')
+        return
       }
-      setImageFile(file);
-      setImagePreview(URL.createObjectURL(file));
+      setImageFile(file)
+      setImagePreview(URL.createObjectURL(file))
     }
-  };
+  }
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
@@ -173,8 +167,8 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
                   <button
                     type="button"
                     onClick={() => {
-                      setImageFile(null);
-                      setImagePreview(null);
+                      setImageFile(null)
+                      setImagePreview(null)
                     }}
                     className="text-sm text-red-400 hover:text-red-300"
                   >
@@ -215,11 +209,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
           </div>
 
           <div className="flex gap-4 pt-4 border-t border-border">
-            <button
-              type="button"
-              onClick={onClose}
-              className="btn-secondary flex-1 py-3"
-            >
+            <button type="button" onClick={onClose} className="btn-secondary flex-1 py-3">
               Скасувати
             </button>
             <button
@@ -233,5 +223,5 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
         </form>
       </div>
     </div>
-  );
+  )
 }

@@ -1,126 +1,69 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import AdminLayout from '@/components/admin/AdminLayout';
-import { productsApi } from '@/lib/api';
-import toast from 'react-hot-toast';
-import { Package, Plus, Search, Edit, Trash2, RefreshCw, CheckCircle, XCircle } from 'lucide-react';
-import ProductModal from '@/components/admin/ProductModal';
-
-interface Product {
-  id: string;
-  title: string;
-  description: string;
-  price: number;
-  imageUrl: string | null;
-  images: string[];
-  stock: number;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
-
-type SortField = 'title' | 'price' | 'stock' | 'createdAt';
-type SortOrder = 'asc' | 'desc';
+import { useState, useEffect } from 'react'
+import AdminLayout from '@/components/admin/AdminLayout'
+import { getProducts, deleteProduct, Product } from '@/actions/products'
+import ProductModal from '@/components/admin/ProductModal'
+import toast from 'react-hot-toast'
+import { Package, Plus, Search, Edit, Trash2, RefreshCw, CheckCircle, XCircle } from 'lucide-react'
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [sortField, setSortField] = useState<SortField>('createdAt');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
-
-  useEffect(() => {
-    loadProducts();
-  }, [search, statusFilter]);
+  const [products, setProducts] = useState<Product[]>([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
+  const [modalOpen, setModalOpen] = useState(false)
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
 
   const loadProducts = async () => {
     try {
-      setLoading(true);
-      const params: Record<string, string> = { limit: '100' };
-      if (search) params.search = search;
-      
-      const response = await productsApi.getAllAdmin(params);
-      let loadedProducts = response.data.products;
-
-      // Filter by status
-      if (statusFilter === 'active') {
-        loadedProducts = loadedProducts.filter((p: Product) => p.isActive);
-      } else if (statusFilter === 'inactive') {
-        loadedProducts = loadedProducts.filter((p: Product) => !p.isActive);
-      } else if (statusFilter === 'instock') {
-        loadedProducts = loadedProducts.filter((p: Product) => p.stock > 0);
-      } else if (statusFilter === 'outofstock') {
-        loadedProducts = loadedProducts.filter((p: Product) => p.stock === 0);
-      }
-
-      // Sort products
-      loadedProducts.sort((a: Product, b: Product) => {
-        let comparison = 0;
-        if (sortField === 'title') {
-          comparison = a.title.localeCompare(b.title);
-        } else if (sortField === 'price') {
-          comparison = a.price - b.price;
-        } else if (sortField === 'stock') {
-          comparison = a.stock - b.stock;
-        } else if (sortField === 'createdAt') {
-          comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-        }
-        return sortOrder === 'asc' ? comparison : -comparison;
-      });
-
-      setProducts(loadedProducts);
+      setLoading(true)
+      const loadedProducts = await getProducts({
+        search: search || undefined,
+        status: statusFilter || undefined,
+      })
+      setProducts(loadedProducts)
     } catch (error) {
-      toast.error('Помилка завантаження товарів');
+      toast.error('Помилка завантаження товарів')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
+
+  useEffect(() => {
+    const debounce = setTimeout(() => {
+      loadProducts()
+    }, 300)
+    return () => clearTimeout(debounce)
+  }, [search, statusFilter])
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Ви впевнені, що хочете видалити цей товар?')) return;
+    if (!confirm('Ви впевнені, що хочете видалити цей товар?')) return
 
-    try {
-      await productsApi.delete(id);
-      toast.success('Товар видалено');
-      loadProducts();
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Помилка при видаленні');
+    const result = await deleteProduct(id)
+    if (result.success) {
+      toast.success('Товар видалено')
+      loadProducts()
+    } else {
+      toast.error(result.error || 'Помилка при видаленні')
     }
-  };
+  }
 
   const handleEdit = (product: Product) => {
-    setEditingProduct(product);
-    setModalOpen(true);
-  };
+    setEditingProduct(product)
+    setModalOpen(true)
+  }
 
   const handleCreate = () => {
-    setEditingProduct(null);
-    setModalOpen(true);
-  };
+    setEditingProduct(null)
+    setModalOpen(true)
+  }
 
   const handleModalClose = () => {
-    setModalOpen(false);
-    setEditingProduct(null);
-    loadProducts();
-  };
-
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortOrder('desc');
-    }
-  };
-
-  const getSortIcon = (field: SortField) => {
-    if (sortField !== field) return '↕';
-    return sortOrder === 'asc' ? '↑' : '↓';
-  };
+    setModalOpen(false)
+    setEditingProduct(null)
+    loadProducts()
+  }
 
   return (
     <AdminLayout>
@@ -132,11 +75,7 @@ export default function ProductsPage() {
             <p className="text-muted mt-1">Управління асортиментом магазину</p>
           </div>
           <div className="flex gap-2">
-            <button 
-              onClick={loadProducts} 
-              className="btn-secondary flex items-center gap-2"
-              disabled={loading}
-            >
+            <button onClick={loadProducts} className="btn-secondary flex items-center gap-2" disabled={loading}>
               <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
               Оновити
             </button>
@@ -150,7 +89,6 @@ export default function ProductsPage() {
         {/* Filters */}
         <div className="card p-4">
           <div className="flex flex-col md:flex-row gap-4">
-            {/* Search */}
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" size={20} />
               <input
@@ -162,7 +100,6 @@ export default function ProductsPage() {
               />
             </div>
 
-            {/* Status Filter */}
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
@@ -266,9 +203,7 @@ export default function ProductsPage() {
         )}
       </div>
 
-      {modalOpen && (
-        <ProductModal product={editingProduct} onClose={handleModalClose} />
-      )}
+      {modalOpen && <ProductModal product={editingProduct} onClose={handleModalClose} />}
     </AdminLayout>
-  );
+  )
 }

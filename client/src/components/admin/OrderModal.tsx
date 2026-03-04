@@ -1,44 +1,30 @@
-'use client';
+'use client'
 
-import { useState } from 'react';
-import { ordersApi } from '@/lib/api';
-import toast from 'react-hot-toast';
-import { X } from 'lucide-react';
-
-interface Order {
-  id: string;
-  name: string;
-  email: string;
-  phone: string;
-  address: string;
-  comment?: string;
-  totalPrice: number;
-  status: string;
-  createdAt: string;
-  items: any[];
-}
+import { useState } from 'react'
+import { X } from 'lucide-react'
+import { Order } from '@/actions/orders'
 
 interface OrderModalProps {
-  order: Order;
-  onClose: () => void;
+  order: Order
+  onClose: () => void
+  onStatusChange: (orderId: string, status: string) => void
 }
 
-export default function OrderModal({ order, onClose }: OrderModalProps) {
-  const [loading, setLoading] = useState(false);
-  const [status, setStatus] = useState(order.status);
+export default function OrderModal({ order, onClose, onStatusChange }: OrderModalProps) {
+  const [status, setStatus] = useState(order.status)
+  const [loading, setLoading] = useState(false)
 
   const handleUpdateStatus = async () => {
     try {
-      setLoading(true);
-      await ordersApi.updateStatus(order.id, status);
-      toast.success('Статус оновлено');
-      onClose();
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Помилка при оновленні');
+      setLoading(true)
+      await onStatusChange(order.id, status)
+      onClose()
+    } catch (error) {
+      console.error('Error updating status:', error)
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const getStatusLabel = (s: string) => {
     const labels: Record<string, string> = {
@@ -47,9 +33,9 @@ export default function OrderModal({ order, onClose }: OrderModalProps) {
       SHIPPED: 'Відправлено',
       DELIVERED: 'Доставлено',
       CANCELLED: 'Скасовано',
-    };
-    return labels[s] || s;
-  };
+    }
+    return labels[s] || s
+  }
 
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
@@ -66,18 +52,32 @@ export default function OrderModal({ order, onClose }: OrderModalProps) {
             <div>
               <h3 className="font-medium mb-2">Клієнт</h3>
               <div className="space-y-1 text-sm text-muted">
-                <p><span className="text-secondary">Ім'я:</span> {order.name}</p>
-                <p><span className="text-secondary">Телефон:</span> {order.phone}</p>
-                <p><span className="text-secondary">Email:</span> {order.email}</p>
+                <p>
+                  <span className="text-secondary">Ім'я:</span> {order.name}
+                </p>
+                <p>
+                  <span className="text-secondary">Телефон:</span> {order.phone}
+                </p>
+                <p>
+                  <span className="text-secondary">Email:</span> {order.email}
+                </p>
               </div>
             </div>
 
             <div>
               <h3 className="font-medium mb-2">Інформація</h3>
               <div className="space-y-1 text-sm text-muted">
-                <p><span className="text-secondary">Дата:</span> {new Date(order.createdAt).toLocaleString('uk-UA')}</p>
-                <p><span className="text-secondary">Статус:</span> {getStatusLabel(order.status)}</p>
-                <p><span className="text-secondary">Сума:</span> {Number(order.totalPrice).toLocaleString('uk-UA')} ₴</p>
+                <p>
+                  <span className="text-secondary">Дата:</span>{' '}
+                  {new Date(order.createdAt).toLocaleString('uk-UA')}
+                </p>
+                <p>
+                  <span className="text-secondary">Статус:</span> {getStatusLabel(order.status)}
+                </p>
+                <p>
+                  <span className="text-secondary">Сума:</span>{' '}
+                  {Number(order.totalPrice).toLocaleString('uk-UA')} ₴
+                </p>
               </div>
             </div>
           </div>
@@ -145,5 +145,5 @@ export default function OrderModal({ order, onClose }: OrderModalProps) {
         </div>
       </div>
     </div>
-  );
+  )
 }

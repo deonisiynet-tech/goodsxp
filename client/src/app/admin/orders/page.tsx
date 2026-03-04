@@ -1,118 +1,76 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import AdminLayout from '@/components/admin/AdminLayout';
-import { ordersApi } from '@/lib/api';
-import toast from 'react-hot-toast';
-import { ShoppingCart, Search, Filter, Eye, Trash2, RefreshCw } from 'lucide-react';
-import OrderModal from '@/components/admin/OrderModal';
-
-interface OrderItem {
-  id: string;
-  productId: string;
-  quantity: number;
-  price: number;
-  product?: {
-    id: string;
-    title: string;
-    imageUrl: string | null;
-  };
-}
-
-interface Order {
-  id: string;
-  userId: string | null;
-  name: string;
-  phone: string;
-  email: string;
-  address: string;
-  totalPrice: number;
-  status: string;
-  comment: string | null;
-  createdAt: string;
-  updatedAt: string;
-  items: OrderItem[];
-}
-
-type SortField = 'createdAt' | 'totalPrice' | 'status';
-type SortOrder = 'asc' | 'desc';
+import { useState, useEffect, use } from 'react'
+import AdminLayout from '@/components/admin/AdminLayout'
+import { getOrders, updateOrderStatus, deleteOrder, Order } from '@/actions/orders'
+import OrderModal from '@/components/admin/OrderModal'
+import toast from 'react-hot-toast'
+import { ShoppingCart, Search, Filter, Eye, Trash2, RefreshCw } from 'lucide-react'
 
 export default function OrdersPage() {
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [searchEmail, setSearchEmail] = useState('');
-  const [searchId, setSearchId] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [sortField, setSortField] = useState<SortField>('createdAt');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [modalOpen, setModalOpen] = useState(false);
-
-  useEffect(() => {
-    loadOrders();
-  }, [statusFilter, searchEmail, searchId]);
+  const [orders, setOrders] = useState<Order[]>([])
+  const [loading, setLoading] = useState(true)
+  const [searchEmail, setSearchEmail] = useState('')
+  const [searchId, setSearchId] = useState('')
+  const [statusFilter, setStatusFilter] = useState('')
+  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
+  const [modalOpen, setModalOpen] = useState(false)
 
   const loadOrders = async () => {
     try {
-      setLoading(true);
-      const params: Record<string, string> = { limit: '100' };
-      if (statusFilter) params.status = statusFilter;
-      if (searchEmail) params.email = searchEmail;
-      
-      const response = await ordersApi.getAllAdmin(params);
-      let loadedOrders = response.data.orders;
-
-      // Filter by ID if provided
-      if (searchId) {
-        loadedOrders = loadedOrders.filter((o: Order) => 
-          o.id.toLowerCase().includes(searchId.toLowerCase())
-        );
-      }
-
-      // Sort orders
-      loadedOrders.sort((a: Order, b: Order) => {
-        let comparison = 0;
-        if (sortField === 'createdAt') {
-          comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-        } else if (sortField === 'totalPrice') {
-          comparison = a.totalPrice - b.totalPrice;
-        } else if (sortField === 'status') {
-          comparison = a.status.localeCompare(b.status);
-        }
-        return sortOrder === 'asc' ? comparison : -comparison;
-      });
-
-      setOrders(loadedOrders);
+      setLoading(true)
+      const loadedOrders = await getOrders({
+        status: statusFilter || undefined,
+        email: searchEmail || undefined,
+        searchId: searchId || undefined,
+      })
+      setOrders(loadedOrders)
     } catch (error) {
-      toast.error('Помилка завантаження замовлень');
+      toast.error('Помилка завантаження замовлень')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
+
+  useEffect(() => {
+    const debounce = setTimeout(() => {
+      loadOrders()
+    }, 300)
+    return () => clearTimeout(debounce)
+  }, [searchEmail, searchId, statusFilter])
 
   const handleView = (order: Order) => {
-    setSelectedOrder(order);
-    setModalOpen(true);
-  };
+    setSelectedOrder(order)
+    setModalOpen(true)
+  }
 
   const handleDelete = async (id: string) => {
-    if (!confirm('Ви впевнені, що хочете видалити це замовлення?')) return;
+    if (!confirm('Ви впевнені, що хочете видалити це замовлення?')) return
 
-    try {
-      await ordersApi.delete(id);
-      toast.success('Замовлення видалено');
-      loadOrders();
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Помилка при видаленні');
+    const result = await deleteOrder(id)
+    if (result.success) {
+      toast.success('Замовлення видалено')
+      loadOrders()
+    } else {
+      toast.error(result.error || 'Помилка при видаленні')
     }
-  };
+  }
 
   const handleModalClose = () => {
-    setModalOpen(false);
-    setSelectedOrder(null);
-    loadOrders();
-  };
+    setModalOpen(false)
+    setSelectedOrder(null)
+    loadOrders()
+  }
+
+  const handleStatusChange = async (orderId: string, status: string) => {
+    const result = await updateOrderStatus(orderId, status)
+    if (result.success) {
+      toast.success('Статус оновлено')
+      loadOrders()
+    } else {
+      toast.error(result.error || 'Помилка при оновленні статусу')
+    }
+  }
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
@@ -121,9 +79,9 @@ export default function OrdersPage() {
       SHIPPED: 'bg-blue-500/10 text-blue-500 border-blue-500/30',
       DELIVERED: 'bg-green-500/10 text-green-500 border-green-500/30',
       CANCELLED: 'bg-red-500/10 text-red-500 border-red-500/30',
-    };
-    return colors[status] || 'bg-gray-500/10 text-gray-500 border-gray-500/30';
-  };
+    }
+    return colors[status] || 'bg-gray-500/10 text-gray-500 border-gray-500/30'
+  }
 
   const getStatusLabel = (status: string) => {
     const labels: Record<string, string> = {
@@ -132,23 +90,9 @@ export default function OrdersPage() {
       SHIPPED: 'Відправлено',
       DELIVERED: 'Доставлено',
       CANCELLED: 'Скасовано',
-    };
-    return labels[status] || status;
-  };
-
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortField(field);
-      setSortOrder('desc');
     }
-  };
-
-  const getSortIcon = (field: SortField) => {
-    if (sortField !== field) return '↕';
-    return sortOrder === 'asc' ? '↑' : '↓';
-  };
+    return labels[status] || status
+  }
 
   return (
     <AdminLayout>
@@ -159,11 +103,7 @@ export default function OrdersPage() {
             <h1 className="text-3xl font-bold text-primary">Замовлення</h1>
             <p className="text-muted mt-1">Управління замовленнями клієнтів</p>
           </div>
-          <button 
-            onClick={loadOrders} 
-            className="btn-secondary flex items-center gap-2"
-            disabled={loading}
-          >
+          <button onClick={loadOrders} className="btn-secondary flex items-center gap-2" disabled={loading}>
             <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
             Оновити
           </button>
@@ -172,7 +112,6 @@ export default function OrdersPage() {
         {/* Filters */}
         <div className="card p-4">
           <div className="flex flex-col lg:flex-row gap-4">
-            {/* Search by Email */}
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" size={20} />
               <input
@@ -184,7 +123,6 @@ export default function OrdersPage() {
               />
             </div>
 
-            {/* Search by ID */}
             <div className="relative max-w-xs">
               <span className="absolute left-4 top-1/2 -translate-y-1/2 text-muted text-sm font-mono">#</span>
               <input
@@ -196,7 +134,6 @@ export default function OrdersPage() {
               />
             </div>
 
-            {/* Status Filter */}
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
@@ -222,33 +159,12 @@ export default function OrdersPage() {
             <table className="w-full">
               <thead className="bg-surfaceLight">
                 <tr>
-                  <th 
-                    className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:text-primary"
-                    onClick={() => handleSort('createdAt')}
-                  >
-                    {getSortIcon('createdAt')} № замовлення
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                    Клієнт
-                  </th>
-                  <th 
-                    className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:text-primary"
-                    onClick={() => handleSort('totalPrice')}
-                  >
-                    {getSortIcon('totalPrice')} Сума
-                  </th>
-                  <th 
-                    className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:text-primary"
-                    onClick={() => handleSort('status')}
-                  >
-                    {getSortIcon('status')} Статус
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                    Дата
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">
-                    Дії
-                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase">№ замовлення</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase">Клієнт</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase">Сума</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase">Статус</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase">Дата</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium uppercase">Дії</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -278,7 +194,7 @@ export default function OrdersPage() {
                         month: 'numeric',
                         year: 'numeric',
                         hour: '2-digit',
-                        minute: '2-digit'
+                        minute: '2-digit',
                       })}
                     </td>
                     <td className="px-6 py-4 text-right">
@@ -315,8 +231,8 @@ export default function OrdersPage() {
       </div>
 
       {modalOpen && selectedOrder && (
-        <OrderModal order={selectedOrder} onClose={handleModalClose} />
+        <OrderModal order={selectedOrder} onClose={handleModalClose} onStatusChange={handleStatusChange} />
       )}
     </AdminLayout>
-  );
+  )
 }

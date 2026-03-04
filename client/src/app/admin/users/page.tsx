@@ -1,97 +1,51 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import AdminLayout from '@/components/admin/AdminLayout';
-import { adminApi } from '@/lib/api';
-import toast from 'react-hot-toast';
-import { Users, Search, UserPlus, Shield, User, RefreshCw } from 'lucide-react';
-
-interface User {
-  id: string;
-  email: string;
-  role: 'USER' | 'ADMIN';
-  createdAt: string;
-  orders?: {
-    id: string;
-    totalPrice: number;
-    createdAt: string;
-  }[];
-  _count?: {
-    orders: number;
-  };
-}
-
-type SortField = 'email' | 'role' | 'createdAt';
-type SortOrder = 'asc' | 'desc';
+import { useState, useEffect } from 'react'
+import AdminLayout from '@/components/admin/AdminLayout'
+import { getUsers, updateUserRole, User as UserType } from '@/actions/users'
+import toast from 'react-hot-toast'
+import { Users, Search, Shield, UserIcon, RefreshCw } from 'lucide-react'
 
 export default function UsersPage() {
-  const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState('');
-  const [sortField, setSortField] = useState<SortField>('createdAt');
-  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
-
-  useEffect(() => {
-    loadUsers();
-  }, [search, roleFilter]);
+  const [users, setUsers] = useState<UserType[]>([])
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
+  const [roleFilter, setRoleFilter] = useState('')
 
   const loadUsers = async () => {
     try {
-      setLoading(true);
-      const params: Record<string, string> = { limit: '100' };
-      if (roleFilter) params.role = roleFilter;
-      if (search) params.search = search;
-      
-      const response = await adminApi.getUsers(params);
-      let loadedUsers = response.data.users;
-
-      // Sort users
-      loadedUsers.sort((a: User, b: User) => {
-        let comparison = 0;
-        if (sortField === 'email') {
-          comparison = a.email.localeCompare(b.email);
-        } else if (sortField === 'role') {
-          comparison = a.role.localeCompare(b.role);
-        } else if (sortField === 'createdAt') {
-          comparison = new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
-        }
-        return sortOrder === 'asc' ? comparison : -comparison;
-      });
-
-      setUsers(loadedUsers);
+      setLoading(true)
+      const loadedUsers = await getUsers({
+        role: roleFilter || undefined,
+        search: search || undefined,
+      })
+      setUsers(loadedUsers)
     } catch (error) {
-      toast.error('Помилка завантаження користувачів');
+      toast.error('Помилка завантаження користувачів')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
+
+  useEffect(() => {
+    const debounce = setTimeout(() => {
+      loadUsers()
+    }, 300)
+    return () => clearTimeout(debounce)
+  }, [search, roleFilter])
 
   const handleRoleChange = async (userId: string, newRole: 'USER' | 'ADMIN') => {
-    if (!confirm(`Ви впевнені, що хочете змінити роль на ${newRole === 'ADMIN' ? 'ADMIN' : 'USER'}?`)) return;
+    if (!confirm(`Ви впевнені, що хочете змінити роль на ${newRole === 'ADMIN' ? 'ADMIN' : 'USER'}?`))
+      return
 
-    try {
-      await adminApi.updateUserRole(userId, newRole);
-      toast.success('Роль змінено');
-      loadUsers();
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Помилка при зміні ролі');
-    }
-  };
-
-  const handleSort = (field: SortField) => {
-    if (sortField === field) {
-      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    const result = await updateUserRole(userId, newRole)
+    if (result.success) {
+      toast.success('Роль змінено')
+      loadUsers()
     } else {
-      setSortField(field);
-      setSortOrder('desc');
+      toast.error(result.error || 'Помилка при зміні ролі')
     }
-  };
-
-  const getSortIcon = (field: SortField) => {
-    if (sortField !== field) return '↕';
-    return sortOrder === 'asc' ? '↑' : '↓';
-  };
+  }
 
   return (
     <AdminLayout>
@@ -102,11 +56,7 @@ export default function UsersPage() {
             <h1 className="text-3xl font-bold text-primary">Користувачі</h1>
             <p className="text-muted mt-1">Управління користувачами та правами доступу</p>
           </div>
-          <button 
-            onClick={loadUsers} 
-            className="btn-secondary flex items-center gap-2"
-            disabled={loading}
-          >
+          <button onClick={loadUsers} className="btn-secondary flex items-center gap-2" disabled={loading}>
             <RefreshCw size={20} className={loading ? 'animate-spin' : ''} />
             Оновити
           </button>
@@ -115,7 +65,6 @@ export default function UsersPage() {
         {/* Filters */}
         <div className="card p-4">
           <div className="flex flex-col md:flex-row gap-4">
-            {/* Search */}
             <div className="relative flex-1 max-w-md">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" size={20} />
               <input
@@ -127,7 +76,6 @@ export default function UsersPage() {
               />
             </div>
 
-            {/* Role Filter */}
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
@@ -150,27 +98,13 @@ export default function UsersPage() {
             <table className="w-full">
               <thead className="bg-surfaceLight">
                 <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                    Email
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase">Email</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase">Роль</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase">
+                    Дата реєстрації
                   </th>
-                  <th 
-                    className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:text-primary"
-                    onClick={() => handleSort('role')}
-                  >
-                    {getSortIcon('role')} Роль
-                  </th>
-                  <th 
-                    className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:text-primary"
-                    onClick={() => handleSort('createdAt')}
-                  >
-                    {getSortIcon('createdAt')} Дата реєстрації
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                    Замовлення
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">
-                    Дії
-                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase">Замовлення</th>
+                  <th className="px-6 py-3 text-right text-xs font-medium uppercase">Дії</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -188,7 +122,7 @@ export default function UsersPage() {
                           </span>
                         ) : (
                           <span className="inline-flex items-center gap-1 px-3 py-1 text-xs rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/30">
-                            <User size={14} />
+                            <UserIcon size={14} />
                             USER
                           </span>
                         )}
@@ -202,9 +136,7 @@ export default function UsersPage() {
                       })}
                     </td>
                     <td className="px-6 py-4 text-sm">
-                      <span className="text-primary font-medium">
-                        {user._count?.orders || 0}
-                      </span>
+                      <span className="text-primary font-medium">{user._count.orders}</span>
                       <span className="text-muted"> зам.</span>
                     </td>
                     <td className="px-6 py-4 text-right">
@@ -232,5 +164,5 @@ export default function UsersPage() {
         )}
       </div>
     </AdminLayout>
-  );
+  )
 }

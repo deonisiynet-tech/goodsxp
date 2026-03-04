@@ -1,89 +1,75 @@
-'use client';
+'use client'
 
-import { useState, useEffect } from 'react';
-import AdminLayout from '@/components/admin/AdminLayout';
-import { adminApi } from '@/lib/api';
-import toast from 'react-hot-toast';
-import { Settings as SettingsIcon, Save, RefreshCw, Store, Mail, DollarSign, Power } from 'lucide-react';
+import { useState, useEffect } from 'react'
+import AdminLayout from '@/components/admin/AdminLayout'
+import { getSettings, updateSettings } from '@/actions/settings'
+import toast from 'react-hot-toast'
+import { Settings as SettingsIcon, Save, RefreshCw, Store, Mail, DollarSign, Power } from 'lucide-react'
 
-interface Setting {
-  key: string;
-  value: string;
-  description?: string | null;
-  type: string;
+interface Settings {
+  storeName: string
+  contactEmail: string
+  currency: string
+  storeEnabled: boolean
 }
 
-interface SettingsForm {
-  storeName: string;
-  contactEmail: string;
-  currency: string;
-  storeEnabled: string;
-}
-
-const defaultSettings: SettingsForm = {
+const defaultSettings: Settings = {
   storeName: 'GoodsXP',
   contactEmail: '',
   currency: 'UAH',
-  storeEnabled: 'true',
-};
+  storeEnabled: true,
+}
+
+const currencies = [
+  { code: 'UAH', symbol: '₴', name: 'Гривня' },
+  { code: 'USD', symbol: '$', name: 'Долар США' },
+  { code: 'EUR', symbol: '€', name: 'Євро' },
+  { code: 'PLN', symbol: 'zł', name: 'Польський злотий' },
+]
 
 export default function SettingsPage() {
-  const [settings, setSettings] = useState<Setting[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState<SettingsForm>(defaultSettings);
+  const [loading, setLoading] = useState(true)
+  const [saving, setSaving] = useState(false)
+  const [form, setForm] = useState<Settings>(defaultSettings)
 
   useEffect(() => {
-    loadSettings();
-  }, []);
+    loadSettings()
+  }, [])
 
   const loadSettings = async () => {
     try {
-      setLoading(true);
-      const response = await adminApi.getSettings();
-      const settingsData = response.data;
-      setSettings(settingsData);
-
-      // Parse settings into form
-      const parsed: SettingsForm = {
-        storeName: settingsData['storeName'] || defaultSettings.storeName,
-        contactEmail: settingsData['contactEmail'] || defaultSettings.contactEmail,
-        currency: settingsData['currency'] || defaultSettings.currency,
-        storeEnabled: settingsData['storeEnabled'] ?? defaultSettings.storeEnabled,
-      };
-      setForm(parsed);
+      setLoading(true)
+      const settings = await getSettings()
+      setForm(settings)
     } catch (error) {
-      toast.error('Помилка завантаження налаштувань');
+      toast.error('Помилка завантаження налаштувань')
     } finally {
-      setLoading(false);
+      setLoading(false)
     }
-  };
+  }
 
   const handleSave = async () => {
     try {
-      setSaving(true);
-      
-      await Promise.all([
-        adminApi.updateSetting('storeName', form.storeName, 'Назва магазину'),
-        adminApi.updateSetting('contactEmail', form.contactEmail, 'Контактний email'),
-        adminApi.updateSetting('currency', form.currency, 'Валюта магазину'),
-        adminApi.updateSetting('storeEnabled', form.storeEnabled, 'Магазин включений'),
-      ]);
+      setSaving(true)
 
-      toast.success('Налаштування збережено');
-    } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Помилка при збереженні');
+      const formData = new FormData()
+      formData.append('storeName', form.storeName)
+      formData.append('contactEmail', form.contactEmail)
+      formData.append('currency', form.currency)
+      formData.append('storeEnabled', form.storeEnabled ? 'true' : 'false')
+
+      const result = await updateSettings(formData)
+      if (result.success) {
+        toast.success('Налаштування збережено')
+      } else {
+        toast.error(result.error || 'Помилка при збереженні')
+      }
+    } catch (error) {
+      toast.error('Помилка при збереженні')
     } finally {
-      setSaving(false);
+      setSaving(false)
     }
-  };
-
-  const currencies = [
-    { code: 'UAH', symbol: '₴', name: 'Гривня' },
-    { code: 'USD', symbol: '$', name: 'Долар США' },
-    { code: 'EUR', symbol: '€', name: 'Євро' },
-    { code: 'PLN', symbol: 'zł', name: 'Польський злотий' },
-  ];
+  }
 
   if (loading) {
     return (
@@ -92,7 +78,7 @@ export default function SettingsPage() {
           <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
       </AdminLayout>
-    );
+    )
   }
 
   return (
@@ -105,19 +91,11 @@ export default function SettingsPage() {
             <p className="text-muted mt-1">Конфігурація параметрів сайту</p>
           </div>
           <div className="flex gap-2">
-            <button 
-              onClick={loadSettings} 
-              className="btn-secondary flex items-center gap-2"
-              disabled={saving}
-            >
+            <button onClick={loadSettings} className="btn-secondary flex items-center gap-2" disabled={saving}>
               <RefreshCw size={20} />
               Оновити
             </button>
-            <button 
-              onClick={handleSave} 
-              className="btn-primary flex items-center gap-2"
-              disabled={saving}
-            >
+            <button onClick={handleSave} className="btn-primary flex items-center gap-2" disabled={saving}>
               <Save size={20} />
               {saving ? 'Збереження...' : 'Зберегти'}
             </button>
@@ -207,8 +185,8 @@ export default function SettingsPage() {
                   type="radio"
                   name="storeEnabled"
                   value="true"
-                  checked={form.storeEnabled === 'true'}
-                  onChange={(e) => setForm({ ...form, storeEnabled: e.target.value })}
+                  checked={form.storeEnabled}
+                  onChange={() => setForm({ ...form, storeEnabled: true })}
                   className="w-4 h-4 text-primary focus:ring-primary"
                 />
                 <span className="text-green-400 font-medium">Включений</span>
@@ -218,46 +196,21 @@ export default function SettingsPage() {
                   type="radio"
                   name="storeEnabled"
                   value="false"
-                  checked={form.storeEnabled === 'false'}
-                  onChange={(e) => setForm({ ...form, storeEnabled: e.target.value })}
+                  checked={!form.storeEnabled}
+                  onChange={() => setForm({ ...form, storeEnabled: false })}
                   className="w-4 h-4 text-primary focus:ring-primary"
                 />
                 <span className="text-red-400 font-medium">Вимкнений</span>
               </label>
             </div>
-            {form.storeEnabled === 'false' && (
+            {!form.storeEnabled && (
               <p className="text-sm text-yellow-500 mt-3">
                 ⚠️ Магазин буде недоступний для покупців
               </p>
             )}
           </div>
         </div>
-
-        {/* Current Settings Info */}
-        <div className="card p-6">
-          <h3 className="font-semibold text-primary mb-4">Поточні налаштування в базі</h3>
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-surfaceLight">
-                <tr>
-                  <th className="px-4 py-2 text-left">Ключ</th>
-                  <th className="px-4 py-2 text-left">Значення</th>
-                  <th className="px-4 py-2 text-left">Опис</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {settings.map((setting) => (
-                  <tr key={setting.key}>
-                    <td className="px-4 py-3 font-mono text-primary">{setting.key}</td>
-                    <td className="px-4 py-3">{setting.value}</td>
-                    <td className="px-4 py-3 text-muted">{setting.description || '-'}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
       </div>
     </AdminLayout>
-  );
+  )
 }
