@@ -222,15 +222,15 @@ export class AdminService {
     ]);
 
     // Отримуємо інформацію про топ продукти
-    const topProductIds = topProducts.map((p) => p.productId);
+    const topProductIds = topProducts.map((p: { productId: string }) => p.productId);
     const topProductsDetails = await prisma.product.findMany({
       where: { id: { in: topProductIds } },
       select: { id: true, title: true, price: true, imageUrl: true },
     });
 
-    const topProductsWithDetails = topProducts.map((tp) => ({
+    const topProductsWithDetails = topProducts.map((tp: { productId: string; _sum: { quantity: number | null }; _count: number }) => ({
       ...tp,
-      product: topProductsDetails.find((p) => p.id === tp.productId),
+      product: topProductsDetails.find((p: { id: string }) => p.id === tp.productId),
     }));
 
     return {
@@ -242,7 +242,7 @@ export class AdminService {
       new: newOrdersCount,
       processing: processingOrdersCount,
       delivered: deliveredOrdersCount,
-      ordersByStatus: ordersByStatus.map((s) => ({
+      ordersByStatus: ordersByStatus.map((s: { status: string; _count: number }) => ({
         status: s.status,
         count: s._count,
       })),

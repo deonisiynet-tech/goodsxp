@@ -34,7 +34,7 @@ export class OrderService {
 
     // Check stock availability
     for (const item of validated.items) {
-      const product = products.find((p) => p.id === item.productId);
+      const product = products.find((p: { id: string; stock: number; title: string }) => p.id === item.productId);
       if (!product || product.stock < item.quantity) {
         throw new AppError(`Товар "${product?.title}" недоступний у кількості ${item.quantity}`, 400);
       }
@@ -43,12 +43,12 @@ export class OrderService {
     // Calculate total price
     let totalPrice = 0;
     for (const item of validated.items) {
-      const product = products.find((p) => p.id === item.productId)!;
+      const product = products.find((p: { id: string; price: any }) => p.id === item.productId)!;
       totalPrice += Number(product.price) * item.quantity;
     }
 
     // Create order with transaction
-    const order = await prisma.$transaction(async (tx) => {
+    const order = await prisma.$transaction(async (tx: any) => {
       // Create order
       const newOrder = await tx.order.create({
         data: {
@@ -207,7 +207,7 @@ export class OrderService {
 
     // Return stock if order is cancelled or new
     if (existing.status === 'NEW' || existing.status === 'PROCESSING') {
-      await prisma.$transaction(async (tx) => {
+      await prisma.$transaction(async (tx: any) => {
         for (const item of existing.items) {
           await tx.product.update({
             where: { id: item.productId },
