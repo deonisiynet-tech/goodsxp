@@ -10,6 +10,13 @@ RUN apk add --no-cache openssl
 COPY server/package*.json ./
 RUN npm install
 
+# Copy server source files
+COPY server/tsconfig.json ./
+COPY server/src ./src
+
+# Build TypeScript server
+RUN npm run build
+
 # Build client (Next.js)
 WORKDIR /client
 
@@ -40,13 +47,6 @@ RUN ls -la /client/.next && echo "✅ .next directory exists at /client/.next"
 
 # Return to server directory
 WORKDIR /app
-
-# Copy server source files
-COPY server/tsconfig.json ./
-COPY server/src ./src
-
-# Build TypeScript server
-RUN npm run build
 
 # Set production environment
 ENV NODE_ENV=production

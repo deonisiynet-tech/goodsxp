@@ -1,1 +1,4 @@
-web: cd server && npx prisma generate && npx prisma db push --accept-data-loss && npm run build && npm run start
+# Procfile for Railway with Docker
+# When using Dockerfile, Railway uses the CMD from Dockerfile
+# This file is kept for reference only
+web: node dist/server.js
