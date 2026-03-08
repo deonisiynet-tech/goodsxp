@@ -24,37 +24,47 @@ export interface ProductsFilter {
 }
 
 export async function getProducts(filter: ProductsFilter = {}): Promise<Product[]> {
-  const { search, status, sortField = 'createdAt', sortOrder = 'desc' } = filter
+  try {
+    const { search, status, sortField = 'createdAt', sortOrder = 'desc' } = filter
 
-  const where: any = {}
-  if (search) where.title = { contains: search, mode: 'insensitive' }
+    const where: any = {}
+    if (search) where.title = { contains: search, mode: 'insensitive' }
 
-  const products = await prisma.product.findMany({
-    where,
-    orderBy: { [sortField]: sortOrder },
-  })
+    const products = await prisma.product.findMany({
+      where,
+      orderBy: { [sortField]: sortOrder },
+    })
 
-  // Filter by status
-  let filteredProducts = products
-  if (status === 'active') {
-    filteredProducts = products.filter((p) => p.isActive)
-  } else if (status === 'inactive') {
-    filteredProducts = products.filter((p) => !p.isActive)
-  } else if (status === 'instock') {
-    filteredProducts = products.filter((p) => p.stock > 0)
-  } else if (status === 'outofstock') {
-    filteredProducts = products.filter((p) => p.stock === 0)
+    // Filter by status
+    let filteredProducts = products
+    if (status === 'active') {
+      filteredProducts = products.filter((p) => p.isActive)
+    } else if (status === 'inactive') {
+      filteredProducts = products.filter((p) => !p.isActive)
+    } else if (status === 'instock') {
+      filteredProducts = products.filter((p) => p.stock > 0)
+    } else if (status === 'outofstock') {
+      filteredProducts = products.filter((p) => p.stock === 0)
+    }
+
+    return filteredProducts as Product[]
+  } catch (error) {
+    console.error('Error fetching products:', error)
+    return []
   }
-
-  return filteredProducts as Product[]
 }
 
 export async function getProductById(id: string): Promise<Product | null> {
-  const product = await prisma.product.findUnique({
-    where: { id },
-  })
+  try {
+    const product = await prisma.product.findUnique({
+      where: { id },
+    })
 
-  return product as Product | null
+    return product as Product | null
+  } catch (error) {
+    console.error('Error fetching product:', error)
+    return null
+  }
 }
 
 export async function createProduct(

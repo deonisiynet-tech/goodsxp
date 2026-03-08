@@ -60,4 +60,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD node -e "require('http').get('http://localhost:5000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
 # Start the custom Express server with Next.js
+# Note: Database migrations should be run separately via Railway CLI or dashboard
 CMD ["npm", "run", "start"]

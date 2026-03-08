@@ -19,22 +19,22 @@ yarn-error.log
 # ==================================
 # Build outputs
 # ==================================
-# Next.js - НЕ ігноруємо для деплою
-# .next/
-# out/
-# build/
-# dist/
-# *.tsbuildinfo
+# Next.js
+.next/
+out/
+build/
+dist/
+*.tsbuildinfo
 
 # Server
 server/dist/
 server/build/
 
 # Client
-# client/.next/
-# client/out/
-# client/build/
-# client/dist/
+client/.next/
+client/out/
+client/build/
+client/dist/
 
 # ==================================
 # Environment variables
