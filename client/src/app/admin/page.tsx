@@ -1,9 +1,16 @@
 import { getDashboardStats } from '@/actions/dashboard'
-import DashboardView from './DashboardView'
+import dynamic from 'next/dynamic'
 
-// Принудительно динамический рендеринг - не генерировать статически во время build
-// Это нужно чтобы Prisma не пытался подключиться к БД во время Docker build
-export const dynamic = 'force-dynamic'
+// Динамічний іморт DashboardView без SSR
+const DashboardView = dynamic(() => import('./DashboardView'), { 
+  ssr: false,
+  loading: () => (
+    <div className="min-h-screen bg-surface flex items-center justify-center">
+      <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+    </div>
+  )
+})
+
 export const revalidate = 0
 
 export default async function AdminPage() {

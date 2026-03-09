@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { ShoppingCart, Users, Package, DollarSign, CheckCircle, Clock, Tag } from 'lucide-react'
 import AdminLayout from '@/components/admin/AdminLayout'
 import ProductModal from '@/components/admin/ProductModal'
@@ -69,11 +69,6 @@ function StatCard({ title, value, icon: Icon, color }: StatCardProps) {
 export default function DashboardView({ stats }: { stats: DashboardStats }) {
   const [modalOpen, setModalOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<any>(null)
-  const [mounted, setMounted] = useState(false)
-
-  useEffect(() => {
-    setMounted(true)
-  }, [])
 
   const chartData = stats.dailyOrders.slice(0, 7)
   const maxOrders = chartData.length > 0 ? Math.max(...chartData.map((d) => d.orders), 1) : 1
@@ -102,16 +97,6 @@ export default function DashboardView({ stats }: { stats: DashboardStats }) {
   const handleModalClose = () => {
     setModalOpen(false)
     setEditingProduct(null)
-  }
-
-  if (!mounted) {
-    return (
-      <AdminLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-        </div>
-      </AdminLayout>
-    )
   }
 
   return (
