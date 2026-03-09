@@ -2,7 +2,10 @@
 
 import { Toaster } from 'react-hot-toast';
 import { useEffect, useState } from 'react';
-import CookieBanner from './CookieBanner';
+import dynamic from 'next/dynamic';
+
+// Динамічний імпорт CookieBanner без SSR
+const CookieBanner = dynamic(() => import('./CookieBanner'), { ssr: false });
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const [mounted, setMounted] = useState(false);
