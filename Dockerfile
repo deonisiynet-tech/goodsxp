@@ -45,6 +45,7 @@ COPY client/next.config.mjs ./
 COPY client/tailwind.config.js ./
 COPY client/postcss.config.js ./
 COPY client/tsconfig.json ./
+COPY client/.eslintrc.json ./
 
 # Build Next.js
 RUN npm run build
