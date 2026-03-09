@@ -1,4 +1,3 @@
-import { getDashboardStats } from '@/actions/dashboard'
 import dynamic from 'next/dynamic'
 
 // Динамічний іморт DashboardView без SSR
@@ -13,8 +12,6 @@ const DashboardView = dynamic(() => import('./DashboardView'), {
 
 export const revalidate = 0
 
-export default async function AdminPage() {
-  const stats = await getDashboardStats()
-
-  return <DashboardView stats={stats} />
+export default function AdminPage() {
+  return <DashboardView />
 }

@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { ShoppingCart, Users, Package, DollarSign, CheckCircle, Clock, Tag } from 'lucide-react'
 import AdminLayout from '@/components/admin/AdminLayout'
 import ProductModal from '@/components/admin/ProductModal'
 import { deleteProduct } from '@/actions/products'
+import { getDashboardStats } from '@/actions/dashboard'
 import toast from 'react-hot-toast'
 import { Edit, Trash2, Plus } from 'lucide-react'
 
@@ -66,9 +67,28 @@ function StatCard({ title, value, icon: Icon, color }: StatCardProps) {
   )
 }
 
-export default function DashboardView({ stats }: { stats: DashboardStats }) {
+export default function DashboardView() {
+  const [stats, setStats] = useState<DashboardStats | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<any>(null)
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    getDashboardStats().then((data) => {
+      setStats(data)
+      setLoading(false)
+    })
+  }, [])
+
+  if (loading || !stats) {
+    return (
+      <AdminLayout>
+        <div className="flex items-center justify-center h-64">
+          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+        </div>
+      </AdminLayout>
+    )
+  }
 
   const chartData = stats.dailyOrders.slice(0, 7)
   const maxOrders = chartData.length > 0 ? Math.max(...chartData.map((d) => d.orders), 1) : 1
