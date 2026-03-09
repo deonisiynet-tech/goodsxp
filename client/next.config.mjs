@@ -34,7 +34,6 @@ const nextConfig = {
       fullUrl: true,
     },
   },
-  // Вимикаємо мінімізацію для відладки
   productionBrowserSourceMaps: false,
 };
 

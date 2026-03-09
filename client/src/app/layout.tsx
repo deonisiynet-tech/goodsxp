@@ -2,9 +2,8 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { Providers } from '@/components/Providers';
-import CookieBanner from '@/components/CookieBanner';
 
-const inter = Inter({ 
+const inter = Inter({
   subsets: ['latin', 'cyrillic'],
   weight: ['300', '400', '500', '600', '700'],
 });
@@ -24,7 +23,6 @@ export default function RootLayout({
     <html lang="uk">
       <body className={inter.className}>
         <Providers>{children}</Providers>
-        <CookieBanner />
       </body>
     </html>
   );
