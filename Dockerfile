@@ -8,7 +8,8 @@ RUN apk add --no-cache openssl
 
 # Copy and install server dependencies (NO React/Next.js here!)
 COPY server/package*.json ./
-RUN npm install --omit=dev
+# Install ALL dependencies for build (including devDependencies for TypeScript)
+RUN npm install
 
 # Copy server source files
 COPY server/tsconfig.json ./
