@@ -27,8 +27,8 @@ RUN npm run build
 # Build client (Next.js) - THIS IS WHERE REACT LIVES
 WORKDIR /client
 
-# Copy client package files
-COPY client/package*.json ./
+# Copy ALL client files (preserves directory structure)
+COPY client/ .
 
 # Install client dependencies (includes React, Next.js, @prisma/client)
 RUN npm install --omit=dev
@@ -38,14 +38,6 @@ COPY server/prisma ./prisma
 
 # Generate Prisma Client for Server Actions
 RUN DATABASE_URL="postgresql://user:pass@localhost:5432/db" npx prisma generate
-
-# Copy rest of client source code (NOT the whole client folder!)
-COPY client/src ./src
-COPY client/next.config.mjs ./
-COPY client/tailwind.config.js ./
-COPY client/postcss.config.js ./
-COPY client/tsconfig.json ./
-COPY client/.eslintrc.json ./
 
 # Build Next.js
 RUN npm run build
