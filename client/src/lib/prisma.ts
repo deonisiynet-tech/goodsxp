@@ -13,11 +13,21 @@ export const prisma = globalForPrisma.prisma ?? new PrismaClient({
   log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
 })
 
-if (process.env.NODE_ENV !== 'production') globalForPrisma.prisma = prisma
-
-// Graceful shutdown handling
-if (process.env.NODE_ENV === 'production') {
-  process.on('beforeExit', async () => {
-    await prisma.$disconnect()
-  })
+if (process.env.NODE_ENV !== 'production') {
+  globalForPrisma.prisma = prisma
 }
+
+// Graceful shutdown handling for production
+// Disconnect Prisma when the process exits
+async function gracefulShutdown() {
+  try {
+    await prisma.$disconnect()
+    console.log('✅ Prisma disconnected')
+  } catch (error) {
+    console.error('❌ Error disconnecting Prisma:', error)
+  }
+}
+
+process.on('SIGINT', gracefulShutdown)
+process.on('SIGTERM', gracefulShutdown)
+process.on('exit', gracefulShutdown)

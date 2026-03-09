@@ -21,23 +21,28 @@ export interface UsersFilter {
 }
 
 export async function getUsers(filter: UsersFilter = {}): Promise<User[]> {
-  const { role, search, sortField = 'createdAt', sortOrder = 'desc' } = filter
+  try {
+    const { role, search, sortField = 'createdAt', sortOrder = 'desc' } = filter
 
-  const where: any = {}
-  if (role) where.role = role
-  if (search) where.email = { contains: search, mode: 'insensitive' }
+    const where: any = {}
+    if (role) where.role = role
+    if (search) where.email = { contains: search, mode: 'insensitive' }
 
-  const users = await prisma.user.findMany({
-    where,
-    orderBy: { [sortField]: sortOrder },
-    include: {
-      _count: {
-        select: { orders: true },
+    const users = await prisma.user.findMany({
+      where,
+      orderBy: { [sortField]: sortOrder },
+      include: {
+        _count: {
+          select: { orders: true },
+        },
       },
-    },
-  })
+    })
 
-  return users as User[]
+    return users as User[]
+  } catch (error) {
+    console.error('Error fetching users:', error)
+    return []
+  }
 }
 
 export async function updateUserRole(

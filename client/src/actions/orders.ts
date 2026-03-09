@@ -37,60 +37,70 @@ export interface OrdersFilter {
 }
 
 export async function getOrders(filter: OrdersFilter = {}): Promise<Order[]> {
-  const { status, email, searchId, sortField = 'createdAt', sortOrder = 'desc' } = filter
+  try {
+    const { status, email, searchId, sortField = 'createdAt', sortOrder = 'desc' } = filter
 
-  const where: any = {}
-  if (status) where.status = status
-  if (email) where.email = { contains: email, mode: 'insensitive' }
+    const where: any = {}
+    if (status) where.status = status
+    if (email) where.email = { contains: email, mode: 'insensitive' }
 
-  const orders = await prisma.order.findMany({
-    where,
-    orderBy: { [sortField]: sortOrder },
-    include: {
-      items: {
-        include: {
-          product: {
-            select: {
-              id: true,
-              title: true,
-              imageUrl: true,
+    const orders = await prisma.order.findMany({
+      where,
+      orderBy: { [sortField]: sortOrder },
+      include: {
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                title: true,
+                imageUrl: true,
+              },
             },
           },
         },
       },
-    },
-  })
+    })
 
-  // Filter by ID if provided (client-side filtering for partial match)
-  let filteredOrders = orders
-  if (searchId) {
-    filteredOrders = orders.filter((o) =>
-      o.id.toLowerCase().includes(searchId.toLowerCase())
-    )
+    // Filter by ID if provided (client-side filtering for partial match)
+    let filteredOrders = orders
+    if (searchId) {
+      filteredOrders = orders.filter((o) =>
+        o.id.toLowerCase().includes(searchId.toLowerCase())
+      )
+    }
+
+    return filteredOrders as Order[]
+  } catch (error) {
+    console.error('Error fetching orders:', error)
+    return []
   }
-
-  return filteredOrders as Order[]
 }
 
 export async function getOrderById(id: string): Promise<Order | null> {
-  const order = await prisma.order.findUnique({
-    where: { id },
-    include: {
-      items: {
-        include: {
-          product: {
-            select: {
-              id: true,
-              title: true,
-              imageUrl: true,
+  try {
+    const order = await prisma.order.findUnique({
+      where: { id },
+      include: {
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                title: true,
+                imageUrl: true,
+              },
             },
           },
         },
       },
-    },
-  })
+    })
 
-  return order as Order | null
+    return order as Order | null
+  } catch (error) {
+    console.error('Error fetching order:', error)
+    return null
+  }
 }
 
 export async function updateOrderStatus(

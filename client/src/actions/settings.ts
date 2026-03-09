@@ -11,18 +11,29 @@ export interface Settings {
 }
 
 export async function getSettings(): Promise<Settings> {
-  const settings = await prisma.siteSettings.findMany()
+  try {
+    const settings = await prisma.siteSettings.findMany()
 
-  const settingsObj: Record<string, string> = {}
-  settings.forEach((s) => {
-    settingsObj[s.key] = s.value
-  })
+    const settingsObj: Record<string, string> = {}
+    settings.forEach((s) => {
+      settingsObj[s.key] = s.value
+    })
 
-  return {
-    storeName: settingsObj['storeName'] || 'GoodsXP',
-    contactEmail: settingsObj['contactEmail'] || '',
-    currency: settingsObj['currency'] || 'UAH',
-    storeEnabled: settingsObj['storeEnabled'] !== 'false',
+    return {
+      storeName: settingsObj['storeName'] || 'GoodsXP',
+      contactEmail: settingsObj['contactEmail'] || '',
+      currency: settingsObj['currency'] || 'UAH',
+      storeEnabled: settingsObj['storeEnabled'] !== 'false',
+    }
+  } catch (error) {
+    console.error('Error fetching settings:', error)
+    // Return default settings on error
+    return {
+      storeName: 'GoodsXP',
+      contactEmail: '',
+      currency: 'UAH',
+      storeEnabled: true,
+    }
   }
 }
 
