@@ -46,7 +46,6 @@ COPY client/next.config.mjs ./
 COPY client/tailwind.config.js ./
 COPY client/postcss.config.js ./
 COPY client/tsconfig.json ./
-COPY client/next-env.d.ts ./
 
 # Build Next.js
 RUN npm run build
