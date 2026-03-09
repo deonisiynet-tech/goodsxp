@@ -82,11 +82,9 @@ export default function DashboardView() {
 
   if (loading || !stats) {
     return (
-      <AdminLayout>
-        <div className="flex items-center justify-center h-64">
-          <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-        </div>
-      </AdminLayout>
+      <div className="min-h-screen bg-surface flex items-center justify-center">
+        <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
     )
   }
 
