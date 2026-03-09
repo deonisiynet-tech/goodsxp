@@ -41,7 +41,6 @@ RUN DATABASE_URL="postgresql://user:pass@localhost:5432/db" npx prisma generate
 
 # Copy rest of client source code (NOT the whole client folder!)
 COPY client/src ./src
-COPY client/public ./public
 COPY client/next.config.mjs ./
 COPY client/tailwind.config.js ./
 COPY client/postcss.config.js ./
