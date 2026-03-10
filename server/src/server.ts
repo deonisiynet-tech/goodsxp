@@ -24,13 +24,17 @@ if (!process.env.DATABASE_URL) {
 console.log('📦 Initializing Next.js...');
 
 // Шлях до client directory
-// У production (Docker/Railway): CLIENT_DIR встановлено в /client
+// У production (Docker/Railway): CLIENT_DIR встановлено в /client або ./client
 // У development: ../../client відносно dist/server.js
 let clientDir: string;
 
 if (process.env.CLIENT_DIR) {
   // Production: використовуємо CLIENT_DIR напряму
   clientDir = process.env.CLIENT_DIR;
+  // Якщо CLIENT_DIR відносний (наприклад 'client'), робимо його абсолютним
+  if (!path.isAbsolute(clientDir)) {
+    clientDir = path.resolve(process.cwd(), clientDir);
+  }
 } else {
   // Development: обчислюємо відносно dist/server.js
   clientDir = path.resolve(__dirname, '../../client');

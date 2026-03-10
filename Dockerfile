@@ -1,21 +1,27 @@
-# Root Dockerfile for Railway
-FROM node:20-alpine
+# Root Dockerfile for Railway - Fullstack Build
+FROM node:20-alpine AS base
+
+# Install dependencies for Prisma
+RUN apk add --no-cache openssl libc6-compat
+
+# ==================================
+# SERVER BUILD
+# ==================================
+FROM base AS server-builder
 
 WORKDIR /app
 
-# Install OpenSSL for Prisma
-RUN apk add --no-cache openssl
-
-# Copy and install server dependencies (NO React/Next.js here!)
+# Copy server package files
 COPY server/package*.json ./
-# Install ALL dependencies for build (including devDependencies for TypeScript)
+
+# Install ALL dependencies (including devDependencies for TypeScript build)
 RUN npm install
 
 # Copy server source files
 COPY server/tsconfig.json ./
 COPY server/src ./src
 
-# Copy Prisma schema and generate Prisma Client BEFORE building server
+# Copy Prisma schema
 COPY server/prisma ./prisma
 
 # Generate Prisma Client
@@ -24,37 +30,66 @@ RUN DATABASE_URL="postgresql://user:pass@localhost:5432/db" npx prisma generate
 # Build TypeScript server
 RUN npm run build
 
-# Build client (Next.js) - THIS IS WHERE REACT LIVES
+# ==================================
+# CLIENT BUILD
+# ==================================
+FROM base AS client-builder
+
 WORKDIR /client
 
-# Copy ALL client files (preserves directory structure)
+# Copy client package files
+COPY client/package*.json ./
+
+# Install dependencies
+RUN npm install
+
+# Copy all client source files
 COPY client/ .
 
-# Install client dependencies (includes React, Next.js, @prisma/client)
-RUN npm install --omit=dev
-
-# Copy Prisma schema for client Prisma generation
+# Copy Prisma schema for Server Actions
 COPY server/prisma ./prisma
 
 # Generate Prisma Client for Server Actions
 RUN DATABASE_URL="postgresql://user:pass@localhost:5432/db" npx prisma generate
 
-# Build Next.js
+# Build Next.js (creates .next/standalone)
 RUN npm run build
 
-# Verify .next exists
-RUN ls -la /client/.next && echo "✅ .next directory exists at /client/.next"
+# Verify .next/standalone exists
+RUN ls -la /client/.next/standalone && echo "✅ .next/standalone exists"
 
-# Return to server directory
+# ==================================
+# PRODUCTION IMAGE
+# ==================================
+FROM base AS runner
+
 WORKDIR /app
 
-# Set production environment
 ENV NODE_ENV=production
-ENV CLIENT_DIR=/client
+ENV CLIENT_DIR=client
+
+# Create non-root user
+RUN addgroup --system --gid 1001 nodejs
+RUN adduser --system --uid 1001 nodejs
+
+# Copy built server
+COPY --from=server-builder --chown=nodejs:nodejs /app/dist ./dist
+COPY --from=server-builder --chown=nodejs:nodejs /app/node_modules ./node_modules
+COPY --from=server-builder --chown=nodejs:nodejs /app/package.json ./
+
+# Copy built client (standalone output)
+COPY --from=client-builder --chown=nodejs:nodejs /client/.next/standalone ./client
+COPY --from=client-builder --chown=nodejs:nodejs /client/.next/static ./client/.next/static
+COPY --from=client-builder --chown=nodejs:nodejs /client/public ./client/public
+
+# Set correct permissions
+USER nodejs
+
 EXPOSE 5000
 
+# Health check for Railway
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD node -e "require('http').get('http://localhost:5000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-# Start the custom Express server with Next.js
-CMD ["npm", "run", "start"]
+# Start the Express server with Next.js
+CMD ["node", "dist/server.js"]
