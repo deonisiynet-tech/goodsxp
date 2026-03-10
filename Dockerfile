@@ -43,8 +43,11 @@ COPY client/package*.json ./
 # Install dependencies
 RUN npm install
 
-# Copy all client source files
+# Copy all client source files INCLUDING public folder
 COPY client/ .
+
+# Ensure public directory has at least one file (prevents Docker copy errors)
+RUN if [ ! "$(ls -A /client/public)" ]; then echo "# Public assets" > /client/public/.gitkeep; fi
 
 # Copy Prisma schema for Server Actions
 COPY server/prisma ./prisma
@@ -80,7 +83,11 @@ COPY --from=server-builder --chown=nodejs:nodejs /app/package.json ./
 # Copy built client (standalone output)
 COPY --from=client-builder --chown=nodejs:nodejs /client/.next/standalone ./client
 COPY --from=client-builder --chown=nodejs:nodejs /client/.next/static ./client/.next/static
-COPY --from=client-builder --chown=nodejs:nodejs /client/public ./client/public
+
+# Create public directory and copy files if they exist
+# This handles the case where /client/public is empty
+RUN mkdir -p ./client/public
+COPY --from=client-builder --chown=nodejs:nodejs /client/public/ ./client/public/
 
 # Set correct permissions
 USER nodejs
