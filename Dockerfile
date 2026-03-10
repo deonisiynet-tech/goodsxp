@@ -45,11 +45,14 @@ COPY client/package*.json ./
 # Install dependencies
 RUN npm install
 
-# Copy all client source files INCLUDING public folder
+# Create public directory BEFORE copying to ensure it exists (Docker doesn't copy empty directories)
+RUN mkdir -p /client/public
+
+# Copy all client source files
 COPY client/ .
 
-# Ensure public directory has at least one file (prevents Docker copy errors)
-RUN if [ ! "$(ls -A /client/public)" ]; then echo "# Public assets" > /client/public/.gitkeep; fi
+# Add placeholder file if public directory is empty (ensures Docker COPY works)
+RUN test -z "$(ls -A /client/public 2>/dev/null)" && echo "# Public assets" > /client/public/.keep || true
 
 # Copy Prisma schema for Server Actions
 COPY server/prisma ./prisma
