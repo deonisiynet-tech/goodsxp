@@ -25,7 +25,9 @@ COPY server/src ./src
 COPY server/prisma ./prisma
 
 # Generate Prisma Client
-RUN DATABASE_URL="postgresql://user:pass@localhost:5432/db" npx prisma generate
+# Use dummy DATABASE_URL - only schema is needed for generate
+ENV DATABASE_URL="postgresql://user:pass@localhost:5432/db"
+RUN npx prisma generate --schema=./prisma/schema.prisma
 
 # Build TypeScript server
 RUN npm run build
@@ -53,7 +55,9 @@ RUN if [ ! "$(ls -A /client/public)" ]; then echo "# Public assets" > /client/pu
 COPY server/prisma ./prisma
 
 # Generate Prisma Client for Server Actions
-RUN DATABASE_URL="postgresql://user:pass@localhost:5432/db" npx prisma generate
+# Use dummy DATABASE_URL - only schema is needed for generate
+ENV DATABASE_URL="postgresql://user:pass@localhost:5432/db"
+RUN npx prisma generate --schema=./prisma/schema.prisma
 
 # Build Next.js (creates .next/standalone)
 RUN npm run build
