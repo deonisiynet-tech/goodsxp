@@ -5,7 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { productsApi } from '@/lib/api';
 import { useCartStore } from '@/lib/store';
 import toast from 'react-hot-toast';
-import { ArrowLeft, ShoppingCart, Check } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -51,7 +51,7 @@ export default function ProductPage() {
     toast.success('Товар додано до кошика');
   };
 
-  const images = product?.images?.length ? product.images : [product.imageUrl];
+  const images = product?.images?.length ? product.images : product.imageUrl ? [product.imageUrl] : [];
 
   if (loading) {
     return (
@@ -59,7 +59,7 @@ export default function ProductPage() {
         <Header />
         <main className="flex-1 container mx-auto px-4 py-8">
           <div className="flex justify-center items-center py-20">
-            <div className="w-12 h-12 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
           </div>
         </main>
         <Footer />
@@ -82,32 +82,67 @@ export default function ProductPage() {
         </Link>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
-          {/* Images */}
+          {/* Images Gallery */}
           <div className="space-y-4">
-            <div className="aspect-square rounded-none overflow-hidden bg-surfaceLight">
-              <img
-                src={images[selectedImage] || product.imageUrl || '/placeholder.jpg'}
-                alt={product.title}
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  (e.target as HTMLImageElement).src =
-                    'https://via.placeholder.com/800?text=No+Image';
-                }}
-              />
+            {/* Main Image */}
+            <div className="aspect-square rounded-2xl overflow-hidden bg-surfaceLight border border-border relative group">
+              {images.length > 0 ? (
+                <>
+                  <img
+                    src={images[selectedImage] || '/placeholder.jpg'}
+                    alt={`${product.title} - view ${selectedImage + 1}`}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = 'https://via.placeholder.com/800?text=No+Image';
+                    }}
+                  />
+                  {images.length > 1 && (
+                    <>
+                      <div className="absolute top-4 right-4 px-3 py-1.5 bg-black/60 backdrop-blur-sm text-white text-sm rounded-full">
+                        {selectedImage + 1} / {images.length}
+                      </div>
+                      <button
+                        onClick={() => setSelectedImage((prev) => Math.max(0, prev - 1))}
+                        disabled={selectedImage === 0}
+                        className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-black/60 backdrop-blur-sm text-white rounded-full hover:bg-black/80 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        <ChevronLeft size={24} />
+                      </button>
+                      <button
+                        onClick={() => setSelectedImage((prev) => Math.min(images.length - 1, prev + 1))}
+                        disabled={selectedImage === images.length - 1}
+                        className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-black/60 backdrop-blur-sm text-white rounded-full hover:bg-black/80 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                      >
+                        <ChevronRight size={24} />
+                      </button>
+                    </>
+                  )}
+                </>
+              ) : (
+                <img
+                  src="https://via.placeholder.com/800?text=No+Image"
+                  alt="No image"
+                  className="w-full h-full object-cover"
+                />
+              )}
             </div>
+            
+            {/* Thumbnail Grid */}
             {images.length > 1 && (
-              <div className="flex gap-2 overflow-x-auto">
-                {images.map((img: string, idx: number) => (
+              <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
+                {images.map((img, idx) => (
                   <button
                     key={idx}
                     onClick={() => setSelectedImage(idx)}
-                    className={`w-20 h-20 flex-shrink-0 overflow-hidden border-2 transition-colors ${
-                      selectedImage === idx ? 'border-primary' : 'border-border'
+                    className={`aspect-square rounded-lg overflow-hidden border-2 transition-all duration-200 ${
+                      selectedImage === idx 
+                        ? 'border-primary ring-2 ring-primary/30 scale-105' 
+                        : 'border-border hover:border-primary/50'
                     }`}
                   >
                     <img
                       src={img}
-                      alt={`${product.title} ${idx + 1}`}
+                      alt={`${product.title} thumbnail ${idx + 1}`}
                       className="w-full h-full object-cover"
                     />
                   </button>

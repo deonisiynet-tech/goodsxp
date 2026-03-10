@@ -76,10 +76,24 @@ export async function createProduct(
     const price = parseFloat(formData.get('price') as string)
     const stock = parseInt(formData.get('stock') as string, 10)
     const isActive = formData.get('isActive') === 'on'
+    const imagesJson = formData.get('images') as string
 
     if (!title || !description || isNaN(price) || isNaN(stock)) {
       return { success: false, error: 'Невірні дані' }
     }
+
+    // Parse images array from JSON
+    let images: string[] = []
+    if (imagesJson) {
+      try {
+        images = JSON.parse(imagesJson)
+      } catch {
+        images = []
+      }
+    }
+
+    // Use first image as imageUrl for backward compatibility
+    const imageUrl = images.length > 0 ? images[0] : null
 
     const product = await prisma.product.create({
       data: {
@@ -88,8 +102,8 @@ export async function createProduct(
         price,
         stock,
         isActive,
-        imageUrl: null,
-        images: [],
+        imageUrl,
+        images,
       },
     })
 
@@ -111,10 +125,24 @@ export async function updateProduct(
     const price = parseFloat(formData.get('price') as string)
     const stock = parseInt(formData.get('stock') as string, 10)
     const isActive = formData.get('isActive') === 'on'
+    const imagesJson = formData.get('images') as string
 
     if (!title || !description || isNaN(price) || isNaN(stock)) {
       return { success: false, error: 'Невірні дані' }
     }
+
+    // Parse images array from JSON
+    let images: string[] = []
+    if (imagesJson) {
+      try {
+        images = JSON.parse(imagesJson)
+      } catch {
+        images = []
+      }
+    }
+
+    // Use first image as imageUrl for backward compatibility
+    const imageUrl = images.length > 0 ? images[0] : null
 
     await prisma.product.update({
       where: { id },
@@ -124,6 +152,8 @@ export async function updateProduct(
         price,
         stock,
         isActive,
+        imageUrl,
+        images,
       },
     })
 

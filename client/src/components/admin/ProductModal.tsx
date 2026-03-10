@@ -1,10 +1,10 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useForm } from 'react-hook-form'
 import { createProduct, updateProduct, Product } from '@/actions/products'
 import toast from 'react-hot-toast'
-import { X, Upload } from 'lucide-react'
+import { X, Upload, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface ProductModalProps {
   product: Product | null
@@ -13,8 +13,9 @@ interface ProductModalProps {
 
 export default function ProductModal({ product, onClose }: ProductModalProps) {
   const [loading, setLoading] = useState(false)
-  const [imageFile, setImageFile] = useState<File | null>(null)
-  const [imagePreview, setImagePreview] = useState<string | null>(null)
+  const [images, setImages] = useState<string[]>(product?.images || [])
+  const [imagePreviews, setImagePreviews] = useState<string[]>([])
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const {
     register,
@@ -44,6 +45,10 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
       formData.append('price', data.price.toString())
       formData.append('stock', data.stock.toString())
       formData.append('isActive', data.isActive ? 'on' : 'off')
+      
+      // Save images as JSON string
+      const imagesToSave = imagePreviews.length > 0 ? imagePreviews : images
+      formData.append('images', JSON.stringify(imagesToSave))
 
       if (product) {
         const result = await updateProduct(product.id, formData)
@@ -70,20 +75,43 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
   }
 
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Розмір файлу не повинен перевищувати 5MB')
-        return
-      }
-      setImageFile(file)
-      setImagePreview(URL.createObjectURL(file))
+    const files = e.target.files
+    if (files && files.length > 0) {
+      Array.from(files).forEach((file) => {
+        if (file.size > 5 * 1024 * 1024) {
+          toast.error(`Файл "${file.name}" занадто великий (макс. 5MB)`)
+          return
+        }
+        if (!file.type.startsWith('image/')) {
+          toast.error(`Файл "${file.name}" не є зображенням`)
+          return
+        }
+        
+        // Create preview URL
+        const previewUrl = URL.createObjectURL(file)
+        setImagePreviews((prev) => [...prev, previewUrl])
+      })
     }
   }
 
+  const removeImage = (index: number) => {
+    setImagePreviews((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const moveImage = (index: number, direction: 'left' | 'right') => {
+    const newIndex = direction === 'left' ? index - 1 : index + 1
+    if (newIndex < 0 || newIndex >= imagePreviews.length) return
+    
+    const newPreviews = [...imagePreviews]
+    ;[newPreviews[index], newPreviews[newIndex]] = [newPreviews[newIndex], newPreviews[index]]
+    setImagePreviews(newPreviews)
+  }
+
+  const allImages = imagePreviews.length > 0 ? imagePreviews : images
+
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-background border border-border max-w-2xl w-full my-8 rounded-2xl max-h-[90vh] overflow-y-auto">
+      <div className="bg-background border border-border max-w-4xl w-full my-8 rounded-2xl max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center p-6 border-b border-border sticky top-0 bg-background z-10">
           <h2 className="text-2xl font-light">
             {product ? 'Редагувати товар' : 'Новий товар'}
@@ -152,45 +180,98 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
             </div>
           </div>
 
+          {/* Image Gallery */}
           <div>
             <label className="block text-sm font-medium mb-2">Зображення товару</label>
-            <div className="border-2 border-dashed border-border rounded-xl p-6 text-center hover:border-primary/50 transition-colors">
-              {imagePreview || product?.imageUrl ? (
-                <div className="space-y-4">
-                  <div className="w-32 h-32 mx-auto rounded-xl overflow-hidden bg-surfaceLight border border-border">
-                    <img
-                      src={imagePreview || product!.imageUrl!}
-                      alt="Preview"
-                      className="w-full h-full object-cover"
-                    />
+            <div className="border-2 border-dashed border-border rounded-xl p-6">
+              {allImages.length > 0 ? (
+                <div>
+                  <p className="text-sm text-muted mb-4">
+                    Перший елемент буде основним зображенням. Перетягуйте для зміни порядку.
+                  </p>
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {allImages.map((img, index) => (
+                      <div key={index} className="relative group aspect-square rounded-xl overflow-hidden bg-surfaceLight border border-border">
+                        <img
+                          src={img}
+                          alt={`Image ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                        
+                        {/* Overlay controls */}
+                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                          {index > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => moveImage(index, 'left')}
+                              className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+                              title="Вліво"
+                            >
+                              <ChevronLeft size={16} className="text-white" />
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => removeImage(index)}
+                            className="p-2 bg-red-500/80 hover:bg-red-500 rounded-lg transition-colors"
+                            title="Видалити"
+                          >
+                            <Trash2 size={16} className="text-white" />
+                          </button>
+                          {index < allImages.length - 1 && (
+                            <button
+                              type="button"
+                              onClick={() => moveImage(index, 'right')}
+                              className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+                              title="Вправо"
+                            >
+                              <ChevronRight size={16} className="text-white" />
+                            </button>
+                          )}
+                        </div>
+                        
+                        {/* Main image badge */}
+                        {index === 0 && (
+                          <div className="absolute top-2 left-2 px-2 py-1 bg-primary text-background text-xs font-medium rounded">
+                            Основне
+                          </div>
+                        )}
+                      </div>
+                    ))}
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setImageFile(null)
-                      setImagePreview(null)
-                    }}
-                    className="text-sm text-red-400 hover:text-red-300"
-                  >
-                    Видалити зображення
-                  </button>
                 </div>
               ) : (
-                <div>
+                <div className="text-center">
                   <Upload size={48} className="mx-auto text-muted mb-4" />
                   <p className="text-muted mb-2">Перетягніть зображення сюди або натисніть для вибору</p>
                   <label className="inline-block">
                     <input
+                      ref={fileInputRef}
                       type="file"
                       accept="image/*"
+                      multiple
                       onChange={handleImageChange}
                       className="hidden"
                     />
                     <span className="btn-secondary inline-block cursor-pointer">
-                      Обрати файл
+                      Обрати файли
                     </span>
                   </label>
-                  <p className="text-xs text-muted mt-2">PNG, JPG до 5MB</p>
+                  <p className="text-xs text-muted mt-2">PNG, JPG до 5MB (можна декілька)</p>
+                </div>
+              )}
+              
+              {/* Add more images button */}
+              {allImages.length > 0 && (
+                <div className="mt-4 text-center">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="btn-secondary inline-flex items-center gap-2"
+                  >
+                    <Upload size={16} />
+                    Додати ще зображень
+                  </button>
                 </div>
               )}
             </div>
@@ -210,7 +291,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
 
           <div className="flex gap-4 pt-4 border-t border-border">
             <button type="button" onClick={onClose} className="btn-secondary flex-1 py-3">
-              Скасувати
+              Скасуати
             </button>
             <button
               type="submit"
