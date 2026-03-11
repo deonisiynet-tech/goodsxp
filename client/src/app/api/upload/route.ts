@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { v2 as cloudinary } from 'cloudinary'
 
-// Configure Cloudinary
+// Configure Cloudinary from environment variables
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -9,34 +9,38 @@ cloudinary.config({
 })
 
 /**
- * Upload one or multiple images to Cloudinary
+ * POST /api/upload
+ * 
+ * Accepts one or multiple image files via FormData
+ * Uploads to Cloudinary and returns array of URLs
  * 
  * Request:
- * - FormData with field 'files' (one or multiple File objects)
- * - OR field 'file' (single File object) for backward compatibility
+ * - FormData with field 'files' (multiple) or 'file' (single)
  * 
  * Response:
  * - success: boolean
- * - urls: string[] (array of Cloudinary URLs)
- * - count: number (number of uploaded files)
+ * - urls: string[] (Cloudinary URLs)
+ * - count: number
  */
 export async function POST(request: NextRequest) {
-  const startTime = Date.now()
   console.log('📤 Upload request received')
 
   try {
-    // Check if Cloudinary is configured
-    if (!process.env.CLOUDINARY_CLOUD_NAME) {
-      console.error('❌ Cloudinary credentials not configured')
+    // Validate Cloudinary configuration
+    const cloudName = process.env.CLOUDINARY_CLOUD_NAME
+    const apiKey = process.env.CLOUDINARY_API_KEY
+    const apiSecret = process.env.CLOUDINARY_API_SECRET
+
+    if (!cloudName || !apiKey || !apiSecret) {
+      console.error('❌ Cloudinary credentials missing:', {
+        hasCloudName: !!cloudName,
+        hasApiKey: !!apiKey,
+        hasApiSecret: !!apiSecret,
+      })
       return NextResponse.json(
         {
-          success: false,
-          error: 'Cloudinary не налаштовано. Перевірте змінні оточення.',
-          debug: {
-            hasCloudName: !!process.env.CLOUDINARY_CLOUD_NAME,
-            hasApiKey: !!process.env.CLOUDINARY_API_KEY,
-            hasApiSecret: !!process.env.CLOUDINARY_API_SECRET,
-          }
+          error: 'Cloudinary не налаштовано',
+          details: 'Перевірте змінні оточення: CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET',
         },
         { status: 500 }
       )
@@ -45,59 +49,71 @@ export async function POST(request: NextRequest) {
     // Parse FormData
     console.log('📦 Parsing FormData...')
     const formData = await request.formData()
-    
-    // Get all files from 'files' field (multiple files)
-    let files: File[] = []
-    
-    // Try 'files' field first (multiple files)
+
+    // Collect all files from request
+    const files: File[] = []
+
+    // Try 'files' field first (for multiple files)
     const filesField = formData.getAll('files')
-    if (filesField && filesField.length > 0) {
-      files = filesField.filter((item): item is File => item instanceof File)
-      console.log(`📁 Found ${files.length} file(s) in 'files' field`)
-    }
-    
-    // If no files in 'files' field, try 'file' field (single file)
-    if (files.length === 0) {
-      const fileField = formData.get('file')
-      if (fileField instanceof File) {
-        files = [fileField]
-        console.log(`📁 Found 1 file in 'file' field`)
-      }
-    }
-    
-    // If still no files, try 'image' field (alternative)
-    if (files.length === 0) {
-      const imageField = formData.getAll('image')
-      if (imageField && imageField.length > 0) {
-        files = imageField.filter((item): item is File => item instanceof File)
-        console.log(`📁 Found ${files.length} file(s) in 'image' field`)
+    for (const item of filesField) {
+      if (item instanceof File) {
+        files.push(item)
       }
     }
 
-    // Validate files
+    // If no files in 'files', try 'file' field (for single file backward compatibility)
+    if (files.length === 0) {
+      const fileField = formData.get('file')
+      if (fileField instanceof File) {
+        files.push(fileField)
+      }
+    }
+
+    // If still no files, try 'image' field (alternative)
+    if (files.length === 0) {
+      const imageField = formData.getAll('image')
+      for (const item of imageField) {
+        if (item instanceof File) {
+          files.push(item)
+        }
+      }
+    }
+
+    // Validate that we have files
     if (files.length === 0) {
       console.error('❌ No files found in request')
+      const receivedKeys = Array.from(formData.keys())
       return NextResponse.json(
         {
-          success: false,
-          error: 'Файли не знайдено. Перевірте що файл обрано та поле називається "files" або "file".',
-          receivedFields: Array.from(formData.keys()),
+          error: 'No files provided',
+          message: 'Файли не знайдено. Переконайтеся що файл обрано та відправлено через FormData.',
+          receivedFields: receivedKeys,
         },
         { status: 400 }
       )
     }
 
-    console.log(`✅ Processing ${files.length} file(s)...`)
+    console.log(`✅ Found ${files.length} file(s) to upload`)
 
     // Upload all files to Cloudinary
-    const uploadResults: Array<{ url: string; public_id: string; originalName: string }> = []
-    const errors: Array<{ name: string; error: string }> = []
+    const uploadResults: Array<{
+      url: string
+      public_id: string
+      originalName: string
+      size: number
+    }> = []
+
+    const errors: Array<{
+      fileName: string
+      error: string
+    }> = []
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
       const fileName = file.name || `file_${i}`
-      
-      console.log(`⬆️ Uploading file ${i + 1}/${files.length}: ${fileName} (${(file.size / 1024 / 1024).toFixed(2)} MB)`)
+      const fileSize = file.size
+
+      console.log(`⬆️ Uploading file ${i + 1}/${files.length}: ${fileName} (${formatBytes(fileSize)})`)
 
       try {
         // Validate file type
@@ -106,26 +122,26 @@ export async function POST(request: NextRequest) {
         }
 
         // Validate file size (max 10MB)
-        if (file.size > 10 * 1024 * 1024) {
-          throw new Error(`Файл "${fileName}" завеликий (${(file.size / 1024 / 1024).toFixed(2)} MB, макс. 10 MB)`)
+        if (fileSize > 10 * 1024 * 1024) {
+          throw new Error(`Файл "${fileName}" завеликий (${formatBytes(fileSize)}, макс. 10MB)`)
         }
 
         // Convert File to Buffer
         const bytes = await file.arrayBuffer()
         const buffer = Buffer.from(bytes)
 
-        // Convert buffer to base64 for Cloudinary upload
+        // Convert to base64 for Cloudinary upload
         const b64 = buffer.toString('base64')
         const dataUri = `data:${file.type};base64,${b64}`
 
         // Upload to Cloudinary
-        const result = await new Promise<any>((resolve, reject) => {
+        const uploadResult = await new Promise<any>((resolve, reject) => {
           cloudinary.uploader.upload(
             dataUri,
             {
               folder: 'goodsxp-products',
               resource_type: 'image',
-              public_id: `product_${Date.now()}_${i}`,
+              public_id: `product_${Date.now()}_${i}_${Math.random().toString(36).substring(7)}`,
               transformation: [
                 { width: 1200, height: 1200, crop: 'limit' },
                 { quality: 'auto:good' },
@@ -140,27 +156,27 @@ export async function POST(request: NextRequest) {
         })
 
         uploadResults.push({
-          url: result.secure_url,
-          public_id: result.public_id,
+          url: uploadResult.secure_url,
+          public_id: uploadResult.public_id,
           originalName: fileName,
+          size: fileSize,
         })
 
-        console.log(`✅ Uploaded: ${fileName} → ${result.secure_url}`)
+        console.log(`✅ Uploaded: ${fileName} → ${uploadResult.secure_url}`)
 
       } catch (uploadError: any) {
         console.error(`❌ Upload failed for ${fileName}:`, uploadError.message)
         errors.push({
-          name: fileName,
+          fileName,
           error: uploadError.message,
         })
       }
     }
 
     // Log summary
-    const uploadTime = ((Date.now() - startTime) / 1000).toFixed(2)
-    console.log(`🎉 Upload completed in ${uploadTime}s: ${uploadResults.length} success, ${errors.length} errors`)
+    console.log(`🎉 Upload completed: ${uploadResults.length} success, ${errors.length} errors`)
 
-    // Return results
+    // Return response
     return NextResponse.json({
       success: uploadResults.length > 0,
       urls: uploadResults.map(r => r.url),
@@ -171,33 +187,25 @@ export async function POST(request: NextRequest) {
       })),
       count: uploadResults.length,
       errors: errors.length > 0 ? errors : undefined,
-      debug: {
-        uploadTime: `${uploadTime}s`,
-        totalFiles: files.length,
-        successfulUploads: uploadResults.length,
-        failedUploads: errors.length,
-      }
     })
 
   } catch (error: any) {
-    const totalTime = ((Date.now() - startTime) / 1000).toFixed(2)
-    console.error('❌ Upload error:', error)
-    console.error('Stack:', error.stack)
-    
+    console.error('❌ Upload error:', error.message)
+    if (error.stack) {
+      console.error('Stack:', error.stack)
+    }
+
     return NextResponse.json(
       {
-        success: false,
-        error: error.message || 'Помилка завантаження зображення',
-        debug: {
-          totalTime: `${totalTime}s`,
-        }
+        error: error.message || 'Помилка завантаження',
+        message: 'Не вдалося завантажити файл(и) на Cloudinary',
       },
       { status: 500 }
     )
   }
 }
 
-// Handle OPTIONS request for CORS
+// Handle OPTIONS for CORS preflight
 export async function OPTIONS(request: NextRequest) {
   return new NextResponse(null, {
     status: 204,
@@ -207,4 +215,13 @@ export async function OPTIONS(request: NextRequest) {
       'Access-Control-Allow-Headers': 'Content-Type',
     },
   })
+}
+
+// Helper function to format bytes
+function formatBytes(bytes: number): string {
+  if (bytes === 0) return '0 Bytes'
+  const k = 1024
+  const sizes = ['Bytes', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
 }
