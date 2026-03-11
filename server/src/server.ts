@@ -114,6 +114,26 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
 // ==================================
+// Static Files - Uploads Directory
+// ==================================
+console.log('✅ Setting up static file serving...');
+
+// Serve uploaded images from server/uploads directory
+const uploadsDir = path.join(process.cwd(), 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+  console.log('📁 Created uploads directory:', uploadsDir);
+}
+app.use('/uploads', express.static(uploadsDir));
+console.log('📁 Serving static files from:', uploadsDir);
+
+// Also serve from client/public for Next.js
+if (fs.existsSync(path.join(clientDir, 'public'))) {
+  app.use(express.static(path.join(clientDir, 'public')));
+  console.log('📁 Serving client public files from:', path.join(clientDir, 'public'));
+}
+
+// ==================================
 // Next.js Static Assets Handler
 // ==================================
 console.log('✅ Registering Next.js static handler...');

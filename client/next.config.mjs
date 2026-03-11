@@ -21,8 +21,16 @@ const nextConfig = {
         port: '5000',
         pathname: '/uploads/**',
       },
+      {
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '3000',
+        pathname: '/uploads/**',
+      },
     ],
     unoptimized: process.env.NODE_ENV === 'production',
+    // Allow serving images from local uploads directory
+    domains: ['localhost'],
   },
   eslint: {
     ignoreDuringBuilds: true,

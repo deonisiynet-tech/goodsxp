@@ -2,8 +2,6 @@
 
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
-import { writeFile, mkdir } from 'fs/promises'
-import path from 'path'
 
 export interface Product {
   id: string
@@ -23,35 +21,6 @@ export interface ProductsFilter {
   status?: 'active' | 'inactive' | 'instock' | 'outofstock'
   sortField?: 'title' | 'price' | 'stock' | 'createdAt'
   sortOrder?: 'asc' | 'desc'
-}
-
-// Helper function to ensure uploads directory exists
-async function ensureUploadsDir() {
-  const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
-  try {
-    await mkdir(uploadsDir, { recursive: true })
-  } catch (err) {
-    console.error('Error creating uploads directory:', err)
-  }
-  return uploadsDir
-}
-
-// Helper function to save file to uploads directory
-async function saveFile(file: File): Promise<string> {
-  const bytes = await file.arrayBuffer()
-  const buffer = Buffer.from(bytes)
-  
-  // Generate unique filename
-  const ext = path.extname(file.name)
-  const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}${ext}`
-  
-  const uploadsDir = await ensureUploadsDir()
-  const filePath = path.join(uploadsDir, fileName)
-  
-  await writeFile(filePath, buffer)
-  
-  // Return the URL path (relative to public/)
-  return `/uploads/${fileName}`
 }
 
 export async function getProducts(filter: ProductsFilter = {}): Promise<Product[]> {
@@ -99,32 +68,27 @@ export async function getProductById(id: string): Promise<Product | null> {
 }
 
 export async function createProduct(
-  formData: FormData
+  data: {
+    title: string
+    description: string
+    price: number
+    stock: number
+    isActive: boolean
+    images: string[]  // Array of Cloudinary URLs
+  }
 ): Promise<{ success: boolean; error?: string; productId?: string }> {
   try {
-    const title = formData.get('title') as string
-    const description = formData.get('description') as string
-    const price = parseFloat(formData.get('price') as string)
-    const stock = parseInt(formData.get('stock') as string, 10)
-    const isActive = formData.get('isActive') === 'on'
-    const imagesJson = formData.get('images') as string
+    const { title, description, price, stock, isActive, images } = data
 
-    if (!title || !description || isNaN(price) || isNaN(stock)) {
+    if (!title || !description || !price || stock === undefined) {
       return { success: false, error: 'Невірні дані' }
     }
 
-    // Parse images array from JSON (contains file paths like /uploads/filename.png)
-    let images: string[] = []
-    if (imagesJson) {
-      try {
-        images = JSON.parse(imagesJson)
-      } catch {
-        images = []
-      }
-    }
+    // Ensure images is always an array
+    const imagesArray = Array.isArray(images) ? images : []
 
     // Use first image as imageUrl for backward compatibility
-    const imageUrl = images.length > 0 ? images[0] : null
+    const imageUrl = imagesArray.length > 0 ? imagesArray[0] : null
 
     const product = await prisma.product.create({
       data: {
@@ -134,7 +98,7 @@ export async function createProduct(
         stock,
         isActive,
         imageUrl,
-        images,
+        images: imagesArray,
       },
     })
 
@@ -148,32 +112,27 @@ export async function createProduct(
 
 export async function updateProduct(
   id: string,
-  formData: FormData
+  data: {
+    title: string
+    description: string
+    price: number
+    stock: number
+    isActive: boolean
+    images: string[]  // Array of Cloudinary URLs
+  }
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const title = formData.get('title') as string
-    const description = formData.get('description') as string
-    const price = parseFloat(formData.get('price') as string)
-    const stock = parseInt(formData.get('stock') as string, 10)
-    const isActive = formData.get('isActive') === 'on'
-    const imagesJson = formData.get('images') as string
+    const { title, description, price, stock, isActive, images } = data
 
-    if (!title || !description || isNaN(price) || isNaN(stock)) {
+    if (!title || !description || !price || stock === undefined) {
       return { success: false, error: 'Невірні дані' }
     }
 
-    // Parse images array from JSON
-    let images: string[] = []
-    if (imagesJson) {
-      try {
-        images = JSON.parse(imagesJson)
-      } catch {
-        images = []
-      }
-    }
+    // Ensure images is always an array
+    const imagesArray = Array.isArray(images) ? images : []
 
     // Use first image as imageUrl for backward compatibility
-    const imageUrl = images.length > 0 ? images[0] : null
+    const imageUrl = imagesArray.length > 0 ? imagesArray[0] : null
 
     await prisma.product.update({
       where: { id },
@@ -184,7 +143,7 @@ export async function updateProduct(
         stock,
         isActive,
         imageUrl,
-        images,
+        images: imagesArray,
       },
     })
 
@@ -207,28 +166,5 @@ export async function deleteProduct(id: string): Promise<{ success: boolean; err
   } catch (error) {
     console.error('Error deleting product:', error)
     return { success: false, error: 'Помилка при видаленні товару' }
-  }
-}
-
-// New action to handle file upload
-export async function uploadImage(file: File): Promise<{ success: boolean; url?: string; error?: string }> {
-  try {
-    if (!file || file.size === 0) {
-      return { success: false, error: 'Файл не обрано' }
-    }
-
-    if (!file.type.startsWith('image/')) {
-      return { success: false, error: 'Файл не є зображенням' }
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      return { success: false, error: 'Файл завеликий (макс. 5MB)' }
-    }
-
-    const url = await saveFile(file)
-    return { success: true, url }
-  } catch (error) {
-    console.error('Error uploading image:', error)
-    return { success: false, error: 'Помилка завантаження зображення' }
   }
 }

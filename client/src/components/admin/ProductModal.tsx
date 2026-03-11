@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { useForm } from 'react-hook-form'
-import { createProduct, updateProduct, Product, uploadImage } from '@/actions/products'
+import { createProduct, updateProduct, Product } from '@/actions/products'
 import toast from 'react-hot-toast'
 import { X, Upload, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
 
@@ -11,25 +11,19 @@ interface ProductModalProps {
   onClose: () => void
 }
 
-interface ImageFile {
-  file: File
-  preview: string
-  uploadedUrl?: string
-}
-
 export default function ProductModal({ product, onClose }: ProductModalProps) {
   const [loading, setLoading] = useState(false)
   const [uploadingImages, setUploadingImages] = useState(false)
-  // Existing images from database (already uploaded, stored as /uploads/filename.png)
+  // Existing images from database (Cloudinary URLs)
   const [existingImages, setExistingImages] = useState<string[]>(product?.images || [])
-  // New images being added (with File objects and preview URLs)
-  const [newImages, setNewImages] = useState<ImageFile[]>([])
+  // New images being uploaded (Cloudinary URLs only - no File objects!)
+  const [newImages, setNewImages] = useState<string[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // All images for display = existing URLs + new previews
+  // All images for display = existing URLs + new URLs
   const allImages = [
     ...existingImages,
-    ...newImages.map(img => img.preview)
+    ...newImages
   ]
 
   const {
@@ -54,31 +48,35 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
     try {
       setLoading(true)
 
-      const formData = new FormData()
-      formData.append('title', data.title)
-      formData.append('description', data.description)
-      formData.append('price', data.price.toString())
-      formData.append('stock', data.stock.toString())
-      formData.append('isActive', data.isActive ? 'on' : 'off')
-
       // Combine existing image URLs with newly uploaded ones
       const allImageUrls = [
         ...existingImages,
-        ...newImages.filter(img => img.uploadedUrl).map(img => img.uploadedUrl!)
+        ...newImages
       ]
 
-      // Save all images as JSON string
-      formData.append('images', JSON.stringify(allImageUrls))
-
       if (product) {
-        const result = await updateProduct(product.id, formData)
+        const result = await updateProduct(product.id, {
+          title: data.title,
+          description: data.description,
+          price: data.price,
+          stock: data.stock,
+          isActive: data.isActive,
+          images: allImageUrls,
+        })
         if (result.success) {
           toast.success('Товар оновлено')
         } else {
           toast.error(result.error || 'Помилка при оновленні')
         }
       } else {
-        const result = await createProduct(formData)
+        const result = await createProduct({
+          title: data.title,
+          description: data.description,
+          price: data.price,
+          stock: data.stock,
+          isActive: data.isActive,
+          images: allImageUrls,
+        })
         if (result.success) {
           toast.success('Товар створено')
         } else {
@@ -98,7 +96,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
     const files = e.target.files
     if (files && files.length > 0) {
       setUploadingImages(true)
-      
+
       for (const file of Array.from(files)) {
         if (file.size > 5 * 1024 * 1024) {
           toast.error(`Файл "${file.name}" занадто великий (макс. 5MB)`)
@@ -109,25 +107,28 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
           continue
         }
 
-        // Create preview URL for immediate display
-        const previewUrl = URL.createObjectURL(file)
-        
-        // Upload file to server
-        const result = await uploadImage(file)
-        if (result.success && result.url) {
-          setNewImages((prev) => [...prev, {
-            file,
-            preview: result.url, // Use uploaded URL for display
-            uploadedUrl: result.url
-          }])
-          toast.success(`Зображення "${file.name}" завантажено`)
-        } else {
-          // Fallback to preview only if upload fails
-          setNewImages((prev) => [...prev, {
-            file,
-            preview: previewUrl,
-          }])
-          toast.error(result.error || 'Помилка завантаження')
+        try {
+          // Upload to Cloudinary via API route
+          const formData = new FormData()
+          formData.append('file', file)
+
+          const response = await fetch('/api/upload', {
+            method: 'POST',
+            body: formData,
+          })
+
+          const result = await response.json()
+
+          if (result.success && result.url) {
+            // Add ONLY the URL string to state (no File objects!)
+            setNewImages((prev) => [...prev, result.url])
+            toast.success(`Зображення "${file.name}" завантажено`)
+          } else {
+            toast.error(result.error || 'Помилка завантаження')
+          }
+        } catch (error: any) {
+          console.error('Upload error:', error)
+          toast.error('Помилка завантаження зображення')
         }
       }
 
@@ -266,14 +267,12 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {allImages.map((img, index) => {
                       const isNew = index >= existingImages.length
-                      const newImage = isNew ? newImages[index - existingImages.length] : null
-                      const isUploaded = newImage?.uploadedUrl !== undefined
-                      const isUploading = uploadingImages && isNew && !isUploaded
+                      const isUploading = uploadingImages && isNew
 
                       return (
                         <div key={index} className="relative group aspect-square rounded-xl overflow-hidden bg-surfaceLight border border-border">
                           <img
-                            src={img.startsWith('/uploads/') ? img : img}
+                            src={img}
                             alt={`Image ${index + 1}`}
                             className="w-full h-full object-cover"
                             onError={(e) => {
@@ -329,17 +328,10 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
                             </div>
                           )}
 
-                          {/* New image badge */}
-                          {isNew && isUploaded && (
+                          {/* Cloudinary badge */}
+                          {isNew && !isUploading && (
                             <div className="absolute top-2 right-2 px-2 py-1 bg-green-500 text-white text-xs font-medium rounded">
-                              Завантажено
-                            </div>
-                          )}
-
-                          {/* Upload pending badge */}
-                          {isNew && !isUploaded && !isUploading && (
-                            <div className="absolute top-2 right-2 px-2 py-1 bg-yellow-500 text-white text-xs font-medium rounded">
-                              Очікує
+                              Cloudinary
                             </div>
                           )}
                         </div>
@@ -390,7 +382,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
 
           <div className="flex gap-4 pt-4 border-t border-border">
             <button type="button" onClick={onClose} className="btn-secondary flex-1 py-3">
-              Скасуати
+              Скасувати
             </button>
             <button
               type="submit"

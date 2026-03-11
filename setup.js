@@ -1,0 +1,1 @@
+const fs=require('fs');const dirs=['client/public/uploads','server/uploads'];dirs.forEach(d= full='c:/Users/User/Desktop/shop-mvp/'+d;try{if(!fs.existsSync(full))fs.mkdirSync(full,{recursive:true});fs.writeFileSync(full+'/.gitkeep','# Uploads');console.log('OK:',d);}catch(e){console.log('Error:',d,e.message);}});console.log('Done!');  
