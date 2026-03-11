@@ -13,17 +13,10 @@ cloudinary.config({
  * 
  * Accepts one or multiple image files via FormData
  * Uploads to Cloudinary and returns array of URLs
- * 
- * Request:
- * - FormData with field 'files' (multiple) or 'file' (single)
- * 
- * Response:
- * - success: boolean
- * - urls: string[] (Cloudinary URLs)
- * - count: number
  */
 export async function POST(request: NextRequest) {
   console.log('📤 Upload request received')
+  console.log('📋 Headers:', Object.fromEntries(request.headers))
 
   try {
     // Validate Cloudinary configuration
@@ -32,15 +25,11 @@ export async function POST(request: NextRequest) {
     const apiSecret = process.env.CLOUDINARY_API_SECRET
 
     if (!cloudName || !apiKey || !apiSecret) {
-      console.error('❌ Cloudinary credentials missing:', {
-        hasCloudName: !!cloudName,
-        hasApiKey: !!apiKey,
-        hasApiSecret: !!apiSecret,
-      })
+      console.error('❌ Cloudinary credentials missing')
       return NextResponse.json(
         {
           error: 'Cloudinary не налаштовано',
-          details: 'Перевірте змінні оточення: CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY, CLOUDINARY_API_SECRET',
+          details: 'Перевірте змінні оточення',
         },
         { status: 500 }
       )
@@ -49,31 +38,57 @@ export async function POST(request: NextRequest) {
     // Parse FormData
     console.log('📦 Parsing FormData...')
     const formData = await request.formData()
+    
+    // Debug: log all form data
+    const formDataDebug: Record<string, any> = {}
+    for (const [key, value] of formData.entries()) {
+      if (value instanceof File) {
+        formDataDebug[key] = {
+          type: 'File',
+          name: value.name,
+          size: value.size,
+          mimeType: value.type,
+        }
+      } else {
+        formDataDebug[key] = typeof value
+      }
+    }
+    console.log('📋 FormData contents:', formDataDebug)
 
     // Collect all files from request
     const files: File[] = []
 
     // Try 'files' field first (for multiple files)
     const filesField = formData.getAll('files')
+    console.log(`🔍 Found ${filesField.length} items in 'files' field`)
     for (const item of filesField) {
       if (item instanceof File) {
+        console.log(`  ✅ File: ${item.name} (${item.size} bytes, ${item.type})`)
         files.push(item)
+      } else {
+        console.log(`  ⚠️ Not a File: ${typeof item}`)
       }
     }
 
-    // If no files in 'files', try 'file' field (for single file backward compatibility)
+    // If no files in 'files', try 'file' field (for single file)
     if (files.length === 0) {
+      console.log('🔍 Trying "file" field...')
       const fileField = formData.get('file')
       if (fileField instanceof File) {
+        console.log(`  ✅ File: ${fileField.name} (${fileField.size} bytes)`)
         files.push(fileField)
+      } else {
+        console.log('  ❌ Not a File')
       }
     }
 
     // If still no files, try 'image' field (alternative)
     if (files.length === 0) {
+      console.log('🔍 Trying "image" field...')
       const imageField = formData.getAll('image')
       for (const item of imageField) {
         if (item instanceof File) {
+          console.log(`  ✅ File: ${item.name}`)
           files.push(item)
         }
       }
@@ -81,26 +96,26 @@ export async function POST(request: NextRequest) {
 
     // Validate that we have files
     if (files.length === 0) {
-      console.error('❌ No files found in request')
-      const receivedKeys = Array.from(formData.keys())
+      console.error('❌ No files found in request!')
+      console.error('📋 Received fields:', Array.from(formData.keys()))
       return NextResponse.json(
         {
           error: 'No files provided',
-          message: 'Файли не знайдено. Переконайтеся що файл обрано та відправлено через FormData.',
-          receivedFields: receivedKeys,
+          message: 'Файли не знайдено. Переконайтеся що файл обрано.',
+          receivedFields: Array.from(formData.keys()),
+          formDataDebug,
         },
         { status: 400 }
       )
     }
 
-    console.log(`✅ Found ${files.length} file(s) to upload`)
+    console.log(`✅ Processing ${files.length} file(s)...`)
 
     // Upload all files to Cloudinary
     const uploadResults: Array<{
       url: string
       public_id: string
       originalName: string
-      size: number
     }> = []
 
     const errors: Array<{
@@ -111,28 +126,29 @@ export async function POST(request: NextRequest) {
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
       const fileName = file.name || `file_${i}`
-      const fileSize = file.size
 
-      console.log(`⬆️ Uploading file ${i + 1}/${files.length}: ${fileName} (${formatBytes(fileSize)})`)
+      console.log(`⬆️ Uploading ${i + 1}/${files.length}: ${fileName} (${(file.size / 1024 / 1024).toFixed(2)} MB)`)
 
       try {
         // Validate file type
         if (!file.type.startsWith('image/')) {
-          throw new Error(`Файл "${fileName}" не є зображенням (type: ${file.type})`)
+          throw new Error(`Файл "${fileName}" не є зображенням`)
         }
 
         // Validate file size (max 10MB)
-        if (fileSize > 10 * 1024 * 1024) {
-          throw new Error(`Файл "${fileName}" завеликий (${formatBytes(fileSize)}, макс. 10MB)`)
+        if (file.size > 10 * 1024 * 1024) {
+          throw new Error(`Файл "${fileName}" завеликий`)
         }
 
         // Convert File to Buffer
         const bytes = await file.arrayBuffer()
         const buffer = Buffer.from(bytes)
 
-        // Convert to base64 for Cloudinary upload
+        // Convert to base64
         const b64 = buffer.toString('base64')
         const dataUri = `data:${file.type};base64,${b64}`
+
+        console.log(`☁️ Uploading to Cloudinary...`)
 
         // Upload to Cloudinary
         const uploadResult = await new Promise<any>((resolve, reject) => {
@@ -141,7 +157,7 @@ export async function POST(request: NextRequest) {
             {
               folder: 'goodsxp-products',
               resource_type: 'image',
-              public_id: `product_${Date.now()}_${i}_${Math.random().toString(36).substring(7)}`,
+              public_id: `product_${Date.now()}_${i}`,
               transformation: [
                 { width: 1200, height: 1200, crop: 'limit' },
                 { quality: 'auto:good' },
@@ -159,7 +175,6 @@ export async function POST(request: NextRequest) {
           url: uploadResult.secure_url,
           public_id: uploadResult.public_id,
           originalName: fileName,
-          size: fileSize,
         })
 
         console.log(`✅ Uploaded: ${fileName} → ${uploadResult.secure_url}`)
@@ -173,7 +188,6 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Log summary
     console.log(`🎉 Upload completed: ${uploadResults.length} success, ${errors.length} errors`)
 
     // Return response
@@ -198,14 +212,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         error: error.message || 'Помилка завантаження',
-        message: 'Не вдалося завантажити файл(и) на Cloudinary',
+        message: 'Не вдалося завантажити файл',
       },
       { status: 500 }
     )
   }
 }
 
-// Handle OPTIONS for CORS preflight
+// Handle OPTIONS for CORS
 export async function OPTIONS(request: NextRequest) {
   return new NextResponse(null, {
     status: 204,
@@ -215,13 +229,4 @@ export async function OPTIONS(request: NextRequest) {
       'Access-Control-Allow-Headers': 'Content-Type',
     },
   })
-}
-
-// Helper function to format bytes
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 Bytes'
-  const k = 1024
-  const sizes = ['Bytes', 'KB', 'MB', 'GB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i]
 }
