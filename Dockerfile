@@ -1,4 +1,5 @@
 # Root Dockerfile for Railway - Fullstack Build
+# Next.js 14 + Express API Server + Cloudinary Support
 FROM node:20-alpine AS base
 
 # Install dependencies for Prisma
@@ -14,7 +15,7 @@ WORKDIR /app
 # Copy server package files
 COPY server/package*.json ./
 
-# Install ALL dependencies (including devDependencies for TypeScript build)
+# Install ALL dependencies
 RUN npm install
 
 # Copy server source files
@@ -25,7 +26,6 @@ COPY server/src ./src
 COPY server/prisma ./prisma
 
 # Generate Prisma Client
-# Use dummy DATABASE_URL - only schema is needed for generate
 ENV DATABASE_URL="postgresql://user:pass@localhost:5432/db"
 RUN npx prisma generate --schema=./prisma/schema.prisma
 
@@ -45,56 +45,55 @@ COPY client/package*.json ./
 # Install dependencies
 RUN npm install
 
-# Create public directory BEFORE copying to ensure it exists (Docker doesn't copy empty directories)
+# Create public directory
 RUN mkdir -p /client/public
 
 # Copy all client source files
 COPY client/ .
 
-# Add placeholder file if public directory is empty (ensures Docker COPY works)
-RUN test -z "$(ls -A /client/public 2>/dev/null)" && echo "# Public assets" > /client/public/.keep || true
-
 # Copy Prisma schema for Server Actions
 COPY server/prisma ./prisma
 
-# Generate Prisma Client for Server Actions
-# Use dummy DATABASE_URL - only schema is needed for generate
+# Generate Prisma Client
 ENV DATABASE_URL="postgresql://user:pass@localhost:5432/db"
 RUN npx prisma generate --schema=./prisma/schema.prisma
 
 # Build Next.js (creates .next/standalone)
 RUN npm run build
 
-# Verify .next/standalone exists
+# Verify build
 RUN ls -la /client/.next/standalone && echo "✅ .next/standalone exists"
 
 # ==================================
-# PRODUCTION IMAGE
+# PRODUCTION IMAGE - Express + Next.js
 # ==================================
 FROM base AS runner
 
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV CLIENT_DIR=client
+ENV PORT=5000
 
 # Create non-root user
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
 
-# Copy built server
+# Copy server build (Express API + Next.js handler)
 COPY --from=server-builder --chown=nodejs:nodejs /app/dist ./dist
 COPY --from=server-builder --chown=nodejs:nodejs /app/node_modules ./node_modules
 COPY --from=server-builder --chown=nodejs:nodejs /app/package.json ./
 
-# Copy built client (standalone output)
+# Copy Next.js standalone build to client directory
+# Express server will load Next.js from here
+RUN mkdir -p ./client
 COPY --from=client-builder --chown=nodejs:nodejs /client/.next/standalone ./client
 COPY --from=client-builder --chown=nodejs:nodejs /client/.next/static ./client/.next/static
 
-# Create public directory and copy files if they exist
-# This handles the case where /client/public is empty
-RUN mkdir -p ./client/public
-COPY --from=client-builder --chown=nodejs:nodejs /client/public/ ./client/public/
+# Copy client public directory (for uploads and static assets)
+COPY --from=client-builder --chown=nodejs:nodejs /client/public ./client/public
+
+# Create uploads directory at root level
+RUN mkdir -p ./uploads && chown nodejs:nodejs ./uploads
 
 # Set correct permissions
 USER nodejs
@@ -105,5 +104,5 @@ EXPOSE 5000
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD node -e "require('http').get('http://localhost:5000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-# Start the Express server with Next.js
+# Start Express server which handles both API routes and Next.js pages
 CMD ["node", "dist/server.js"]

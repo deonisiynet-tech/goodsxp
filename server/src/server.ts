@@ -2,10 +2,10 @@ import express, { Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
-import next from 'next';
-import { parse } from 'url';
 import path from 'path';
 import fs from 'fs';
+import next from 'next';
+import { parse } from 'url';
 
 dotenv.config();
 
@@ -19,40 +19,36 @@ if (!process.env.DATABASE_URL) {
 }
 
 // ==================================
-// Ініціалізація Next.js
+// Next.js Initialization
 // ==================================
 console.log('📦 Initializing Next.js...');
 
-// Шлях до client directory
-// У production (Docker/Railway): CLIENT_DIR встановлено в /client або ./client
-// У development: ../../client відносно dist/server.js
+// Determine client directory
+// In production (Railway): Next.js standalone is in ./client directory
+// In development: use ../../client relative to dist/server.js
 let clientDir: string;
+let isStandalone = false;
 
-if (process.env.CLIENT_DIR) {
-  // Production: використовуємо CLIENT_DIR напряму
-  clientDir = process.env.CLIENT_DIR;
-  // Якщо CLIENT_DIR відносний (наприклад 'client'), робимо його абсолютним
-  if (!path.isAbsolute(clientDir)) {
-    clientDir = path.resolve(process.cwd(), clientDir);
-  }
+// Check if we're running in standalone mode
+const standalonePath = path.join(process.cwd(), 'client', 'server.js');
+if (fs.existsSync(standalonePath)) {
+  // We're in production - Next.js standalone exists
+  isStandalone = true;
+  clientDir = path.join(process.cwd(), 'client');
+  console.log('🚀 PRODUCTION MODE: Using Next.js standalone');
 } else {
-  // Development: обчислюємо відносно dist/server.js
+  // Development mode
   clientDir = path.resolve(__dirname, '../../client');
+  console.log('🛠️ DEVELOPMENT MODE: Using Next.js dev server');
 }
 
 console.log('📁 Client directory:', clientDir);
-console.log('📁 CLIENT_DIR env:', process.env.CLIENT_DIR);
-console.log('📁 NODE_ENV:', process.env.NODE_ENV);
 
-// Перевірка існування .next directory
+// Check .next directory
 const nextDir = path.join(clientDir, '.next');
 console.log('📁 .next exists:', fs.existsSync(nextDir));
-if (fs.existsSync(nextDir)) {
-  console.log('📁 .next contents:', fs.readdirSync(nextDir).slice(0, 10));
-} else {
-  console.error('❌ ERROR: .next directory not found at', nextDir);
-}
 
+// Initialize Next.js
 const nextApp = next({
   dev: false,
   dir: clientDir,
@@ -61,7 +57,7 @@ const nextApp = next({
 const nextHandle = nextApp.getRequestHandler();
 
 // ==================================
-// Імпорт API маршрутів
+// Import API Routes
 // ==================================
 console.log('📥 Importing API routes...');
 import authRoutes from './routes/auth.routes.js';
@@ -73,7 +69,7 @@ import { initializeAdmin } from './utils/initAdmin.js';
 console.log('✅ All imports completed successfully');
 
 // ==================================
-// Створення Express додатку
+// Create Express App
 // ==================================
 const app = express();
 const PORT = Number(process.env.PORT) || 5000;
@@ -81,12 +77,8 @@ const PORT = Number(process.env.PORT) || 5000;
 console.log('🚀 Initializing Express app...');
 
 // ==================================
-// CORS Middleware - ПЕРШИМ (до всіх інших)
+// CORS Middleware
 // ==================================
-console.log('✅ Setting up CORS...');
-
-// Глобальне CORS налаштування - дозволяє ВСІ джерела
-// Це має бути ПЕРШИМ middleware, до будь-яких route handlers
 app.use(cors({
   origin: '*',
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -95,13 +87,13 @@ app.use(cors({
   optionsSuccessStatus: 200,
 }));
 
-// Логірування для діагностики (після CORS)
+// Logging
 app.use((req, res, next) => {
   console.log(`📡 ${req.method} ${req.path} | Origin: ${req.headers.origin || 'no-origin'}`);
   next();
 });
 
-// Helmet для безпеки (після CORS, щоб не конфліктувати)
+// Helmet
 app.use(helmet({
   contentSecurityPolicy: false,
   crossOriginEmbedderPolicy: false,
@@ -109,7 +101,7 @@ app.use(helmet({
   crossOriginResourcePolicy: false,
 }));
 
-// Body parsing middleware
+// Body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
@@ -118,7 +110,7 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // ==================================
 console.log('✅ Setting up static file serving...');
 
-// Serve uploaded images from server/uploads directory
+// Serve uploads from root level
 const uploadsDir = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
@@ -127,37 +119,38 @@ if (!fs.existsSync(uploadsDir)) {
 app.use('/uploads', express.static(uploadsDir));
 console.log('📁 Serving static files from:', uploadsDir);
 
-// Also serve from client/public for Next.js
-if (fs.existsSync(path.join(clientDir, 'public'))) {
-  app.use(express.static(path.join(clientDir, 'public')));
-  console.log('📁 Serving client public files from:', path.join(clientDir, 'public'));
+// Also serve from client/public for Next.js assets
+const clientPublicDir = path.join(clientDir, 'public');
+if (fs.existsSync(clientPublicDir)) {
+  app.use(express.static(clientPublicDir));
+  console.log('📁 Serving client public files from:', clientPublicDir);
 }
 
 // ==================================
-// Next.js Static Assets Handler
+// Next.js Handler
 // ==================================
-console.log('✅ Registering Next.js static handler...');
+console.log('✅ Registering Next.js handler...');
 
-// Всі запити до Next.js (статика, сторінки, CSS, JS)
+// All non-API requests go to Next.js
 app.all('*', (req: Request, res: Response, next) => {
   const urlPath = req.path;
-  
-  // Пропускаємо API запити
+
+  // Skip API routes
   if (urlPath.startsWith('/api')) {
     return next();
   }
-  
-  // Обробляємо через Next.js
+
+  // Handle with Next.js
   const parsedUrl = parse(req.url!, true);
   return nextHandle(req, res, parsedUrl);
 });
 
 // ==================================
-// API Routes - обробляються ПІСЛЯ Next.js handler
+// API Routes
 // ==================================
 console.log('✅ Registering API routes...');
 
-// Health check endpoint (критично для Railway)
+// Health check
 app.get('/health', (_req: Request, res: Response) => {
   res.status(200).json({
     status: 'healthy',
@@ -171,28 +164,25 @@ app.get('/healthz', (_req: Request, res: Response) => {
   res.status(200).send('OK');
 });
 
-// API роути (всі запити до /api/...)
+// API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/admin', adminRoutes);
 
-// ==================================
 // Error handling
-// ==================================
 app.use(notFound);
 app.use(errorHandler);
 
 // ==================================
-// Запуск сервера
+// Start Server
 // ==================================
 console.log('🎧 ABOUT TO LISTEN on port', PORT);
 
-// Спочатку готуємо Next.js, потім запускаємо сервер
 nextApp.prepare().then(async () => {
   console.log('✅ Next.js prepared successfully');
 
-  // Ініціалізація адміна (створення або оновлення)
+  // Initialize admin user
   await initializeAdmin();
 
   const server = app.listen(PORT, '0.0.0.0', () => {
@@ -229,12 +219,10 @@ nextApp.prepare().then(async () => {
 
   process.on('SIGTERM', () => shutdown('SIGTERM'));
   process.on('SIGINT', () => shutdown('SIGINT'));
-
   process.on('uncaughtException', (err) => {
     console.error('❌ Uncaught Exception:', err);
     process.exit(1);
   });
-
   process.on('unhandledRejection', (reason, promise) => {
     console.error('❌ Unhandled Rejection at:', promise, 'reason:', reason);
     process.exit(1);
