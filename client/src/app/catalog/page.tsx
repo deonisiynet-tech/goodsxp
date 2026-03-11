@@ -112,13 +112,14 @@ export default function CatalogPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-[#0f0f12]">
       <Header />
       <main className="flex-1 pt-20">
-        <div className="bg-surface border-b border-border">
-          <div className="container mx-auto px-4 py-8">
-            <h1 className="section-title mb-4">Каталог</h1>
-            <p className="text-muted">Обирай сучасну електроніку для себе та близьких</p>
+        {/* Hero Section */}
+        <div className="bg-gradient-to-r from-[#18181c] to-[#1f1f23] border-b border-[#26262b]">
+          <div className="container mx-auto px-4 py-12">
+            <h1 className="section-title mb-4 bg-gradient-to-r from-white to-[#9ca3af] bg-clip-text text-transparent">Каталог</h1>
+            <p className="text-[#9ca3af] text-lg">Обирай сучасну електроніку для себе та близьких</p>
           </div>
         </div>
 
@@ -126,7 +127,7 @@ export default function CatalogPage() {
           {/* Search and Filters */}
           <div className="flex flex-col md:flex-row gap-4 mb-8">
             <div className="relative flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted" size={20} />
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9ca3af]" size={20} />
               <input
                 type="text"
                 placeholder="Пошук товарів..."
@@ -146,10 +147,10 @@ export default function CatalogPage() {
 
           {/* Filter Panel */}
           {showFilters && (
-            <div className="card p-6 mb-8 animate-slide-down">
+            <div className="card p-6 mb-8 animate-fade-in">
               <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div>
-                  <label className="block text-sm font-medium mb-2">Сортування</label>
+                  <label className="block text-sm font-medium mb-2 text-[#9ca3af]">Сортування</label>
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value)}
@@ -161,7 +162,7 @@ export default function CatalogPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">Порядок</label>
+                  <label className="block text-sm font-medium mb-2 text-[#9ca3af]">Порядок</label>
                   <select
                     value={sortOrder}
                     onChange={(e) => setSortOrder(e.target.value as 'asc' | 'desc')}
@@ -172,7 +173,7 @@ export default function CatalogPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium mb-2">
+                  <label className="block text-sm font-medium mb-2 text-[#9ca3af]">
                     Макс. ціна: {priceRange[1].toLocaleString('uk-UA')} ₴
                   </label>
                   <input
@@ -182,7 +183,7 @@ export default function CatalogPage() {
                     step="5000"
                     value={priceRange[1]}
                     onChange={(e) => setPriceRange([0, parseInt(e.target.value)])}
-                    className="w-full"
+                    className="w-full accent-[#6366f1]"
                   />
                 </div>
               </div>
@@ -192,65 +193,93 @@ export default function CatalogPage() {
           {/* Products Grid */}
           {loading ? (
             <div className="flex justify-center py-20">
-              <div className="w-12 h-12 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+              <div className="w-12 h-12 border-2 border-[#6366f1] border-t-transparent rounded-full animate-spin" />
             </div>
           ) : (
             <>
               <div className="flex justify-between items-center mb-6">
-                <p className="text-muted text-sm">
-                  Знайдено товарів: {products.length}
+                <p className="text-[#9ca3af] text-sm">
+                  Знайдено товарів: <span className="text-white font-medium">{products.length}</span>
                 </p>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              
+              {/* Modern Product Grid - 2 columns mobile, 3 tablet, 4 desktop */}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
                 {products.map((product) => (
                   <div
                     key={product.id}
                     onClick={() => handleProductClick(product)}
-                    className="group card animate-fade-in cursor-pointer"
+                    className="product-card group"
                   >
-                    <div className="aspect-square overflow-hidden bg-surfaceLight relative">
+                    {/* Image Container */}
+                    <div className="aspect-square overflow-hidden bg-[#1f1f23] relative">
                       <img
                         src={getProductImage(product)}
                         alt={product.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                         onError={(e) => {
                           (e.target as HTMLImageElement).src =
                             'https://via.placeholder.com/500?text=No+Image';
                         }}
                       />
+                      
+                      {/* Out of Stock Overlay */}
                       {product.stock === 0 && (
-                        <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
-                          <span className="text-sm font-medium">Немає в наявності</span>
+                        <div className="absolute inset-0 bg-[#0f0f12]/80 backdrop-blur-sm flex items-center justify-center">
+                          <span className="text-sm font-medium text-[#9ca3af]">Немає в наявності</span>
                         </div>
                       )}
+                      
+                      {/* Quick Add Button - appears on hover */}
+                      {product.stock > 0 && (
+                        <button
+                          onClick={(e) => handleAddToCart(e, product)}
+                          className="absolute bottom-3 right-3 p-3 bg-[#6366f1] text-white rounded-full
+                                   opacity-0 group-hover:opacity-100 transition-all duration-300
+                                   hover:bg-[#818cf8] hover:shadow-lg hover:shadow-[#6366f1]/50
+                                   transform group-hover:translate-y-0 translate-y-2"
+                          aria-label="Додати до кошика"
+                        >
+                          <ShoppingCart size={18} strokeWidth={2} />
+                        </button>
+                      )}
                     </div>
+                    
+                    {/* Product Info */}
                     <div className="p-4">
-                      <h3 className="font-medium text-base mb-2 group-hover:text-secondary transition-colors">
+                      <h3 className="font-medium text-sm md:text-base mb-2 text-white line-clamp-2 min-h-[2.5rem]">
                         {product.title}
                       </h3>
                       <div className="flex items-center justify-between">
-                        <span className="text-lg font-light">
+                        <span className="text-lg font-light text-white">
                           {Number(product.price).toLocaleString('uk-UA')} ₴
                         </span>
                         {product.stock > 0 ? (
-                          <button
-                            onClick={(e) => handleAddToCart(e, product)}
-                            className="p-2 hover:bg-surfaceLight transition-colors"
-                            aria-label="Додати до кошика"
-                          >
-                            <ShoppingCart size={18} strokeWidth={1.5} />
-                          </button>
+                          <span className="text-xs text-green-400 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
+                            В наявності
+                          </span>
                         ) : (
-                          <span className="text-xs text-muted">Недоступно</span>
+                          <span className="text-xs text-[#9ca3af]">Недоступно</span>
                         )}
                       </div>
                     </div>
                   </div>
                 ))}
               </div>
+              
               {products.length === 0 && (
-                <div className="text-center py-20 text-muted">
-                  Товари не знайдено
+                <div className="text-center py-20">
+                  <div className="text-[#9ca3af] text-lg mb-4">Товари не знайдено</div>
+                  <button
+                    onClick={() => {
+                      setSearch('')
+                      setPriceRange([0, 100000])
+                    }}
+                    className="btn-primary"
+                  >
+                    Скинути фільтри
+                  </button>
                 </div>
               )}
             </>
