@@ -44,14 +44,30 @@ export default function ProductPage() {
       productId: product.id,
       title: product.title,
       price: Number(product.price),
-      imageUrl: product.imageUrl,
+      imageUrl: product.imageUrl?.startsWith('/uploads/') 
+        ? product.imageUrl 
+        : product.images?.[0]?.startsWith('/uploads/')
+          ? product.images[0]
+          : product.imageUrl
+            ? `/uploads/${product.imageUrl}`
+            : undefined,
       quantity: 1,
     });
 
     toast.success('Товар додано до кошика');
   };
 
-  const images = product?.images?.length ? product.images : product.imageUrl ? [product.imageUrl] : [];
+  // Helper to normalize image path
+  const normalizeImagePath = (img: string) => {
+    if (img.startsWith('/uploads/')) return img;
+    return `/uploads/${img}`;
+  };
+
+  const images = product?.images?.length 
+    ? product.images.map(normalizeImagePath)
+    : product.imageUrl 
+      ? [normalizeImagePath(product.imageUrl)]
+      : [];
 
   if (loading) {
     return (

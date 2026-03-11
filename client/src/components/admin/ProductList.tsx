@@ -114,9 +114,18 @@ export default function AdminProductList() {
                   <td className="px-6 py-4">
                     <div className="w-12 h-12 overflow-hidden bg-surfaceLight">
                       <img
-                        src={product.imageUrl || '/placeholder.jpg'}
+                        src={
+                          product.imageUrl?.startsWith('/uploads/') 
+                            ? product.imageUrl 
+                            : product.imageUrl 
+                              ? `/uploads/${product.imageUrl}`
+                              : '/placeholder.jpg'
+                        }
                         alt={product.title}
                         className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).src = '/placeholder.jpg';
+                        }}
                       />
                     </div>
                   </td>

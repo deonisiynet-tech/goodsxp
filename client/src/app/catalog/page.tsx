@@ -73,7 +73,13 @@ export default function CatalogPage() {
       productId: product.id,
       title: product.title,
       price: Number(product.price),
-      imageUrl: product.imageUrl || product.images?.[0],
+      imageUrl: product.imageUrl?.startsWith('/uploads/') 
+        ? product.imageUrl 
+        : product.images?.[0]?.startsWith('/uploads/')
+          ? product.images[0]
+          : product.imageUrl || product.images?.[0]
+            ? `/uploads/${product.imageUrl || product.images[0]}`
+            : undefined,
       quantity: 1,
     });
     toast.success('Товар додано до кошика');
@@ -178,7 +184,15 @@ export default function CatalogPage() {
                   >
                     <div className="aspect-square overflow-hidden bg-surfaceLight relative">
                       <img
-                        src={product.imageUrl || product.images?.[0] || '/placeholder.jpg'}
+                        src={
+                          product.imageUrl?.startsWith('/uploads/') 
+                            ? product.imageUrl 
+                            : product.images?.[0]?.startsWith('/uploads/')
+                              ? product.images[0]
+                              : product.imageUrl || product.images?.[0]
+                                ? `/uploads/${product.imageUrl || product.images[0]}`
+                                : '/placeholder.jpg'
+                        }
                         alt={product.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         onError={(e) => {

@@ -110,6 +110,10 @@ server/uploads/
 uploads/
 *.upload
 
+# Client uploads - keep directory but ignore files
+client/public/uploads/*
+!client/public/uploads/.gitkeep
+
 # ==================================
 # TypeScript
 # ==================================

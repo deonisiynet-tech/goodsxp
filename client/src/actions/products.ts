@@ -2,6 +2,8 @@
 
 import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
+import { writeFile, mkdir } from 'fs/promises'
+import path from 'path'
 
 export interface Product {
   id: string
@@ -21,6 +23,35 @@ export interface ProductsFilter {
   status?: 'active' | 'inactive' | 'instock' | 'outofstock'
   sortField?: 'title' | 'price' | 'stock' | 'createdAt'
   sortOrder?: 'asc' | 'desc'
+}
+
+// Helper function to ensure uploads directory exists
+async function ensureUploadsDir() {
+  const uploadsDir = path.join(process.cwd(), 'public', 'uploads')
+  try {
+    await mkdir(uploadsDir, { recursive: true })
+  } catch (err) {
+    console.error('Error creating uploads directory:', err)
+  }
+  return uploadsDir
+}
+
+// Helper function to save file to uploads directory
+async function saveFile(file: File): Promise<string> {
+  const bytes = await file.arrayBuffer()
+  const buffer = Buffer.from(bytes)
+  
+  // Generate unique filename
+  const ext = path.extname(file.name)
+  const fileName = `${Date.now()}-${Math.random().toString(36).substring(7)}${ext}`
+  
+  const uploadsDir = await ensureUploadsDir()
+  const filePath = path.join(uploadsDir, fileName)
+  
+  await writeFile(filePath, buffer)
+  
+  // Return the URL path (relative to public/)
+  return `/uploads/${fileName}`
 }
 
 export async function getProducts(filter: ProductsFilter = {}): Promise<Product[]> {
@@ -82,7 +113,7 @@ export async function createProduct(
       return { success: false, error: 'Невірні дані' }
     }
 
-    // Parse images array from JSON
+    // Parse images array from JSON (contains file paths like /uploads/filename.png)
     let images: string[] = []
     if (imagesJson) {
       try {
@@ -176,5 +207,28 @@ export async function deleteProduct(id: string): Promise<{ success: boolean; err
   } catch (error) {
     console.error('Error deleting product:', error)
     return { success: false, error: 'Помилка при видаленні товару' }
+  }
+}
+
+// New action to handle file upload
+export async function uploadImage(file: File): Promise<{ success: boolean; url?: string; error?: string }> {
+  try {
+    if (!file || file.size === 0) {
+      return { success: false, error: 'Файл не обрано' }
+    }
+
+    if (!file.type.startsWith('image/')) {
+      return { success: false, error: 'Файл не є зображенням' }
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      return { success: false, error: 'Файл завеликий (макс. 5MB)' }
+    }
+
+    const url = await saveFile(file)
+    return { success: true, url }
+  } catch (error) {
+    console.error('Error uploading image:', error)
+    return { success: false, error: 'Помилка завантаження зображення' }
   }
 }

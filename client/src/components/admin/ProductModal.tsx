@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { useForm } from 'react-hook-form'
-import { createProduct, updateProduct, Product } from '@/actions/products'
+import { createProduct, updateProduct, Product, uploadImage } from '@/actions/products'
 import toast from 'react-hot-toast'
 import { X, Upload, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
 
@@ -11,15 +11,26 @@ interface ProductModalProps {
   onClose: () => void
 }
 
+interface ImageFile {
+  file: File
+  preview: string
+  uploadedUrl?: string
+}
+
 export default function ProductModal({ product, onClose }: ProductModalProps) {
   const [loading, setLoading] = useState(false)
-  // Combine existing images with any new previews
+  const [uploadingImages, setUploadingImages] = useState(false)
+  // Existing images from database (already uploaded, stored as /uploads/filename.png)
   const [existingImages, setExistingImages] = useState<string[]>(product?.images || [])
-  const [newImages, setNewImages] = useState<string[]>([])
+  // New images being added (with File objects and preview URLs)
+  const [newImages, setNewImages] = useState<ImageFile[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
 
-  // All images = existing + new (for display purposes)
-  const allImages = [...existingImages, ...newImages]
+  // All images for display = existing URLs + new previews
+  const allImages = [
+    ...existingImages,
+    ...newImages.map(img => img.preview)
+  ]
 
   const {
     register,
@@ -50,8 +61,14 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
       formData.append('stock', data.stock.toString())
       formData.append('isActive', data.isActive ? 'on' : 'off')
 
-      // Save all images (existing + new) as JSON string
-      formData.append('images', JSON.stringify(allImages))
+      // Combine existing image URLs with newly uploaded ones
+      const allImageUrls = [
+        ...existingImages,
+        ...newImages.filter(img => img.uploadedUrl).map(img => img.uploadedUrl!)
+      ]
+
+      // Save all images as JSON string
+      formData.append('images', JSON.stringify(allImageUrls))
 
       if (product) {
         const result = await updateProduct(product.id, formData)
@@ -77,26 +94,46 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
     }
   }
 
-  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files
     if (files && files.length > 0) {
-      Array.from(files).forEach((file) => {
+      setUploadingImages(true)
+      
+      for (const file of Array.from(files)) {
         if (file.size > 5 * 1024 * 1024) {
           toast.error(`Файл "${file.name}" занадто великий (макс. 5MB)`)
-          return
+          continue
         }
         if (!file.type.startsWith('image/')) {
           toast.error(`Файл "${file.name}" не є зображенням`)
-          return
+          continue
         }
 
-        // Create preview URL for new image
+        // Create preview URL for immediate display
         const previewUrl = URL.createObjectURL(file)
-        setNewImages((prev) => [...prev, previewUrl])
-      })
-      
+        
+        // Upload file to server
+        const result = await uploadImage(file)
+        if (result.success && result.url) {
+          setNewImages((prev) => [...prev, {
+            file,
+            preview: result.url, // Use uploaded URL for display
+            uploadedUrl: result.url
+          }])
+          toast.success(`Зображення "${file.name}" завантажено`)
+        } else {
+          // Fallback to preview only if upload fails
+          setNewImages((prev) => [...prev, {
+            file,
+            preview: previewUrl,
+          }])
+          toast.error(result.error || 'Помилка завантаження')
+        }
+      }
+
       // Reset input value to allow selecting the same file again
       e.target.value = ''
+      setUploadingImages(false)
     }
   }
 
@@ -116,13 +153,24 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
     const newIndex = direction === 'left' ? index - 1 : index + 1
     if (newIndex < 0 || newIndex >= allImages.length) return
 
-    // Swap images in the combined array
-    const newAllImages = [...allImages]
-    ;[newAllImages[index], newAllImages[newIndex]] = [newAllImages[newIndex], newAllImages[index]]
-    
-    // Split back into existing and new
-    setExistingImages(newAllImages.slice(0, existingImages.length))
-    setNewImages(newAllImages.slice(existingImages.length))
+    // Need to handle existing and new images separately
+    if (index < existingImages.length) {
+      // Moving within existing images
+      if (newIndex < existingImages.length) {
+        const newExisting = [...existingImages]
+        ;[newExisting[index], newExisting[newIndex]] = [newExisting[newIndex], newExisting[index]]
+        setExistingImages(newExisting)
+      }
+    } else {
+      // Moving within new images
+      const newImgIndex = index - existingImages.length
+      const newNewIndex = newIndex - existingImages.length
+      if (newNewIndex >= 0 && newNewIndex < newImages.length) {
+        const newNewImages = [...newImages]
+        ;[newNewImages[newImgIndex], newNewImages[newNewIndex]] = [newNewImages[newNewIndex], newNewImages[newImgIndex]]
+        setNewImages(newNewImages)
+      }
+    }
   }
 
   return (
@@ -218,45 +266,61 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     {allImages.map((img, index) => {
                       const isNew = index >= existingImages.length
+                      const newImage = isNew ? newImages[index - existingImages.length] : null
+                      const isUploaded = newImage?.uploadedUrl !== undefined
+                      const isUploading = uploadingImages && isNew && !isUploaded
+
                       return (
                         <div key={index} className="relative group aspect-square rounded-xl overflow-hidden bg-surfaceLight border border-border">
                           <img
-                            src={img}
+                            src={img.startsWith('/uploads/') ? img : img}
                             alt={`Image ${index + 1}`}
                             className="w-full h-full object-cover"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = 'https://via.placeholder.com/500?text=No+Image'
+                            }}
                           />
 
+                          {/* Uploading indicator */}
+                          {isUploading && (
+                            <div className="absolute inset-0 bg-black/60 flex items-center justify-center">
+                              <div className="w-8 h-8 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+                            </div>
+                          )}
+
                           {/* Overlay controls */}
-                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                            {index > 0 && (
+                          {!isUploading && (
+                            <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                              {index > 0 && (
+                                <button
+                                  type="button"
+                                  onClick={() => moveImage(index, 'left')}
+                                  className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+                                  title="Вліво"
+                                >
+                                  <ChevronLeft size={16} className="text-white" />
+                                </button>
+                              )}
                               <button
                                 type="button"
-                                onClick={() => moveImage(index, 'left')}
-                                className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
-                                title="Вліво"
+                                onClick={() => removeImage(index)}
+                                className="p-2 bg-red-500/80 hover:bg-red-500 rounded-lg transition-colors"
+                                title="Видалити"
                               >
-                                <ChevronLeft size={16} className="text-white" />
+                                <Trash2 size={16} className="text-white" />
                               </button>
-                            )}
-                            <button
-                              type="button"
-                              onClick={() => removeImage(index)}
-                              className="p-2 bg-red-500/80 hover:bg-red-500 rounded-lg transition-colors"
-                              title="Видалити"
-                            >
-                              <Trash2 size={16} className="text-white" />
-                            </button>
-                            {index < allImages.length - 1 && (
-                              <button
-                                type="button"
-                                onClick={() => moveImage(index, 'right')}
-                                className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
-                                title="Вправо"
-                              >
-                                <ChevronRight size={16} className="text-white" />
-                              </button>
-                            )}
-                          </div>
+                              {index < allImages.length - 1 && (
+                                <button
+                                  type="button"
+                                  onClick={() => moveImage(index, 'right')}
+                                  className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+                                  title="Вправо"
+                                >
+                                  <ChevronRight size={16} className="text-white" />
+                                </button>
+                              )}
+                            </div>
+                          )}
 
                           {/* Main image badge */}
                           {index === 0 && (
@@ -266,9 +330,16 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
                           )}
 
                           {/* New image badge */}
-                          {isNew && (
+                          {isNew && isUploaded && (
                             <div className="absolute top-2 right-2 px-2 py-1 bg-green-500 text-white text-xs font-medium rounded">
-                              Нове
+                              Завантажено
+                            </div>
+                          )}
+
+                          {/* Upload pending badge */}
+                          {isNew && !isUploaded && !isUploading && (
+                            <div className="absolute top-2 right-2 px-2 py-1 bg-yellow-500 text-white text-xs font-medium rounded">
+                              Очікує
                             </div>
                           )}
                         </div>
