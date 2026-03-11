@@ -45,7 +45,7 @@ COPY client/package*.json ./
 # Install dependencies
 RUN npm install
 
-# Copy all client source files
+# Copy all client source files INCLUDING public directory
 COPY client/ .
 
 # Copy Prisma schema for Server Actions
@@ -58,9 +58,20 @@ RUN npx prisma generate --schema=./prisma/schema.prisma
 # Build Next.js (creates .next/standalone)
 RUN npm run build
 
-# Verify build output - check standalone and static
+# Verify build output - check standalone and static exist
 RUN ls -la /client/.next/standalone && echo "✅ .next/standalone exists"
 RUN ls -la /client/.next/static && echo "✅ .next/static exists"
+
+# Ensure public directory exists (create if missing)
+RUN mkdir -p /client/public && echo "✅ public directory ensured"
+
+# Create placeholder file if public is empty
+RUN if [ ! "$(ls -A /client/public)" ]; then \
+      echo "Public directory placeholder" > /client/public/.gitkeep; \
+      echo "✅ Placeholder created"; \
+    else \
+      echo "✅ Public directory already has files"; \
+    fi
 
 # ==================================
 # PRODUCTION IMAGE - Express + Next.js
@@ -87,9 +98,11 @@ RUN mkdir -p ./client
 COPY --from=client-builder --chown=nodejs:nodejs /client/.next/standalone/. ./client/
 COPY --from=client-builder --chown=nodejs:nodejs /client/.next/static ./client/.next/static
 
-# Copy client public directory AFTER standalone (for uploads and static assets)
-# Note: standalone build already has public in the root, so we copy to ./public at root
+# Copy client public directory to BOTH ./public (root) and ./client/public
+# Root ./public is for direct access via /public/*
+# ./client/public is for Next.js standalone compatibility
 COPY --from=client-builder --chown=nodejs:nodejs /client/public ./public
+COPY --from=client-builder --chown=nodejs:nodejs /client/public ./client/public
 
 # Create uploads directory at root level for local file storage
 RUN mkdir -p ./uploads && chown nodejs:nodejs ./uploads

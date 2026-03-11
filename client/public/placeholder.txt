@@ -1,0 +1,2 @@
+Placeholder image for products without photos.
+This file ensures the public directory is not empty during Docker build.
