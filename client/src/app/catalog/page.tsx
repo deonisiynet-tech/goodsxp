@@ -1,22 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import Link from 'next/link';
 import { productsApi } from '@/lib/api';
 import { useCartStore } from '@/lib/store';
 import toast from 'react-hot-toast';
 import { ShoppingCart, Search, SlidersHorizontal } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-
-interface Product {
-  id: string;
-  title: string;
-  description: string;
-  price: number;
-  imageUrl: string | null;
-  stock: number;
-}
+import ProductModal from '@/components/ProductModal';
+import { Product } from '@/actions/products';
 
 export default function CatalogPage() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -26,6 +18,8 @@ export default function CatalogPage() {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 100000]);
   const [showFilters, setShowFilters] = useState(false);
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const addItem = useCartStore((state) => state.addItem);
 
   useEffect(() => {
@@ -62,13 +56,24 @@ export default function CatalogPage() {
     }
   };
 
+  const handleProductClick = (product: Product) => {
+    setSelectedProduct(product);
+    setIsModalOpen(true);
+  };
+
+  const handleCloseModal = () => {
+    setIsModalOpen(false);
+    setTimeout(() => setSelectedProduct(null), 300);
+  };
+
   const handleAddToCart = (e: React.MouseEvent, product: Product) => {
     e.preventDefault();
+    e.stopPropagation();
     addItem({
       productId: product.id,
       title: product.title,
       price: Number(product.price),
-      imageUrl: product.imageUrl,
+      imageUrl: product.imageUrl || product.images?.[0],
       quantity: 1,
     });
     toast.success('Товар додано до кошика');
@@ -166,14 +171,14 @@ export default function CatalogPage() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                 {products.map((product) => (
-                  <Link
+                  <div
                     key={product.id}
-                    href={`/catalog/${product.id}`}
-                    className="group card animate-fade-in"
+                    onClick={() => handleProductClick(product)}
+                    className="group card animate-fade-in cursor-pointer"
                   >
                     <div className="aspect-square overflow-hidden bg-surfaceLight relative">
                       <img
-                        src={product.imageUrl || '/placeholder.jpg'}
+                        src={product.imageUrl || product.images?.[0] || '/placeholder.jpg'}
                         alt={product.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         onError={(e) => {
@@ -188,10 +193,9 @@ export default function CatalogPage() {
                       )}
                     </div>
                     <div className="p-4">
-                      <h3 className="font-medium text-base mb-2 line-clamp-2 group-hover:text-secondary transition-colors">
+                      <h3 className="font-medium text-base mb-2 group-hover:text-secondary transition-colors">
                         {product.title}
                       </h3>
-                      <p className="text-muted text-sm line-clamp-2 mb-3">{product.description}</p>
                       <div className="flex items-center justify-between">
                         <span className="text-lg font-light">
                           {Number(product.price).toLocaleString('uk-UA')} ₴
@@ -209,7 +213,7 @@ export default function CatalogPage() {
                         )}
                       </div>
                     </div>
-                  </Link>
+                  </div>
                 ))}
               </div>
               {products.length === 0 && (
@@ -222,6 +226,14 @@ export default function CatalogPage() {
         </div>
       </main>
       <Footer />
+      {/* Product Modal */}
+      {selectedProduct && (
+        <ProductModal
+          product={selectedProduct}
+          isOpen={isModalOpen}
+          onClose={handleCloseModal}
+        />
+      )}
     </div>
   );
 }
