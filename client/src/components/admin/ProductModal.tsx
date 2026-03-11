@@ -109,8 +109,9 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
 
         try {
           // Upload to Cloudinary via API route
+          // Use 'files' field for compatibility with server API
           const formData = new FormData()
-          formData.append('file', file)
+          formData.append('files', file)  // Changed from 'file' to 'files'
 
           const response = await fetch('/api/upload', {
             method: 'POST',
@@ -118,10 +119,11 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
           })
 
           const result = await response.json()
+          console.log('Upload result:', result)
 
-          if (result.success && result.url) {
-            // Add ONLY the URL string to state (no File objects!)
-            setNewImages((prev) => [...prev, result.url])
+          if (result.success && result.urls && result.urls.length > 0) {
+            // Add URL string to state
+            setNewImages((prev) => [...prev, result.urls[0]])
             toast.success(`Зображення "${file.name}" завантажено`)
           } else {
             toast.error(result.error || 'Помилка завантаження')
