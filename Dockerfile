@@ -2,7 +2,7 @@
 # Next.js 14 + Express API Server + Cloudinary Support
 FROM node:20-alpine AS base
 
-# Install dependencies for Prisma
+# Install dependencies for Prisma and sharp
 RUN apk add --no-cache openssl libc6-compat
 
 # ==================================
@@ -45,9 +45,6 @@ COPY client/package*.json ./
 # Install dependencies
 RUN npm install
 
-# Create public directory
-RUN mkdir -p /client/public
-
 # Copy all client source files
 COPY client/ .
 
@@ -61,8 +58,10 @@ RUN npx prisma generate --schema=./prisma/schema.prisma
 # Build Next.js (creates .next/standalone)
 RUN npm run build
 
-# Verify build
+# Verify build output
 RUN ls -la /client/.next/standalone && echo "✅ .next/standalone exists"
+RUN ls -la /client/.next/static && echo "✅ .next/static exists"
+RUN ls -la /client/public && echo "✅ public exists"
 
 # ==================================
 # PRODUCTION IMAGE - Express + Next.js
@@ -74,7 +73,7 @@ WORKDIR /app
 ENV NODE_ENV=production
 ENV PORT=5000
 
-# Create non-root user
+# Create non-root user (Railway uses nodejs user)
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
 
@@ -86,14 +85,20 @@ COPY --from=server-builder --chown=nodejs:nodejs /app/package.json ./
 # Copy Next.js standalone build to client directory
 # Express server will load Next.js from here
 RUN mkdir -p ./client
-COPY --from=client-builder --chown=nodejs:nodejs /client/.next/standalone ./client
+COPY --from=client-builder --chown=nodejs:nodejs /client/.next/standalone/. ./client/
 COPY --from=client-builder --chown=nodejs:nodejs /client/.next/static ./client/.next/static
 
 # Copy client public directory (for uploads and static assets)
 COPY --from=client-builder --chown=nodejs:nodejs /client/public ./client/public
 
-# Create uploads directory at root level
+# Create uploads directory at root level for local file storage
 RUN mkdir -p ./uploads && chown nodejs:nodejs ./uploads
+
+# Create tmp directory for file uploads
+RUN mkdir -p /tmp && chown nodejs:nodejs /tmp
+
+# Set correct permissions for all directories
+RUN chown -R nodejs:nodejs /app
 
 # Set correct permissions
 USER nodejs
