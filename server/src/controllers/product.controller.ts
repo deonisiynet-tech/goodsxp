@@ -51,14 +51,36 @@ export class ProductController {
 
   async create(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { title, description, price, stock, isActive } = req.body;
-      
-      let imageUrl: string | undefined = undefined;
+      const { title, description, price, stock, isActive, images } = req.body;
 
-      // Handle image upload
-      if (req.files?.image) {
-        const file = Array.isArray(req.files.image) ? req.files.image[0] : req.files.image;
-        imageUrl = await processImageUpload(file);
+      let imageUrl: string | undefined = undefined;
+      let imagesArray: string[] = [];
+
+      // Handle multiple image uploads
+      if (req.files?.images) {
+        const files = Array.isArray(req.files.images) ? req.files.images : [req.files.images];
+        for (const file of files) {
+          const uploadedUrl = await processImageUpload(file);
+          if (uploadedUrl) imagesArray.push(uploadedUrl);
+        }
+      }
+
+      // Use first image as imageUrl for backward compatibility
+      if (imagesArray.length > 0) {
+        imageUrl = imagesArray[0];
+      }
+
+      // Also check if images were sent as JSON string (from FormData)
+      if (!imagesArray.length && images) {
+        try {
+          const parsedImages = typeof images === 'string' ? JSON.parse(images) : images;
+          if (Array.isArray(parsedImages)) {
+            imagesArray = parsedImages;
+            imageUrl = imagesArray[0];
+          }
+        } catch (e) {
+          console.error('Error parsing images JSON:', e);
+        }
       }
 
       const product = await productService.create({
@@ -66,7 +88,7 @@ export class ProductController {
         description,
         price: Number(price),
         imageUrl: imageUrl || undefined,
-        images: imageUrl ? [imageUrl] : [],
+        images: imagesArray,
         stock: stock ? Number(stock) : 0,
         isActive: isActive === 'true',
       });
@@ -80,7 +102,7 @@ export class ProductController {
   async update(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const { title, description, price, stock, isActive } = req.body;
+      const { title, description, price, stock, isActive, images } = req.body;
 
       const updateData: any = {};
       if (title) updateData.title = title;
@@ -89,10 +111,33 @@ export class ProductController {
       if (stock !== undefined) updateData.stock = Number(stock);
       if (isActive !== undefined) updateData.isActive = isActive === 'true';
 
-      // Handle image upload
-      if (req.files?.image) {
-        const file = Array.isArray(req.files.image) ? req.files.image[0] : req.files.image;
-        updateData.imageUrl = await processImageUpload(file);
+      let imagesArray: string[] = [];
+
+      // Handle multiple image uploads (new files)
+      if (req.files?.images) {
+        const files = Array.isArray(req.files.images) ? req.files.images : [req.files.images];
+        for (const file of files) {
+          const uploadedUrl = await processImageUpload(file);
+          if (uploadedUrl) imagesArray.push(uploadedUrl);
+        }
+      }
+
+      // Check if images were sent as JSON string (from FormData)
+      if (images) {
+        try {
+          const parsedImages = typeof images === 'string' ? JSON.parse(images) : images;
+          if (Array.isArray(parsedImages)) {
+            imagesArray = parsedImages;
+          }
+        } catch (e) {
+          console.error('Error parsing images JSON:', e);
+        }
+      }
+
+      // Use first image as imageUrl for backward compatibility
+      if (imagesArray.length > 0) {
+        updateData.imageUrl = imagesArray[0];
+        updateData.images = imagesArray;
       }
 
       const product = await productService.update(id, updateData);

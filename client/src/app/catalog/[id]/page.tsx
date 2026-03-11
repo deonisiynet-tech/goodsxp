@@ -10,10 +10,21 @@ import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 
+interface Product {
+  id: string;
+  title: string;
+  description: string | null;
+  price: number;
+  imageUrl: string | null;
+  images: string[] | null;
+  stock: number;
+  isActive: boolean;
+}
+
 export default function ProductPage() {
   const params = useParams();
   const router = useRouter();
-  const [product, setProduct] = useState<any>(null);
+  const [product, setProduct] = useState<Product | null>(null);
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -40,34 +51,56 @@ export default function ProductPage() {
   const handleAddToCart = () => {
     if (!product) return;
 
+    const imageList = getImageList(product);
+    const imageUrl = imageList.length > 0 ? imageList[0] : undefined;
+
     addItem({
       productId: product.id,
       title: product.title,
       price: Number(product.price),
-      imageUrl: product.imageUrl?.startsWith('/uploads/') 
-        ? product.imageUrl 
-        : product.images?.[0]?.startsWith('/uploads/')
-          ? product.images[0]
-          : product.imageUrl
-            ? `/uploads/${product.imageUrl}`
-            : undefined,
+      imageUrl,
       quantity: 1,
     });
 
     toast.success('Товар додано до кошика');
   };
 
-  // Helper to normalize image path
-  const normalizeImagePath = (img: string) => {
+  // Helper to normalize image path - ALWAYS returns path starting with /uploads/
+  const normalizeImagePath = (img: string): string => {
+    if (!img) return '';
+    // If already starts with /uploads/, return as is
     if (img.startsWith('/uploads/')) return img;
+    // If starts with /, add uploads after
+    if (img.startsWith('/')) return `/uploads${img}`;
+    // Otherwise prepend /uploads/
     return `/uploads/${img}`;
   };
 
-  const images = product?.images?.length 
-    ? product.images.map(normalizeImagePath)
-    : product.imageUrl 
-      ? [normalizeImagePath(product.imageUrl)]
-      : [];
+  // Safe image list getter - NEVER returns undefined/null
+  const getImageList = (prod: Product | null): string[] => {
+    if (!prod) return [];
+    
+    // Safely get images array
+    const images = Array.isArray(prod.images) ? prod.images : [];
+    
+    // Normalize all image paths
+    const normalizedImages = images.map(normalizeImagePath).filter(Boolean);
+    
+    // If no images, try imageUrl
+    if (normalizedImages.length === 0 && prod.imageUrl) {
+      const normalizedUrl = normalizeImagePath(prod.imageUrl);
+      if (normalizedUrl) return [normalizedUrl];
+    }
+    
+    return normalizedImages;
+  };
+
+  const images = getImageList(product);
+
+  // Safe selected image index
+  const safeSelectedIndex = images.length > 0 
+    ? Math.min(selectedImage, images.length - 1) 
+    : 0;
 
   if (loading) {
     return (
@@ -83,7 +116,22 @@ export default function ProductPage() {
     );
   }
 
-  if (!product) return null;
+  if (!product) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 container mx-auto px-4 py-8">
+          <div className="text-center py-20">
+            <p className="text-muted">Товар не знайдено</p>
+            <Link href="/catalog" className="text-primary hover:underline mt-4 inline-block">
+              До каталогу
+            </Link>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col">
@@ -105,8 +153,9 @@ export default function ProductPage() {
               {images.length > 0 ? (
                 <>
                   <img
-                    src={images[selectedImage] || '/placeholder.jpg'}
-                    alt={`${product.title} - view ${selectedImage + 1}`}
+                    key={safeSelectedIndex}
+                    src={images[safeSelectedIndex]}
+                    alt={`${product.title} - view ${safeSelectedIndex + 1}`}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = 'https://via.placeholder.com/800?text=No+Image';
@@ -115,18 +164,18 @@ export default function ProductPage() {
                   {images.length > 1 && (
                     <>
                       <div className="absolute top-4 right-4 px-3 py-1.5 bg-black/60 backdrop-blur-sm text-white text-sm rounded-full">
-                        {selectedImage + 1} / {images.length}
+                        {safeSelectedIndex + 1} / {images.length}
                       </div>
                       <button
                         onClick={() => setSelectedImage((prev) => Math.max(0, prev - 1))}
-                        disabled={selectedImage === 0}
+                        disabled={safeSelectedIndex === 0}
                         className="absolute left-4 top-1/2 -translate-y-1/2 p-3 bg-black/60 backdrop-blur-sm text-white rounded-full hover:bg-black/80 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                       >
                         <ChevronLeft size={24} />
                       </button>
                       <button
                         onClick={() => setSelectedImage((prev) => Math.min(images.length - 1, prev + 1))}
-                        disabled={selectedImage === images.length - 1}
+                        disabled={safeSelectedIndex === images.length - 1}
                         className="absolute right-4 top-1/2 -translate-y-1/2 p-3 bg-black/60 backdrop-blur-sm text-white rounded-full hover:bg-black/80 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
                       >
                         <ChevronRight size={24} />
@@ -142,7 +191,7 @@ export default function ProductPage() {
                 />
               )}
             </div>
-            
+
             {/* Thumbnail Grid */}
             {images.length > 1 && (
               <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
@@ -151,8 +200,8 @@ export default function ProductPage() {
                     key={idx}
                     onClick={() => setSelectedImage(idx)}
                     className={`aspect-square rounded-lg overflow-hidden border-2 transition-all duration-200 ${
-                      selectedImage === idx 
-                        ? 'border-primary ring-2 ring-primary/30 scale-105' 
+                      safeSelectedIndex === idx
+                        ? 'border-primary ring-2 ring-primary/30 scale-105'
                         : 'border-border hover:border-primary/50'
                     }`}
                   >
@@ -160,6 +209,9 @@ export default function ProductPage() {
                       src={img}
                       alt={`${product.title} thumbnail ${idx + 1}`}
                       className="w-full h-full object-cover"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://via.placeholder.com/200?text=No+Image';
+                      }}
                     />
                   </button>
                 ))}

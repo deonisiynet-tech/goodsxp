@@ -10,15 +10,19 @@ import Footer from '@/components/Footer';
 import ProductModal from '@/components/ProductModal';
 import { Product } from '@/actions/products';
 
+interface SafeProduct extends Omit<Product, 'images'> {
+  images: string[] | null;
+}
+
 export default function CatalogPage() {
-  const [products, setProducts] = useState<Product[]>([]);
+  const [products, setProducts] = useState<SafeProduct[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [sortBy, setSortBy] = useState('createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 100000]);
   const [showFilters, setShowFilters] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<SafeProduct | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const addItem = useCartStore((state) => state.addItem);
 
@@ -34,11 +38,11 @@ export default function CatalogPage() {
 
       // Filter by price
       filteredProducts = filteredProducts.filter(
-        (p: Product) => p.price >= priceRange[0] && p.price <= priceRange[1]
+        (p: SafeProduct) => p.price >= priceRange[0] && p.price <= priceRange[1]
       );
 
       // Sort
-      filteredProducts.sort((a: Product, b: Product) => {
+      filteredProducts.sort((a: SafeProduct, b: SafeProduct) => {
         let comparison = 0;
         if (sortBy === 'price') {
           comparison = a.price - b.price;
@@ -56,7 +60,7 @@ export default function CatalogPage() {
     }
   };
 
-  const handleProductClick = (product: Product) => {
+  const handleProductClick = (product: SafeProduct) => {
     setSelectedProduct(product);
     setIsModalOpen(true);
   };
@@ -66,20 +70,42 @@ export default function CatalogPage() {
     setTimeout(() => setSelectedProduct(null), 300);
   };
 
-  const handleAddToCart = (e: React.MouseEvent, product: Product) => {
+  // Helper to normalize image path - ALWAYS returns path starting with /uploads/
+  const normalizeImagePath = (img: string | null | undefined): string => {
+    if (!img) return '/placeholder.jpg';
+    if (img.startsWith('/uploads/')) return img;
+    if (img.startsWith('/')) return `/uploads${img}`;
+    return `/uploads/${img}`;
+  };
+
+  // Safe image getter for single image display
+  const getProductImage = (prod: SafeProduct | null): string => {
+    if (!prod) return '/placeholder.jpg';
+    
+    // Try imageUrl first
+    if (prod.imageUrl) {
+      return normalizeImagePath(prod.imageUrl);
+    }
+    
+    // Try images array
+    const images = Array.isArray(prod.images) ? prod.images : [];
+    if (images.length > 0 && images[0]) {
+      return normalizeImagePath(images[0]);
+    }
+    
+    return '/placeholder.jpg';
+  };
+
+  const handleAddToCart = (e: React.MouseEvent, product: SafeProduct) => {
     e.preventDefault();
     e.stopPropagation();
+    const imageUrl = getProductImage(product);
+    
     addItem({
       productId: product.id,
       title: product.title,
       price: Number(product.price),
-      imageUrl: product.imageUrl?.startsWith('/uploads/') 
-        ? product.imageUrl 
-        : product.images?.[0]?.startsWith('/uploads/')
-          ? product.images[0]
-          : product.imageUrl || product.images?.[0]
-            ? `/uploads/${product.imageUrl || product.images[0]}`
-            : undefined,
+      imageUrl: imageUrl !== '/placeholder.jpg' ? imageUrl : undefined,
       quantity: 1,
     });
     toast.success('Товар додано до кошика');
@@ -184,15 +210,7 @@ export default function CatalogPage() {
                   >
                     <div className="aspect-square overflow-hidden bg-surfaceLight relative">
                       <img
-                        src={
-                          product.imageUrl?.startsWith('/uploads/') 
-                            ? product.imageUrl 
-                            : product.images?.[0]?.startsWith('/uploads/')
-                              ? product.images[0]
-                              : product.imageUrl || product.images?.[0]
-                                ? `/uploads/${product.imageUrl || product.images[0]}`
-                                : '/placeholder.jpg'
-                        }
+                        src={getProductImage(product)}
                         alt={product.title}
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         onError={(e) => {
