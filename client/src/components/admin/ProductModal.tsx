@@ -97,66 +97,65 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
     if (files && files.length > 0) {
       setUploadingImages(true)
 
-      // Upload all files in parallel
-      const uploadPromises = Array.from(files).map(async (file) => {
+      console.log(`📁 Selected ${files.length} file(s)`)
+
+      // Create FormData with ALL files at once
+      const formData = new FormData()
+      for (const file of Array.from(files)) {
         // Validate file size (max 10MB)
         if (file.size > 10 * 1024 * 1024) {
           toast.error(`Файл "${file.name}" занадто великий (макс. 10MB)`)
-          return null
+          continue
         }
         // Validate file type
         if (!file.type.startsWith('image/')) {
           toast.error(`Файл "${file.name}" не є зображенням`)
-          return null
+          continue
         }
-
-        try {
-          // Create FormData and append file with 'files' field name
-          const formData = new FormData()
-          formData.append('files', file)
-
-          console.log(`⬆️ Uploading: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`)
-
-          const response = await fetch('/api/upload', {
-            method: 'POST',
-            body: formData,
-          })
-
-          const result = await response.json()
-          console.log(`📤 Upload result for ${file.name}:`, result)
-
-          if (!response.ok) {
-            throw new Error(result.error || result.message || 'Помилка завантаження')
-          }
-
-          if (result.success && result.urls && result.urls.length > 0) {
-            toast.success(`✅ Зображення "${file.name}" завантажено`)
-            return result.urls[0] // Return first URL
-          } else {
-            throw new Error(result.error || 'Помилка завантаження')
-          }
-        } catch (error: any) {
-          console.error(`❌ Upload error for ${file.name}:`, error)
-          toast.error(`Помилка: ${error.message}`)
-          return null
-        }
-      })
-
-      // Wait for all uploads to complete
-      const results = await Promise.all(uploadPromises)
-      
-      // Filter out null results (failed uploads)
-      const uploadedUrls = results.filter((url): url is string => url !== null)
-      
-      if (uploadedUrls.length > 0) {
-        // Add all uploaded URLs to state
-        setNewImages((prev) => [...prev, ...uploadedUrls])
-        toast.success(`Завантажено ${uploadedUrls.length} зображень`)
+        // Append each file with the same field name 'files'
+        formData.append('files', file)
+        console.log(`⬆️ Added to FormData: ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)`)
       }
 
-      // Reset input value
-      e.target.value = ''
-      setUploadingImages(false)
+      try {
+        console.log('📤 Sending upload request...')
+        console.log('📋 FormData entries:')
+        for (const [key, value] of formData.entries()) {
+          if (value instanceof File) {
+            console.log(`  ${key}: ${value.name} (${value.size} bytes)`)
+          }
+        }
+
+        const response = await fetch('/api/upload', {
+          method: 'POST',
+          body: formData,
+          // IMPORTANT: Don't set Content-Type header!
+          // Browser will set it automatically with boundary
+        })
+
+        console.log('📥 Upload response status:', response.status)
+        const result = await response.json()
+        console.log('📥 Upload result:', result)
+
+        if (!response.ok) {
+          throw new Error(result.error || result.message || 'Помилка завантаження')
+        }
+
+        if (result.success && result.urls && result.urls.length > 0) {
+          // Add all uploaded URLs to state
+          setNewImages((prev) => [...prev, ...result.urls])
+          toast.success(`✅ Завантажено ${result.urls.length} зображень`)
+        } else {
+          throw new Error(result.error || 'Помилка завантаження')
+        }
+      } catch (error: any) {
+        console.error('❌ Upload error:', error)
+        toast.error(`Помилка: ${error.message}`)
+      } finally {
+        // Reset input value
+        e.target.value = ''
+        setUploadingImages(false)
+      }
     }
   }
 
