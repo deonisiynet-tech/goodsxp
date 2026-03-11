@@ -120,7 +120,14 @@ if (!fs.existsSync(uploadsDir)) {
 app.use('/uploads', express.static(uploadsDir));
 console.log('📁 Serving static files from:', uploadsDir);
 
-// Also serve from client/public for Next.js assets
+// Also serve from root public directory (copied from client/public)
+const rootPublicDir = path.join(process.cwd(), 'public');
+if (fs.existsSync(rootPublicDir)) {
+  app.use(express.static(rootPublicDir));
+  console.log('📁 Serving root public files from:', rootPublicDir);
+}
+
+// Also serve from client/public for Next.js assets (standalone build)
 const clientPublicDir = path.join(clientDir, 'public');
 if (fs.existsSync(clientPublicDir)) {
   app.use(express.static(clientPublicDir));

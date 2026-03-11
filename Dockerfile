@@ -58,10 +58,9 @@ RUN npx prisma generate --schema=./prisma/schema.prisma
 # Build Next.js (creates .next/standalone)
 RUN npm run build
 
-# Verify build output
+# Verify build output - check standalone and static
 RUN ls -la /client/.next/standalone && echo "✅ .next/standalone exists"
 RUN ls -la /client/.next/static && echo "✅ .next/static exists"
-RUN ls -la /client/public && echo "✅ public exists"
 
 # ==================================
 # PRODUCTION IMAGE - Express + Next.js
@@ -88,8 +87,9 @@ RUN mkdir -p ./client
 COPY --from=client-builder --chown=nodejs:nodejs /client/.next/standalone/. ./client/
 COPY --from=client-builder --chown=nodejs:nodejs /client/.next/static ./client/.next/static
 
-# Copy client public directory (for uploads and static assets)
-COPY --from=client-builder --chown=nodejs:nodejs /client/public ./client/public
+# Copy client public directory AFTER standalone (for uploads and static assets)
+# Note: standalone build already has public in the root, so we copy to ./public at root
+COPY --from=client-builder --chown=nodejs:nodejs /client/public ./public
 
 # Create uploads directory at root level for local file storage
 RUN mkdir -p ./uploads && chown nodejs:nodejs ./uploads
