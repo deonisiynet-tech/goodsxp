@@ -13,9 +13,13 @@ interface ProductModalProps {
 
 export default function ProductModal({ product, onClose }: ProductModalProps) {
   const [loading, setLoading] = useState(false)
-  const [images, setImages] = useState<string[]>(product?.images || [])
-  const [imagePreviews, setImagePreviews] = useState<string[]>([])
+  // Combine existing images with any new previews
+  const [existingImages, setExistingImages] = useState<string[]>(product?.images || [])
+  const [newImages, setNewImages] = useState<string[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // All images = existing + new (for display purposes)
+  const allImages = [...existingImages, ...newImages]
 
   const {
     register,
@@ -45,10 +49,9 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
       formData.append('price', data.price.toString())
       formData.append('stock', data.stock.toString())
       formData.append('isActive', data.isActive ? 'on' : 'off')
-      
-      // Save images as JSON string
-      const imagesToSave = imagePreviews.length > 0 ? imagePreviews : images
-      formData.append('images', JSON.stringify(imagesToSave))
+
+      // Save all images (existing + new) as JSON string
+      formData.append('images', JSON.stringify(allImages))
 
       if (product) {
         const result = await updateProduct(product.id, formData)
@@ -86,28 +89,41 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
           toast.error(`Файл "${file.name}" не є зображенням`)
           return
         }
-        
-        // Create preview URL
+
+        // Create preview URL for new image
         const previewUrl = URL.createObjectURL(file)
-        setImagePreviews((prev) => [...prev, previewUrl])
+        setNewImages((prev) => [...prev, previewUrl])
       })
+      
+      // Reset input value to allow selecting the same file again
+      e.target.value = ''
     }
   }
 
   const removeImage = (index: number) => {
-    setImagePreviews((prev) => prev.filter((_, i) => i !== index))
+    // Check if removing from existing or new images
+    if (index < existingImages.length) {
+      // Removing from existing images
+      setExistingImages((prev) => prev.filter((_, i) => i !== index))
+    } else {
+      // Removing from new images
+      const newIndex = index - existingImages.length
+      setNewImages((prev) => prev.filter((_, i) => i !== newIndex))
+    }
   }
 
   const moveImage = (index: number, direction: 'left' | 'right') => {
     const newIndex = direction === 'left' ? index - 1 : index + 1
-    if (newIndex < 0 || newIndex >= imagePreviews.length) return
-    
-    const newPreviews = [...imagePreviews]
-    ;[newPreviews[index], newPreviews[newIndex]] = [newPreviews[newIndex], newPreviews[index]]
-    setImagePreviews(newPreviews)
-  }
+    if (newIndex < 0 || newIndex >= allImages.length) return
 
-  const allImages = imagePreviews.length > 0 ? imagePreviews : images
+    // Swap images in the combined array
+    const newAllImages = [...allImages]
+    ;[newAllImages[index], newAllImages[newIndex]] = [newAllImages[newIndex], newAllImages[index]]
+    
+    // Split back into existing and new
+    setExistingImages(newAllImages.slice(0, existingImages.length))
+    setNewImages(newAllImages.slice(existingImages.length))
+  }
 
   return (
     <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
@@ -184,94 +200,106 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
           <div>
             <label className="block text-sm font-medium mb-2">Зображення товару</label>
             <div className="border-2 border-dashed border-border rounded-xl p-6">
+              {/* Hidden file input - always rendered */}
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={handleImageChange}
+                className="hidden"
+              />
+
               {allImages.length > 0 ? (
                 <div>
                   <p className="text-sm text-muted mb-4">
                     Перший елемент буде основним зображенням. Перетягуйте для зміни порядку.
                   </p>
                   <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                    {allImages.map((img, index) => (
-                      <div key={index} className="relative group aspect-square rounded-xl overflow-hidden bg-surfaceLight border border-border">
-                        <img
-                          src={img}
-                          alt={`Image ${index + 1}`}
-                          className="w-full h-full object-cover"
-                        />
-                        
-                        {/* Overlay controls */}
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                          {index > 0 && (
+                    {allImages.map((img, index) => {
+                      const isNew = index >= existingImages.length
+                      return (
+                        <div key={index} className="relative group aspect-square rounded-xl overflow-hidden bg-surfaceLight border border-border">
+                          <img
+                            src={img}
+                            alt={`Image ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+
+                          {/* Overlay controls */}
+                          <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                            {index > 0 && (
+                              <button
+                                type="button"
+                                onClick={() => moveImage(index, 'left')}
+                                className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+                                title="Вліво"
+                              >
+                                <ChevronLeft size={16} className="text-white" />
+                              </button>
+                            )}
                             <button
                               type="button"
-                              onClick={() => moveImage(index, 'left')}
-                              className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
-                              title="Вліво"
+                              onClick={() => removeImage(index)}
+                              className="p-2 bg-red-500/80 hover:bg-red-500 rounded-lg transition-colors"
+                              title="Видалити"
                             >
-                              <ChevronLeft size={16} className="text-white" />
+                              <Trash2 size={16} className="text-white" />
                             </button>
+                            {index < allImages.length - 1 && (
+                              <button
+                                type="button"
+                                onClick={() => moveImage(index, 'right')}
+                                className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+                                title="Вправо"
+                              >
+                                <ChevronRight size={16} className="text-white" />
+                              </button>
+                            )}
+                          </div>
+
+                          {/* Main image badge */}
+                          {index === 0 && (
+                            <div className="absolute top-2 left-2 px-2 py-1 bg-primary text-background text-xs font-medium rounded">
+                              Основне
+                            </div>
                           )}
-                          <button
-                            type="button"
-                            onClick={() => removeImage(index)}
-                            className="p-2 bg-red-500/80 hover:bg-red-500 rounded-lg transition-colors"
-                            title="Видалити"
-                          >
-                            <Trash2 size={16} className="text-white" />
-                          </button>
-                          {index < allImages.length - 1 && (
-                            <button
-                              type="button"
-                              onClick={() => moveImage(index, 'right')}
-                              className="p-2 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
-                              title="Вправо"
-                            >
-                              <ChevronRight size={16} className="text-white" />
-                            </button>
+
+                          {/* New image badge */}
+                          {isNew && (
+                            <div className="absolute top-2 right-2 px-2 py-1 bg-green-500 text-white text-xs font-medium rounded">
+                              Нове
+                            </div>
                           )}
                         </div>
-                        
-                        {/* Main image badge */}
-                        {index === 0 && (
-                          <div className="absolute top-2 left-2 px-2 py-1 bg-primary text-background text-xs font-medium rounded">
-                            Основне
-                          </div>
-                        )}
-                      </div>
-                    ))}
+                      )
+                    })}
+                  </div>
+
+                  {/* Add more images button - always visible when gallery has images */}
+                  <div className="mt-6 pt-6 border-t border-border">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="btn-secondary inline-flex items-center gap-2 w-full justify-center py-4"
+                    >
+                      <Upload size={18} />
+                      Додати ще зображень
+                    </button>
                   </div>
                 </div>
               ) : (
-                <div className="text-center">
+                <div className="text-center py-8">
                   <Upload size={48} className="mx-auto text-muted mb-4" />
                   <p className="text-muted mb-2">Перетягніть зображення сюди або натисніть для вибору</p>
-                  <label className="inline-block">
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      onChange={handleImageChange}
-                      className="hidden"
-                    />
-                    <span className="btn-secondary inline-block cursor-pointer">
-                      Обрати файли
-                    </span>
-                  </label>
-                  <p className="text-xs text-muted mt-2">PNG, JPG до 5MB (можна декілька)</p>
-                </div>
-              )}
-              
-              {/* Add more images button */}
-              {allImages.length > 0 && (
-                <div className="mt-4 text-center">
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="btn-secondary inline-flex items-center gap-2"
+                    className="btn-secondary inline-block cursor-pointer"
                   >
-                    <Upload size={16} />
-                    Додати ще зображень
+                    Обрати файли
                   </button>
+                  <p className="text-xs text-muted mt-2">PNG, JPG до 5MB (можна декілька)</p>
                 </div>
               )}
             </div>
