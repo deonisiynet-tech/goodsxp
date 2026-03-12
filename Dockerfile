@@ -26,7 +26,7 @@ COPY server/src ./src
 COPY server/prisma ./prisma
 
 # Generate Prisma Client
-ENV DATABASE_URL="postgresql://user:pass@localhost:5432/db"
+ENV DATABASE_URL="postgresql://postgres:postgres@localhost:5432/postgres"
 RUN npx prisma generate --schema=./prisma/schema.prisma
 
 # Build TypeScript server
@@ -51,8 +51,13 @@ COPY client/ .
 # Copy Prisma schema for Server Actions
 COPY server/prisma ./prisma
 
+# Environment variables for Prisma and Next.js build
+ENV DATABASE_URL="postgresql://postgres:postgres@localhost:5432/postgres"
+ENV CLOUDINARY_CLOUD_NAME=dho1q87qk
+ENV CLOUDINARY_API_KEY=679329866265555
+ENV CLOUDINARY_API_SECRET=Y8HzBE5cnLyz_86WXNLQ5tMfblU
+
 # Generate Prisma Client
-ENV DATABASE_URL="postgresql://user:pass@localhost:5432/db"
 RUN npx prisma generate --schema=./prisma/schema.prisma
 
 # Build Next.js (creates .next/standalone)

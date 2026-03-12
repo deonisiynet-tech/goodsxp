@@ -1,0 +1,45 @@
+# Git
+.git
+.gitignore
+
+# Node
+node_modules
+npm-debug.log
+yarn-error.log
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+logs/
+
+# Test
+coverage/
+.nyc_output/
+
+# Env files (we use root .env)
+server/.env
+client/.env.local
+*.env.example
+
+# Build artifacts
+dist/
+.next/
+build/
+
+# Docker
+Dockerfile.client
+docker-compose.yml
+
+# Documentation
+*.md
+!README.md

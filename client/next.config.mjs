@@ -1,6 +1,8 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
+  // Use Node.js runtime instead of Edge for middleware
+  server: 'node',
   images: {
     remotePatterns: [
       {
@@ -44,6 +46,13 @@ const nextConfig = {
     },
   },
   productionBrowserSourceMaps: false,
+  // Ensure environment variables are available at build time
+  env: {
+    DATABASE_URL: process.env.DATABASE_URL,
+    CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
+    CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
+    CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
+  },
 };
 
 export default nextConfig;

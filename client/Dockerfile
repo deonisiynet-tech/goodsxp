@@ -17,10 +17,15 @@ COPY client .
 
 # Copy prisma schema and generate Prisma Client BEFORE build
 COPY server/prisma ./prisma
-RUN npx prisma generate
 
+# Environment variables for build
+ENV DATABASE_URL="postgresql://postgres:postgres@localhost:5432/postgres"
+ENV CLOUDINARY_CLOUD_NAME=dho1q87qk
+ENV CLOUDINARY_API_KEY=679329866265555
+ENV CLOUDINARY_API_SECRET=Y8HzBE5cnLyz_86WXNLQ5tMfblU
 ENV NEXT_TELEMETRY_DISABLED 1
 
+RUN npx prisma generate
 RUN npm run build
 
 # Production image
