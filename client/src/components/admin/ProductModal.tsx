@@ -63,42 +63,46 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
         images: allImageUrls,
       })
 
-      if (product) {
-        const result = await updateProduct(product.id, {
-          title: data.title,
-          description: data.description,
-          price: data.price,
-          stock: data.stock,
-          isActive: data.isActive,
-          images: allImageUrls,
-        })
-        console.log('📝 Update result:', result)
-        if (result.success) {
-          toast.success('Товар оновлено')
-        } else {
-          toast.error(result.error || 'Помилка при оновленні')
-        }
-      } else {
-        const result = await createProduct({
-          title: data.title,
-          description: data.description,
-          price: Number(data.price),
-          stock: Number(data.stock),
-          isActive: data.isActive,
-          images: allImageUrls,
-        })
-        console.log('📦 Create result:', result)
-        if (result.success) {
-          toast.success('Товар створено')
-        } else {
-          toast.error(result.error || 'Помилка при створенні')
-        }
+      // Get auth token
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+      
+      if (!token) {
+        throw new Error('Необхідно авторизуватися')
       }
 
+      // Create FormData for Express API
+      const formData = new FormData()
+      formData.append('title', data.title)
+      formData.append('description', data.description)
+      formData.append('price', String(data.price))
+      formData.append('stock', String(data.stock))
+      formData.append('isActive', String(data.isActive))
+      
+      // Append images as JSON array
+      formData.append('images', JSON.stringify(allImageUrls))
+
+      const response = await fetch('/api/products', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          // Don't set Content-Type - browser will set it with boundary
+        },
+        body: formData,
+      })
+
+      console.log('📦 Create response status:', response.status)
+      const result = await response.json()
+      console.log('📦 Create result:', result)
+
+      if (!response.ok) {
+        throw new Error(result.error || result.message || 'Помилка при створенні')
+      }
+
+      toast.success('Товар створено')
       onClose()
     } catch (error: any) {
       console.error('❌ Submission error:', error)
-      toast.error('Помилка при збереженні: ' + error.message)
+      toast.error('Помилка: ' + error.message)
     } finally {
       setLoading(false)
     }
