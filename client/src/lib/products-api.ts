@@ -6,27 +6,43 @@ const API_BASE = '/api'
 async function fetchAPI(endpoint: string, options: RequestInit = {}) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
   
-  const headers: HeadersInit = {
-    ...options.headers,
-  }
+  const headers: Record<string, string> = {}
   
-  // Don't set Content-Type for FormData requests
+  // Don't set Content-Type for FormData requests - browser will set it with boundary
   if (!(options.body instanceof FormData)) {
     headers['Content-Type'] = 'application/json'
   }
   
+  // Add Authorization header if token exists
   if (token) {
     headers['Authorization'] = `Bearer ${token}`
   }
+
+  console.log('📡 API Request:', {
+    endpoint,
+    method: options.method || 'GET',
+    hasToken: !!token,
+    tokenPreview: token ? `${token.substring(0, 20)}...` : 'none',
+  })
 
   const response = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
     headers,
   })
 
+  console.log('📡 API Response:', {
+    status: response.status,
+    statusText: response.statusText,
+  })
+
   const data = await response.json()
 
   if (!response.ok) {
+    console.error('❌ API Error:', {
+      status: response.status,
+      statusText: response.statusText,
+      data,
+    })
     throw new Error(data.error || data.message || 'Request failed')
   }
 
@@ -73,6 +89,10 @@ export const productsApi = {
     formData.append('stock', String(data.stock))
     formData.append('isActive', String(data.isActive))
     formData.append('images', JSON.stringify(data.images))
+
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
+    console.log('🔑 Create product - Token exists:', !!token)
+    console.log('🔑 Token preview:', token ? `${token.substring(0, 30)}...` : 'none')
 
     return fetchAPI('/products', {
       method: 'POST',
