@@ -1,12 +1,12 @@
+import path from 'path'
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
-  // Ensure Node.js runtime is used (not Edge)
-  experimental: {
-    // Disable edge runtime for all pages
-    serverComponentsHmrCache: false,
-  },
+  reactStrictMode: true,
+
   images: {
+    domains: ['res.cloudinary.com', 'localhost'],
     remotePatterns: [
       {
         protocol: 'https',
@@ -34,37 +34,26 @@ const nextConfig = {
       },
     ],
     unoptimized: process.env.NODE_ENV === 'production',
-    // Allow serving images from local uploads directory
-    domains: ['localhost'],
   },
+
   eslint: {
     ignoreDuringBuilds: true,
   },
+
   typescript: {
     ignoreBuildErrors: true,
   },
-  logging: {
-    fetches: {
-      fullUrl: true,
-    },
-  },
-  productionBrowserSourceMaps: false,
-  // Ensure environment variables are available at build time
-  env: {
-    DATABASE_URL: process.env.DATABASE_URL,
-    CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
-    CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
-    CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
-    NODE_ENV: process.env.NODE_ENV,
-  },
-  // Ensure proper webpack configuration for SSR
+
   webpack: (config, { isServer }) => {
     if (isServer) {
-      // Ensure external packages are handled correctly
-      config.externals = [...(config.externals || []), 'sharp', 'canvas'];
+      config.externals = [...(config.externals || []), 'sharp', 'canvas']
     }
-    return config;
-  },
-};
+    config.resolve.alias = {
+      ...config.resolve.alias,
+      '@': path.resolve('./src')
+    }
+    return config
+  }
+}
 
-export default nextConfig;
+export default nextConfig
