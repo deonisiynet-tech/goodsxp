@@ -15,20 +15,6 @@ const dir = path.join(__dirname);
 // Change to the standalone directory
 process.chdir(dir);
 
-// Set the standalone config from the original build
-const nextConfig = {
-  output: 'standalone',
-  env: {
-    DATABASE_URL: process.env.DATABASE_URL,
-    CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
-    CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
-    CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
-    NODE_ENV: process.env.NODE_ENV,
-  },
-};
-
-process.env.__NEXT_PRIVATE_STANDALONE_CONFIG = JSON.stringify(nextConfig);
-
 // Initialize Next.js
 const next = require('next');
 

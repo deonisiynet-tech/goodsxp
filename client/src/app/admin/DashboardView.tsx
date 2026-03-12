@@ -4,8 +4,6 @@ import { useState, useEffect } from 'react'
 import { ShoppingCart, Users, Package, DollarSign, CheckCircle, Clock, Tag } from 'lucide-react'
 import AdminLayout from '@/components/admin/AdminLayout'
 import ProductModal from '@/components/admin/ProductModal'
-import { deleteProduct } from '@/actions/products'
-import { getDashboardStats } from '@/actions/dashboard'
 import toast from 'react-hot-toast'
 import { Edit, Trash2, Plus } from 'lucide-react'
 
@@ -74,10 +72,20 @@ export default function DashboardView() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    getDashboardStats().then((data) => {
-      setStats(data)
-      setLoading(false)
-    })
+    fetch('/api/admin/stats')
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to fetch stats')
+        return res.json()
+      })
+      .then((data) => {
+        setStats(data)
+        setLoading(false)
+      })
+      .catch((err) => {
+        console.error('Error fetching stats:', err)
+        toast.error('Не вдалося завантажити статистику')
+        setLoading(false)
+      })
   }, [])
 
   if (loading || !stats) {
@@ -94,11 +102,19 @@ export default function DashboardView() {
   const handleDeleteProduct = async (id: string) => {
     if (!confirm('Ви впевнені, що хочете видалити цей товар?')) return
 
-    const result = await deleteProduct(id)
-    if (result.success) {
+    try {
+      const res = await fetch(`/api/admin/products/${id}`, {
+        method: 'DELETE',
+      })
+
+      if (!res.ok) {
+        throw new Error('Failed to delete product')
+      }
+
       toast.success('Товар видалено')
-    } else {
-      toast.error(result.error || 'Помилка при видаленні')
+    } catch (error) {
+      console.error('Error deleting product:', error)
+      toast.error('Помилка при видаленні')
     }
   }
 
