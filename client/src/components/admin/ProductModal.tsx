@@ -2,7 +2,7 @@
 
 import { useState, useRef } from 'react'
 import { useForm } from 'react-hook-form'
-import { createProduct, updateProduct, Product } from '@/actions/products'
+import { productsApi } from '@/lib/products-api'
 import toast from 'react-hot-toast'
 import { X, Upload, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
 
@@ -63,42 +63,32 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
         images: allImageUrls,
       })
 
-      // Get auth token
-      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
-      
-      if (!token) {
-        throw new Error('Необхідно авторизуватися')
+      if (product) {
+        // Update existing product
+        const result = await productsApi.update(product.id, {
+          title: data.title,
+          description: data.description,
+          price: data.price,
+          stock: data.stock,
+          isActive: data.isActive,
+          images: allImageUrls,
+        })
+        console.log('📝 Update result:', result)
+        toast.success('Товар оновлено')
+      } else {
+        // Create new product
+        const result = await productsApi.create({
+          title: data.title,
+          description: data.description,
+          price: data.price,
+          stock: data.stock,
+          isActive: data.isActive,
+          images: allImageUrls,
+        })
+        console.log('📦 Create result:', result)
+        toast.success('Товар створено')
       }
 
-      // Create FormData for Express API
-      const formData = new FormData()
-      formData.append('title', data.title)
-      formData.append('description', data.description)
-      formData.append('price', String(data.price))
-      formData.append('stock', String(data.stock))
-      formData.append('isActive', String(data.isActive))
-      
-      // Append images as JSON array
-      formData.append('images', JSON.stringify(allImageUrls))
-
-      const response = await fetch('/api/products', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          // Don't set Content-Type - browser will set it with boundary
-        },
-        body: formData,
-      })
-
-      console.log('📦 Create response status:', response.status)
-      const result = await response.json()
-      console.log('📦 Create result:', result)
-
-      if (!response.ok) {
-        throw new Error(result.error || result.message || 'Помилка при створенні')
-      }
-
-      toast.success('Товар створено')
       onClose()
     } catch (error: any) {
       console.error('❌ Submission error:', error)

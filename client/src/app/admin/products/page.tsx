@@ -2,29 +2,43 @@
 
 import { useState, useEffect } from 'react'
 import AdminLayout from '@/components/admin/AdminLayout'
-import { getProducts, deleteProduct, Product } from '@/actions/products'
+import { productsApi } from '@/lib/products-api'
 import ProductModal from '@/components/admin/ProductModal'
 import toast from 'react-hot-toast'
 import { Package, Plus, Search, Edit, Trash2, RefreshCw, CheckCircle, XCircle } from 'lucide-react'
 
 export default function ProductsPage() {
-  const [products, setProducts] = useState<Product[]>([])
+  const [products, setProducts] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
-  const [editingProduct, setEditingProduct] = useState<Product | null>(null)
+  const [editingProduct, setEditingProduct] = useState<any>(null)
 
   const loadProducts = async () => {
     try {
       setLoading(true)
-      const loadedProducts = await getProducts({
+      const response = await productsApi.getAll({
         search: search || undefined,
-        status: statusFilter || undefined,
+        limit: 100,
       })
+      let loadedProducts = response.products || response
+      
+      // Filter by status
+      if (statusFilter === 'active') {
+        loadedProducts = loadedProducts.filter((p: any) => p.isActive)
+      } else if (statusFilter === 'inactive') {
+        loadedProducts = loadedProducts.filter((p: any) => !p.isActive)
+      } else if (statusFilter === 'instock') {
+        loadedProducts = loadedProducts.filter((p: any) => p.stock > 0)
+      } else if (statusFilter === 'outofstock') {
+        loadedProducts = loadedProducts.filter((p: any) => p.stock === 0)
+      }
+      
       setProducts(loadedProducts)
-    } catch (error) {
-      toast.error('Помилка завантаження товарів')
+    } catch (error: any) {
+      console.error('Error loading products:', error)
+      toast.error('Помилка завантаження товарів: ' + error.message)
     } finally {
       setLoading(false)
     }
@@ -40,16 +54,16 @@ export default function ProductsPage() {
   const handleDelete = async (id: string) => {
     if (!confirm('Ви впевнені, що хочете видалити цей товар?')) return
 
-    const result = await deleteProduct(id)
-    if (result.success) {
+    try {
+      await productsApi.delete(id)
       toast.success('Товар видалено')
       loadProducts()
-    } else {
-      toast.error(result.error || 'Помилка при видаленні')
+    } catch (error: any) {
+      toast.error('Помилка: ' + error.message)
     }
   }
 
-  const handleEdit = (product: Product) => {
+  const handleEdit = (product: any) => {
     setEditingProduct(product)
     setModalOpen(true)
   }
