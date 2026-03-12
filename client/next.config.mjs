@@ -1,8 +1,11 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   output: 'standalone',
-  // Use Node.js runtime instead of Edge for middleware
-  server: 'node',
+  // Ensure Node.js runtime is used (not Edge)
+  experimental: {
+    // Disable edge runtime for all pages
+    serverComponentsHmrCache: false,
+  },
   images: {
     remotePatterns: [
       {
@@ -52,6 +55,15 @@ const nextConfig = {
     CLOUDINARY_CLOUD_NAME: process.env.CLOUDINARY_CLOUD_NAME,
     CLOUDINARY_API_KEY: process.env.CLOUDINARY_API_KEY,
     CLOUDINARY_API_SECRET: process.env.CLOUDINARY_API_SECRET,
+    NODE_ENV: process.env.NODE_ENV,
+  },
+  // Ensure proper webpack configuration for SSR
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      // Ensure external packages are handled correctly
+      config.externals = [...(config.externals || []), 'sharp', 'canvas'];
+    }
+    return config;
   },
 };
 

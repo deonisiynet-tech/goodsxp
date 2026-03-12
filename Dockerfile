@@ -42,7 +42,7 @@ WORKDIR /client
 # Copy client package files
 COPY client/package*.json ./
 
-# Install dependencies
+# Install dependencies (including express for custom server)
 RUN npm install
 
 # Copy all client source files INCLUDING public directory
@@ -99,9 +99,13 @@ COPY --from=server-builder --chown=nodejs:nodejs /app/package.json ./
 
 # Copy Next.js standalone build to client directory
 # Express server will load Next.js from here
+# The standalone build creates a complete server in .next/standalone
 RUN mkdir -p ./client
 COPY --from=client-builder --chown=nodejs:nodejs /client/.next/standalone/. ./client/
 COPY --from=client-builder --chown=nodejs:nodejs /client/.next/static ./client/.next/static
+# Copy custom server.js for Express integration
+COPY --from=client-builder --chown=nodejs:nodejs /client/server.js ./client/server.js
+COPY --from=client-builder --chown=nodejs:nodejs /client/package.json ./client/package.json
 
 # Copy client public directory to BOTH ./public (root) and ./client/public
 # Root ./public is for direct access via /public/*
@@ -114,6 +118,14 @@ RUN mkdir -p ./uploads && chown nodejs:nodejs ./uploads
 
 # Create tmp directory for file uploads
 RUN mkdir -p /tmp && chown nodejs:nodejs /tmp
+
+# Verify the build structure
+RUN echo "=== Build Verification ===" && \
+    echo "Client directory contents:" && ls -la ./client/ && \
+    echo ".next directory contents:" && ls -la ./client/.next/ 2>/dev/null || echo ".next not found" && \
+    echo "Public directory contents:" && ls -la ./public/ && \
+    echo "Dist directory contents:" && ls -la ./dist/ && \
+    echo "========================="
 
 # Set correct permissions for all directories
 RUN chown -R nodejs:nodejs /app

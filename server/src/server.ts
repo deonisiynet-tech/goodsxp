@@ -49,9 +49,21 @@ console.log('📁 Client directory:', clientDir);
 const nextDir = path.join(clientDir, '.next');
 console.log('📁 .next exists:', fs.existsSync(nextDir));
 
+if (fs.existsSync(nextDir)) {
+  try {
+    const nextFiles = fs.readdirSync(nextDir);
+    console.log('📁 .next contents:', nextFiles.slice(0, 10).join(', '));
+  } catch (e) {
+    console.log('⚠️ Could not read .next directory:', e);
+  }
+}
+
 // Initialize Next.js
+const dev = process.env.NODE_ENV !== 'production';
+console.log('🔧 Next.js dev mode:', dev);
+
 const nextApp = next({
-  dev: false,
+  dev: dev,
   dir: clientDir,
 });
 
@@ -140,25 +152,6 @@ if (fs.existsSync(clientPublicDir)) {
 }
 
 // ==================================
-// Next.js Handler
-// ==================================
-console.log('✅ Registering Next.js handler...');
-
-// All non-API requests go to Next.js
-app.all('*', (req: Request, res: Response, next) => {
-  const urlPath = req.path;
-
-  // Skip API routes
-  if (urlPath.startsWith('/api')) {
-    return next();
-  }
-
-  // Handle with Next.js
-  const parsedUrl = parse(req.url!, true);
-  return nextHandle(req, res, parsedUrl);
-});
-
-// ==================================
 // API Routes
 // ==================================
 console.log('✅ Registering API routes...');
@@ -184,6 +177,25 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/admin/auth', adminAuthRoutes);
+
+// ==================================
+// Next.js Handler
+// ==================================
+console.log('✅ Registering Next.js handler...');
+
+// All non-API requests go to Next.js
+app.all('*', (req: Request, res: Response, next) => {
+  const urlPath = req.path;
+
+  // Skip API routes - should not happen as they're handled above
+  if (urlPath.startsWith('/api')) {
+    return next();
+  }
+
+  // Handle with Next.js
+  const parsedUrl = parse(req.url!, true);
+  return nextHandle(req, res, parsedUrl);
+});
 
 // Error handling
 app.use(notFound);

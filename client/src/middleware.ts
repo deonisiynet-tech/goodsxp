@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 
+// Note: Middleware in Next.js runs on Edge runtime by default
+// This is required for middleware to function properly
+// Do not change runtime to 'nodejs' as middleware won't work
+
 // Routes that require admin authentication
 const adminRoutes = [
   '/admin',
@@ -18,7 +22,7 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl
 
   // Check if the route is an admin route
-  const isAdminRoute = adminRoutes.some(route => 
+  const isAdminRoute = adminRoutes.some(route =>
     pathname === route || pathname.startsWith(route + '/')
   )
 
