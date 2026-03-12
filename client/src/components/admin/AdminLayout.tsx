@@ -1,7 +1,7 @@
 'use client';
 
 import { ReactNode, useState } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
   Package,
@@ -15,15 +15,17 @@ import {
   LogOut,
   Home,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 interface AdminLayoutProps {
   children: ReactNode;
-  onLogout?: () => void;
 }
 
-export default function AdminLayout({ children, onLogout }: AdminLayoutProps) {
+export default function AdminLayout({ children }: AdminLayoutProps) {
   const pathname = usePathname();
+  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
 
   const menuItems = [
     { href: '/admin', icon: Home, label: 'Dashboard' },
@@ -39,6 +41,30 @@ export default function AdminLayout({ children, onLogout }: AdminLayoutProps) {
       return pathname === '/admin';
     }
     return pathname?.startsWith(href);
+  };
+
+  const handleLogout = async () => {
+    if (!confirm('Ви впевнені, що хочете вийти?')) return;
+
+    try {
+      setLoggingOut(true);
+      
+      const response = await fetch('/api/admin/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      if (!response.ok) {
+        throw new Error('Помилка виходу');
+      }
+
+      toast.success('Вихід виконано успішно');
+      router.push('/admin/login');
+    } catch (error: any) {
+      toast.error(error.message || 'Помилка виходу');
+    } finally {
+      setLoggingOut(false);
+    }
   };
 
   return (
@@ -89,17 +115,16 @@ export default function AdminLayout({ children, onLogout }: AdminLayoutProps) {
           </nav>
 
           {/* Logout */}
-          {onLogout && (
-            <div className="p-4 border-t border-border">
-              <button
-                onClick={onLogout}
-                className="flex items-center gap-3 w-full px-4 py-3 text-muted hover:text-primary hover:bg-surface rounded-xl transition-all duration-200"
-              >
-                <LogOut size={20} />
-                <span className="font-medium">Вийти</span>
-              </button>
-            </div>
-          )}
+          <div className="p-4 border-t border-border">
+            <button
+              onClick={handleLogout}
+              disabled={loggingOut}
+              className="flex items-center gap-3 w-full px-4 py-3 text-muted hover:text-primary hover:bg-surface rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <LogOut size={20} className={loggingOut ? 'animate-pulse' : ''} />
+              <span className="font-medium">{loggingOut ? 'Вихід...' : 'Вийти'}</span>
+            </button>
+          </div>
         </div>
       </aside>
 
