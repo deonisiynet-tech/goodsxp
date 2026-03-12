@@ -54,6 +54,15 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
         ...newImages
       ]
 
+      console.log('💾 Submitting product:', {
+        title: data.title,
+        price: data.price,
+        stock: data.stock,
+        isActive: data.isActive,
+        imagesCount: allImageUrls.length,
+        images: allImageUrls,
+      })
+
       if (product) {
         const result = await updateProduct(product.id, {
           title: data.title,
@@ -63,6 +72,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
           isActive: data.isActive,
           images: allImageUrls,
         })
+        console.log('📝 Update result:', result)
         if (result.success) {
           toast.success('Товар оновлено')
         } else {
@@ -72,11 +82,12 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
         const result = await createProduct({
           title: data.title,
           description: data.description,
-          price: data.price,
-          stock: data.stock,
+          price: Number(data.price),
+          stock: Number(data.stock),
           isActive: data.isActive,
           images: allImageUrls,
         })
+        console.log('📦 Create result:', result)
         if (result.success) {
           toast.success('Товар створено')
         } else {
@@ -86,7 +97,8 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
 
       onClose()
     } catch (error: any) {
-      toast.error('Помилка при збереженні')
+      console.error('❌ Submission error:', error)
+      toast.error('Помилка при збереженні: ' + error.message)
     } finally {
       setLoading(false)
     }

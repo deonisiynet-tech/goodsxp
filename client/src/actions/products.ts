@@ -78,35 +78,71 @@ export async function createProduct(
   }
 ): Promise<{ success: boolean; error?: string; productId?: string }> {
   try {
+    console.log('📦 Creating product with data:', {
+      ...data,
+      imagesCount: data.images?.length || 0,
+    })
+
     const { title, description, price, stock, isActive, images } = data
 
-    if (!title || !description || !price || stock === undefined) {
-      return { success: false, error: 'Невірні дані' }
+    // Validate required fields
+    if (!title || !title.trim()) {
+      console.error('❌ Missing title')
+      return { success: false, error: 'Назва обов\'язкова' }
+    }
+    
+    if (!description || !description.trim()) {
+      console.error('❌ Missing description')
+      return { success: false, error: 'Опис обов\'язковий' }
+    }
+    
+    if (!price || price <= 0) {
+      console.error('❌ Invalid price:', price)
+      return { success: false, error: 'Ціна має бути додатною' }
+    }
+    
+    if (stock === undefined || stock < 0) {
+      console.error('❌ Invalid stock:', stock)
+      return { success: false, error: 'Некоректний залишок' }
     }
 
     // Ensure images is always an array
     const imagesArray = Array.isArray(images) ? images : []
+    console.log('📸 Images array:', imagesArray)
 
     // Use first image as imageUrl for backward compatibility
     const imageUrl = imagesArray.length > 0 ? imagesArray[0] : null
+    console.log('🖼️ Image URL:', imageUrl)
 
+    // Create product in database
+    console.log('💾 Saving to database...')
     const product = await prisma.product.create({
       data: {
-        title,
-        description,
-        price,
-        stock,
-        isActive,
+        title: title.trim(),
+        description: description.trim(),
+        price: Number(price),
+        stock: Number(stock),
+        isActive: isActive === true,
         imageUrl,
         images: imagesArray,
       },
     })
 
+    console.log('✅ Product created successfully:', product.id)
+
     revalidatePath('/admin/products')
     return { success: true, productId: product.id }
-  } catch (error) {
-    console.error('Error creating product:', error)
-    return { success: false, error: 'Помилка при створенні товару' }
+  } catch (error: any) {
+    console.error('❌ Error creating product:', error)
+    console.error('Error details:', {
+      message: error.message,
+      stack: error.stack,
+      code: error.code,
+    })
+    return { 
+      success: false, 
+      error: error.message || 'Помилка при створенні товару' 
+    }
   }
 }
 
