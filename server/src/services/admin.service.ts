@@ -170,6 +170,7 @@ export class AdminService {
       dailyRevenue,
       dailyOrders,
       topProducts,
+      recentOrders,
     ] = await Promise.all([
       prisma.user.count(),
       prisma.order.count(),
@@ -219,9 +220,27 @@ export class AdminService {
         orderBy: { _sum: { quantity: 'desc' } },
         take: 10,
       }),
+      // Get recent orders with items
+      prisma.order.findMany({
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          items: {
+            include: {
+              product: {
+                select: {
+                  id: true,
+                  title: true,
+                  imageUrl: true,
+                },
+              },
+            },
+          },
+        },
+      }),
     ]);
 
-    // Отримуємо інформацію про топ продукти
+    // Get information about top products
     const topProductIds = topProducts.map((p: { productId: string }) => p.productId);
     const topProductsDetails = await prisma.product.findMany({
       where: { id: { in: topProductIds } },
@@ -249,6 +268,21 @@ export class AdminService {
       dailyRevenue,
       dailyOrders,
       topProducts: topProductsWithDetails,
+      recentOrders: recentOrders.map((order: any) => ({
+        id: order.id,
+        name: order.name,
+        email: order.email,
+        totalPrice: Number(order.totalPrice),
+        status: order.status,
+        createdAt: order.createdAt.toISOString(),
+        items: order.items.map((item: any) => ({
+          quantity: item.quantity,
+          product: {
+            title: item.product.title,
+            imageUrl: item.product.imageUrl,
+          },
+        })),
+      })),
     };
   }
 
