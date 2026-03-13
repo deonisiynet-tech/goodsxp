@@ -70,9 +70,29 @@ export default function DashboardView() {
   const [modalOpen, setModalOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [authenticated, setAuthenticated] = useState(true)
+  const router = typeof window !== 'undefined' ? (require('next/navigation').useRouter() as ReturnType<typeof import('next/navigation').useRouter>) : null
 
   useEffect(() => {
-    fetch('/api/admin/stats')
+    // Check authentication first
+    fetch('/api/admin/auth/me', { credentials: 'include' })
+      .then((res) => {
+        if (res.status === 401) {
+          setAuthenticated(false)
+          if (router) router.push('/admin/login?from=/admin')
+          throw new Error('Not authenticated')
+        }
+        return res.json()
+      })
+      .then((auth) => {
+        if (!auth.authenticated) {
+          setAuthenticated(false)
+          if (router) router.push('/admin/login?from=/admin')
+          throw new Error('Not authenticated')
+        }
+        // Now fetch stats
+        return fetch('/api/admin/stats')
+      })
       .then((res) => {
         if (!res.ok) throw new Error('Failed to fetch stats')
         return res.json()
@@ -83,10 +103,20 @@ export default function DashboardView() {
       })
       .catch((err) => {
         console.error('Error fetching stats:', err)
-        toast.error('Не вдалося завантажити статистику')
+        if (err.message !== 'Not authenticated') {
+          toast.error('Не вдалося завантажити статистику')
+        }
         setLoading(false)
       })
   }, [])
+
+  if (!authenticated) {
+    return (
+      <div className="min-h-screen bg-surface flex items-center justify-center">
+        <div className="text-muted">Перенаправлення на сторінку входу...</div>
+      </div>
+    )
+  }
 
   if (loading || !stats) {
     return (

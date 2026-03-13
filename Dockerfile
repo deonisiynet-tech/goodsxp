@@ -1,5 +1,9 @@
 # Root Dockerfile for Railway - Fullstack Build
 # Next.js 14 + Express API Server + Cloudinary Support
+# 
+# IMPORTANT: Next.js runs in NODE runtime (not Edge)
+# All API routes are handled by Express server
+
 FROM node:20-alpine AS base
 
 # Install dependencies for Prisma and sharp
@@ -45,7 +49,7 @@ COPY client/package*.json ./
 # Install dependencies
 RUN npm install
 
-# Copy all client source files INCLUDING public directory
+# Copy client source files (excluding api directory via .dockerignore)
 COPY client/ .
 
 # Copy Prisma schema for Server Actions (if needed)
@@ -60,6 +64,7 @@ ENV NEXT_PUBLIC_API_URL="/api"
 RUN npx prisma generate --schema=./prisma/schema.prisma
 
 # Build Next.js (creates .next/standalone)
+# Next.js runs in Node runtime (not Edge)
 RUN npm run build
 
 # Verify build output
@@ -126,4 +131,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD node -e "require('http').get('http://localhost:5000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
 # Start Express server which handles both API routes and Next.js pages
+# Next.js runs in Node runtime (not Edge)
 CMD ["node", "dist/server.js"]
