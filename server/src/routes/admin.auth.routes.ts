@@ -51,7 +51,7 @@ router.post('/login', async (req, res) => {
 
     // Set secure cookie
     const isProduction = process.env.NODE_ENV === 'production';
-    
+
     res.cookie('admin_session', token, {
       httpOnly: true,
       secure: isProduction,
@@ -60,16 +60,21 @@ router.post('/login', async (req, res) => {
       path: '/',
     });
 
-    // Log admin action
-    await prisma.adminLog.create({
-      data: {
-        adminId: user.id,
-        action: 'LOGIN',
-        ipAddress: req.ip,
-        userAgent: req.headers['user-agent'],
-        details: 'Admin login successful',
-      },
-    });
+    // Log admin action (optional - don't fail if table doesn't exist)
+    try {
+      await prisma.adminLog.create({
+        data: {
+          adminId: user.id,
+          action: 'LOGIN',
+          ipAddress: req.ip,
+          userAgent: req.headers['user-agent'],
+          details: 'Admin login successful',
+        },
+      });
+    } catch (logError: any) {
+      // Silently ignore if AdminLog table doesn't exist
+      console.warn('⚠️ AdminLog not available:', logError.message);
+    }
 
     res.json({
       success: true,

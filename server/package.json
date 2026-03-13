@@ -9,6 +9,8 @@
     "build:client": "cd ../client && npm install && npm run build",
     "build:all": "npm run build:client && npm run build",
     "start": "node dist/server.js",
+    "migrate": "prisma migrate deploy",
+    "migrate:dev": "prisma migrate dev",
     "prisma:generate": "dotenv -e .env -- prisma generate",
     "prisma:migrate": "dotenv -e .env -- prisma migrate dev",
     "prisma:migrate:prod": "dotenv -e .env -- prisma migrate deploy",
