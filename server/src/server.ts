@@ -10,13 +10,21 @@ import cookieParser from 'cookie-parser';
 
 dotenv.config();
 
+// ==================================
+// Startup Logging for Railway
+// ==================================
+console.log('='.repeat(60));
+console.log('🚀 STARTING GOODSXP SERVER');
+console.log('='.repeat(60));
 console.log('🔧 SERVER FILE LOADED');
 console.log('📦 NODE_ENV:', process.env.NODE_ENV);
-console.log('📦 PORT:', process.env.PORT);
+console.log('📦 PORT:', process.env.PORT || '❌ NOT SET (will use default)');
 console.log('📦 DATABASE_URL:', process.env.DATABASE_URL ? '*** SET ***' : '❌ NOT SET');
+console.log('='.repeat(60));
 
 if (!process.env.DATABASE_URL) {
   console.error('❌ FATAL: DATABASE_URL is not set!');
+  console.error('📝 Please ensure DATABASE_URL environment variable is configured');
   process.exit(1);
 }
 
@@ -78,9 +86,11 @@ console.log('✅ All imports completed successfully');
 // Create Express App
 // ==================================
 const app = express();
-const PORT = Number(process.env.PORT) || 5000;
+// Railway provides PORT via environment variable, default to 8080 if not set
+const PORT = process.env.PORT ? Number(process.env.PORT) : 8080;
 
 console.log('🚀 Initializing Express app...');
+console.log('📡 Server will listen on PORT:', PORT);
 
 // ==================================
 // CORS Middleware - Configured for production
@@ -220,7 +230,7 @@ nextApp.prepare().then(async () => {
 
   const server = app.listen(PORT, '0.0.0.0', () => {
     console.log('='.repeat(60));
-    console.log('✅ SERVER STARTED');
+    console.log('✅ SERVER STARTED SUCCESSFULLY');
     console.log('🚀 Server running on port', PORT);
     console.log('🌐 Listening on 0.0.0.0:', PORT);
     console.log('📡 API available at http://localhost:' + PORT + '/api');
@@ -235,6 +245,9 @@ nextApp.prepare().then(async () => {
     console.error('❌ Server error:', err);
     process.exit(1);
   });
+
+  // Log server listening event for Railway
+  console.log('📡 Server listening on port', PORT);
 
   // Graceful shutdown
   const shutdown = (signal: string) => {

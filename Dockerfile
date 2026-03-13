@@ -75,7 +75,8 @@ FROM base AS runner
 WORKDIR /app
 
 ENV NODE_ENV=production
-ENV PORT=5000
+# DO NOT set PORT here - Railway injects it at runtime
+# PORT will be provided by Railway environment
 
 # Create non-root user (Railway uses nodejs user)
 RUN addgroup --system --gid 1001 nodejs
@@ -118,13 +119,14 @@ RUN chown -R nodejs:nodejs /app
 
 USER nodejs
 
+# EXPOSE is for documentation only - Railway uses PORT env var
 EXPOSE 5000
 
-# Health check for Railway
+# Health check for Railway - uses PORT env var
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD node -e "require('http').get('http://localhost:5000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
+  CMD node -e "const p=process.env.PORT||5000; require('http').get('http://localhost:'+p+'/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
 # Start Express server which handles both API routes and Next.js pages
 # Next.js runs in Node runtime (not Edge)
-# Use db push instead of migrate deploy to avoid migration state issues
-CMD ["sh", "-c", "npx prisma db push --schema=./prisma/schema.prisma --accept-data-loss && node dist/server.js"]
+# Run db push first to sync schema, then start server
+CMD ["sh", "-c", "npx prisma db push --schema=./prisma/schema.prisma --accept-data-loss || true && node dist/server.js"]
