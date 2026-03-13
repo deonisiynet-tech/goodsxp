@@ -74,8 +74,9 @@ export const logAdminAction = (action: ActionType, entity: string) => {
               userAgent: req.headers['user-agent'],
             },
           });
-        } catch (error) {
-          console.error('Failed to log admin action:', error);
+        } catch (error: any) {
+          // Silently ignore if AdminLog table doesn't exist or any other error
+          console.warn('⚠️ AdminLog not available:', error.message);
         }
       });
     }

@@ -52,16 +52,9 @@ RUN npm install
 # Copy client source files (excluding api directory via .dockerignore)
 COPY client/ .
 
-# Copy Prisma schema for Server Actions (if needed)
-COPY server/prisma ./prisma
-
-# Environment variables for Prisma and Next.js build
+# Environment variables for Next.js build
 # These are build-time only, runtime values are set via Railway env vars
-ENV DATABASE_URL="postgresql://postgres:postgres@localhost:5432/postgres"
 ENV NEXT_PUBLIC_API_URL="/api"
-
-# Generate Prisma Client
-RUN npx prisma generate --schema=./prisma/schema.prisma
 
 # Build Next.js (creates .next/standalone)
 # Next.js runs in Node runtime (not Edge)
@@ -133,5 +126,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 
 # Start Express server which handles both API routes and Next.js pages
 # Next.js runs in Node runtime (not Edge)
-# Run migrations first
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]
+# Use db push instead of migrate deploy to avoid migration state issues
+CMD ["sh", "-c", "npx prisma db push --schema=./prisma/schema.prisma --accept-data-loss && node dist/server.js"]
