@@ -4,8 +4,11 @@ import { useState, useEffect } from 'react'
 import { ShoppingCart, Users, Package, DollarSign, CheckCircle, Clock, Tag } from 'lucide-react'
 import AdminLayout from '@/components/admin/AdminLayout'
 import ProductModal from '@/components/admin/ProductModal'
+import SalesChart from '@/components/admin/SalesChart'
+import LatestOrdersTable from '@/components/admin/LatestOrdersTable'
+import TopProducts from '@/components/admin/TopProducts'
 import toast from 'react-hot-toast'
-import { Edit, Trash2, Plus } from 'lucide-react'
+import { Plus } from 'lucide-react'
 
 interface DashboardStats {
   totalUsers: number
@@ -33,6 +36,17 @@ interface DashboardStats {
         imageUrl: string | null
       }
     }[]
+  }[]
+  topProducts?: {
+    productId: string
+    product: {
+      id: string
+      title: string
+      price: number
+      imageUrl: string | null
+    } | null
+    _sum: { quantity: number | null }
+    _count: number
   }[]
 }
 
@@ -69,6 +83,9 @@ function StatCard({ title, value, icon: Icon, color }: StatCardProps) {
 
 export default function DashboardView() {
   const [stats, setStats] = useState<DashboardStats | null>(null)
+  const [salesData, setSalesData] = useState<{ date: string; revenue: number }[]>([])
+  const [latestOrders, setLatestOrders] = useState<any[]>([])
+  const [topProducts, setTopProducts] = useState<any[]>([])
   const [modalOpen, setModalOpen] = useState(false)
   const [editingProduct, setEditingProduct] = useState<any>(null)
   const [loading, setLoading] = useState(true)
@@ -76,6 +93,7 @@ export default function DashboardView() {
   const [error, setError] = useState<string | null>(null)
   const router = typeof window !== 'undefined' ? (require('next/navigation').useRouter() as ReturnType<typeof import('next/navigation').useRouter>) : null
 
+  // Fetch all dashboard data
   useEffect(() => {
     console.log('🔍 Dashboard: Checking authentication...')
 
@@ -111,7 +129,7 @@ export default function DashboardView() {
 
         console.log('✅ Dashboard: Authenticated, fetching stats...')
 
-        // Fetch stats
+        // Fetch main stats
         console.log('📡 Fetching /api/admin/stats...')
         const statsRes = await fetch('/api/admin/stats', {
           credentials: 'include',
@@ -130,14 +148,65 @@ export default function DashboardView() {
 
         const data = await statsRes.json()
         console.log('✅ Dashboard: Stats loaded:', data)
-        console.log('📊 Dashboard: Data keys:', Object.keys(data))
+        setStats(data)
 
-        // Validate data structure
-        if (!data.totalUsers && !data.totalOrders && !data.totalRevenue) {
-          console.warn('⚠️ Dashboard: Stats data may be incomplete')
+        // Fetch sales data for chart (last 7 days)
+        console.log('📡 Fetching /api/admin/stats/sales?days=7...')
+        const salesRes = await fetch('/api/admin/stats/sales?days=7', {
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/json',
+          },
+        })
+
+        if (salesRes.ok) {
+          const salesData = await salesRes.json()
+          console.log('✅ Dashboard: Sales data loaded:', salesData)
+          setSalesData(salesData.dailyRevenue || [])
+        } else {
+          console.warn('⚠️ Dashboard: Could not fetch sales data, using fallback')
+          // Fallback to dailyRevenue from main stats
+          setSalesData(data.dailyRevenue || [])
         }
 
-        setStats(data)
+        // Fetch latest orders
+        console.log('📡 Fetching /api/admin/orders?limit=10...')
+        const ordersRes = await fetch('/api/admin/orders?limit=10', {
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/json',
+          },
+        })
+
+        if (ordersRes.ok) {
+          const ordersData = await ordersRes.json()
+          console.log('✅ Dashboard: Orders data loaded:', ordersData)
+          setLatestOrders(ordersData.orders || ordersData)
+        } else {
+          console.warn('⚠️ Dashboard: Could not fetch orders, using fallback')
+          // Fallback to recentOrders from main stats
+          setLatestOrders(data.recentOrders || [])
+        }
+
+        // Fetch top products
+        console.log('📡 Fetching /api/admin/products/top?limit=5...')
+        const productsRes = await fetch('/api/admin/products/top?limit=5', {
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/json',
+          },
+        })
+
+        if (productsRes.ok) {
+          const productsData = await productsRes.json()
+          console.log('✅ Dashboard: Top products loaded:', productsData)
+          setTopProducts(productsData.products || productsData)
+        } else {
+          console.warn('⚠️ Dashboard: Could not fetch top products, using fallback')
+          // Fallback to topProducts from main stats
+          setTopProducts(data.topProducts || [])
+        }
+
         setError(null)
       } catch (err: any) {
         console.error('❌ Dashboard: Error loading data:', err)
@@ -150,6 +219,24 @@ export default function DashboardView() {
 
     loadDashboardData()
   }, [])
+
+  // Poll for updates every 30 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (!loading && authenticated) {
+        // Refresh stats silently
+        fetch('/api/admin/stats', {
+          credentials: 'include',
+          headers: { 'Accept': 'application/json' },
+        })
+          .then(res => res.json())
+          .then(data => setStats(data))
+          .catch(err => console.error('Error refreshing stats:', err))
+      }
+    }, 30000) // 30 seconds
+
+    return () => clearInterval(interval)
+  }, [loading, authenticated])
 
   // Not authenticated - redirecting
   if (!authenticated) {
@@ -206,9 +293,6 @@ export default function DashboardView() {
     recentOrders: Array.isArray(stats.recentOrders) ? stats.recentOrders : [],
   }
 
-  const chartData = safeStats.dailyOrders.slice(0, 7)
-  const maxOrders = chartData.length > 0 ? Math.max(...chartData.map((d) => d.orders ?? 0), 1) : 1
-
   const handleDeleteProduct = async (id: string) => {
     if (!confirm('Ви впевнені, що хочете видалити цей товар?')) return
 
@@ -254,7 +338,7 @@ export default function DashboardView() {
           <p className="text-muted">Огляд статистики магазину</p>
         </div>
 
-        {/* Stats Grid */}
+        {/* Top Row: Revenue, Orders, Users */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard
             title="Всього користувачів"
@@ -282,137 +366,16 @@ export default function DashboardView() {
           />
         </div>
 
-        {/* Secondary Stats */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          <div className="card p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-yellow-500/10 border border-yellow-500/30">
-                <Clock className="text-yellow-400" size={24} />
-              </div>
-              <div>
-                <p className="text-sm text-muted">Замовлень сьогодні</p>
-                <p className="text-2xl font-bold text-primary">{safeStats.ordersToday}</p>
-              </div>
-            </div>
-          </div>
-          <div className="card p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-blue-500/10 border border-blue-500/30">
-                <Clock className="text-blue-400" size={24} />
-              </div>
-              <div>
-                <p className="text-sm text-muted">В обробці</p>
-                <p className="text-2xl font-bold text-primary">{safeStats.processing}</p>
-              </div>
-            </div>
-          </div>
-          <div className="card p-6">
-            <div className="flex items-center gap-4">
-              <div className="p-3 rounded-xl bg-green-500/10 border border-green-500/30">
-                <CheckCircle className="text-green-400" size={24} />
-              </div>
-              <div>
-                <p className="text-sm text-muted">Виконані</p>
-                <p className="text-2xl font-bold text-primary">{safeStats.delivered}</p>
-              </div>
-            </div>
-          </div>
+        {/* Middle: Sales Chart */}
+        <SalesChart data={salesData} loading={false} days={7} />
+
+        {/* Bottom Row: Top Products, Latest Orders */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <TopProducts products={topProducts} loading={false} />
+          <LatestOrdersTable orders={latestOrders} loading={false} />
         </div>
 
-        {/* Chart */}
-        <div className="card p-6">
-          <h2 className="text-lg font-semibold text-primary mb-6">
-            Замовлення по дням (останні 7 днів)
-          </h2>
-          {chartData.length > 0 ? (
-            <div className="flex items-end justify-between gap-2 h-48">
-              {chartData.map((day, index) => {
-                const height = ((day.orders ?? 0) / maxOrders) * 100
-                const date = day.date ? new Date(day.date) : new Date()
-                const dayName = date.toLocaleDateString('uk-UA', { weekday: 'short' })
-                const dayDate = date.toLocaleDateString('uk-UA', { day: 'numeric', month: 'numeric' })
-
-                return (
-                  <div key={index} className="flex-1 flex flex-col items-center gap-2">
-                    <div className="w-full relative flex items-end justify-center h-full">
-                      <div
-                        className="w-full max-w-[60px] bg-gradient-to-t from-primary/80 to-primary/40 rounded-t-lg transition-all duration-300 hover:from-primary hover:to-primary/60"
-                        style={{ height: `${height}%`, minHeight: height > 0 ? '8px' : '0' }}
-                      />
-                      {(day.orders ?? 0) > 0 && (
-                        <span className="absolute -top-6 text-xs font-medium text-primary">
-                          {day.orders}
-                        </span>
-                      )}
-                    </div>
-                    <div className="text-center">
-                      <p className="text-xs text-muted font-medium">{dayName}</p>
-                      <p className="text-xs text-muted">{dayDate}</p>
-                    </div>
-                  </div>
-                )
-              })}
-            </div>
-          ) : (
-            <div className="text-center py-12 text-muted">
-              <ShoppingCart size={48} className="mx-auto mb-4 opacity-50" />
-              <p>Немає даних про замовлення</p>
-            </div>
-          )}
-        </div>
-
-        {/* Recent Orders - Only render if data exists */}
-        {safeStats.recentOrders && safeStats.recentOrders.length > 0 ? (
-          <div className="card p-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold text-primary">Останні замовлення</h2>
-            </div>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-surfaceLight">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium uppercase">Замовлення</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium uppercase">Клієнт</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium uppercase">Сума</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium uppercase">Статус</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium uppercase">Дата</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {safeStats.recentOrders.map((order) => (
-                    <tr key={order?.id || Math.random()} className="hover:bg-surfaceLight">
-                      <td className="px-4 py-3 font-mono text-sm text-primary">
-                        {order?.id?.slice(0, 8)}...
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-primary">{order?.name || 'N/A'}</div>
-                        <div className="text-sm text-muted">{order?.email || 'N/A'}</div>
-                      </td>
-                      <td className="px-4 py-3 font-medium">
-                        {Number(order?.totalPrice ?? 0).toLocaleString('uk-UA')} ₴
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="px-2 py-1 text-xs rounded-full bg-yellow-500/10 text-yellow-500 border border-yellow-500/30">
-                          {order?.status || 'N/A'}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-muted">
-                        {order?.createdAt ? new Date(order.createdAt).toLocaleDateString('uk-UA') : 'N/A'}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        ) : (
-          <div className="card p-12 text-center text-muted">
-            <ShoppingCart size={48} className="mx-auto mb-4 opacity-50" />
-            <p>Останні замовлення відсутні</p>
-          </div>
-        )}
-
-        {/* Recent Products Section - Simplified to avoid errors */}
+        {/* Quick Actions */}
         <section className="mt-8">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-bold text-primary">Швидкі дії</h2>

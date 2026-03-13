@@ -17,6 +17,12 @@ router.use(authorize(Role.ADMIN));
 // Dashboard Stats
 router.get('/stats', adminController.getDashboardStats.bind(adminController));
 
+// Sales Stats (for chart)
+router.get('/stats/sales', adminController.getSalesStats.bind(adminController));
+
+// Top Products
+router.get('/products/top', adminController.getTopProducts.bind(adminController));
+
 // Admin Logs
 router.get('/logs', adminController.getLogs.bind(adminController));
 

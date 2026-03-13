@@ -106,6 +106,32 @@ export class AdminController {
     }
   }
 
+  // ==================== SALES STATS ====================
+  async getSalesStats(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { days } = req.query;
+      const stats = await adminService.getSalesStats({
+        days: days ? Number(days) : 7,
+      });
+      res.json(stats);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // ==================== TOP PRODUCTS ====================
+  async getTopProducts(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { limit } = req.query;
+      const products = await adminService.getTopProducts({
+        limit: limit ? Number(limit) : 5,
+      });
+      res.json(products);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // ==================== ADMIN LOGS ====================
   async getLogs(req: AuthRequest, res: Response, next: NextFunction) {
     try {

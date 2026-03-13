@@ -286,6 +286,55 @@ export class AdminService {
     };
   }
 
+  // ==================== SALES STATS ====================
+  async getSalesStats(filters?: StatsFilters) {
+    const days = filters?.days || 7;
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+
+    const dailyRevenue = await prisma.$queryRaw`
+      SELECT
+        DATE("createdAt") as date,
+        SUM("totalPrice") as revenue
+      FROM "Order"
+      WHERE "createdAt" >= ${startDate}
+      GROUP BY DATE("createdAt")
+      ORDER BY date DESC
+      LIMIT ${days}
+    `;
+
+    return {
+      dailyRevenue,
+    };
+  }
+
+  // ==================== TOP PRODUCTS ====================
+  async getTopProducts(filters?: { limit?: number }) {
+    const limit = filters?.limit || 5;
+
+    const topProducts = await prisma.orderItem.groupBy({
+      by: ['productId'],
+      _sum: { quantity: true },
+      _count: true,
+      orderBy: { _sum: { quantity: 'desc' } },
+      take: limit,
+    });
+
+    // Get information about top products
+    const topProductIds = topProducts.map((p: { productId: string }) => p.productId);
+    const topProductsDetails = await prisma.product.findMany({
+      where: { id: { in: topProductIds } },
+      select: { id: true, title: true, price: true, imageUrl: true },
+    });
+
+    const topProductsWithDetails = topProducts.map((tp: { productId: string; _sum: { quantity: number | null }; _count: number }) => ({
+      ...tp,
+      product: topProductsDetails.find((p: { id: string }) => p.id === tp.productId),
+    }));
+
+    return topProductsWithDetails;
+  }
+
   // ==================== ADMIN LOGS ====================
   async getAdminLogs(filters: {
     page?: number;
