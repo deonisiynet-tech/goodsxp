@@ -17,20 +17,27 @@ export default function ProductModal({ product, isOpen, onClose }: ProductModalP
   const [quantity, setQuantity] = useState(1)
   const addItem = useCartStore((state) => state.addItem)
 
-  // Helper to normalize image path
-  const normalizeImagePath = (img: string | null | undefined): string => {
+  // Helper to get image URL - handles both Cloudinary and local paths
+  const getImageUrl = (img: string | null | undefined): string => {
     if (!img) return ''
-    if (img.startsWith('/uploads/')) return img
-    if (img.startsWith('/')) return `/uploads${img}`
-    return `/uploads/${img}`
+    // If it's already a full URL (Cloudinary), return as is
+    if (img.startsWith('http://') || img.startsWith('https://')) {
+      return img
+    }
+    // If it's a local path starting with /, return as is
+    if (img.startsWith('/')) {
+      return img
+    }
+    // Otherwise prepend /
+    return `/${img}`
   }
 
   // Safe image list getter
   const getImageList = (): string[] => {
     const images = Array.isArray(product.images) ? product.images : []
-    const normalizedImages = images.map(normalizeImagePath).filter(Boolean)
+    const normalizedImages = images.map(getImageUrl).filter(Boolean)
     if (normalizedImages.length === 0 && product.imageUrl) {
-      const normalizedUrl = normalizeImagePath(product.imageUrl)
+      const normalizedUrl = getImageUrl(product.imageUrl)
       if (normalizedUrl) return [normalizedUrl]
     }
     return normalizedImages

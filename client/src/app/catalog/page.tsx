@@ -82,29 +82,38 @@ export default function CatalogPage() {
     setTimeout(() => setSelectedProduct(null), 300);
   };
 
-  // Helper to normalize image path - ALWAYS returns path starting with /uploads/
-  const normalizeImagePath = (img: string | null | undefined): string => {
-    if (!img) return '/placeholder.jpg';
-    if (img.startsWith('/uploads/')) return img;
-    if (img.startsWith('/')) return `/uploads${img}`;
-    return `/uploads/${img}`;
-  };
-
-  // Safe image getter for single image display
+  // Helper to get image URL - handles both Cloudinary and local paths
   const getProductImage = (prod: SafeProduct | null): string => {
     if (!prod) return '/placeholder.jpg';
-    
+
     // Try imageUrl first
     if (prod.imageUrl) {
-      return normalizeImagePath(prod.imageUrl);
+      // If it's already a full URL (Cloudinary), return as is
+      if (prod.imageUrl.startsWith('http://') || prod.imageUrl.startsWith('https://')) {
+        return prod.imageUrl;
+      }
+      // If it's a local path, return as is
+      if (prod.imageUrl.startsWith('/')) {
+        return prod.imageUrl;
+      }
+      return `/${prod.imageUrl}`;
     }
-    
+
     // Try images array
     const images = Array.isArray(prod.images) ? prod.images : [];
     if (images.length > 0 && images[0]) {
-      return normalizeImagePath(images[0]);
+      const firstImage = images[0];
+      // If it's already a full URL (Cloudinary), return as is
+      if (firstImage.startsWith('http://') || firstImage.startsWith('https://')) {
+        return firstImage;
+      }
+      // If it's a local path, return as is
+      if (firstImage.startsWith('/')) {
+        return firstImage;
+      }
+      return `/${firstImage}`;
     }
-    
+
     return '/placeholder.jpg';
   };
 

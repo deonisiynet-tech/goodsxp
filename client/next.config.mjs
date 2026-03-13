@@ -2,7 +2,7 @@
 const nextConfig = {
   output: 'standalone',
   reactStrictMode: true,
-  
+
   // ESLint/TypeScript - ignore during build
   eslint: {
     ignoreDuringBuilds: true,
@@ -10,22 +10,25 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
-  
+
   // Image configuration
   images: {
-    domains: ['res.cloudinary.com', 'localhost'],
+    domains: ['res.cloudinary.com', 'localhost', 'images.unsplash.com'],
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'images.unsplash.com',
+        hostname: 'res.cloudinary.com',
+        pathname: '/**',
       },
       {
         protocol: 'https',
-        hostname: 'res.cloudinary.com',
+        hostname: 'images.unsplash.com',
+        pathname: '/**',
       },
       {
         protocol: 'https',
         hostname: 'via.placeholder.com',
+        pathname: '/**',
       },
       {
         protocol: 'http',
@@ -33,7 +36,13 @@ const nextConfig = {
         port: '5000',
         pathname: '/uploads/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'goodsxp.store',
+        pathname: '/uploads/**',
+      },
     ],
+    unoptimized: false,
   },
 }
 

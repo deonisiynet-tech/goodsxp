@@ -65,34 +65,38 @@ export default function ProductPage() {
     toast.success('Товар додано до кошика');
   };
 
-  // Helper to normalize image path - ALWAYS returns path starting with /uploads/
-  const normalizeImagePath = (img: string): string => {
-    if (!img) return '';
-    // If already starts with /uploads/, return as is
-    if (img.startsWith('/uploads/')) return img;
-    // If starts with /, add uploads after
-    if (img.startsWith('/')) return `/uploads${img}`;
-    // Otherwise prepend /uploads/
-    return `/uploads/${img}`;
+  // Helper to get image URL - handles both Cloudinary and local paths
+  const getImageUrl = (img: string): string => {
+    if (!img) return ''
+    // If it's already a full URL (Cloudinary), return as is
+    if (img.startsWith('http://') || img.startsWith('https://')) {
+      return img
+    }
+    // If it's a local path starting with /, return as is
+    if (img.startsWith('/')) {
+      return img
+    }
+    // Otherwise prepend /
+    return `/${img}`
   };
 
   // Safe image list getter - NEVER returns undefined/null
   const getImageList = (prod: Product | null): string[] => {
     if (!prod) return [];
-    
+
     // Safely get images array
     const images = Array.isArray(prod.images) ? prod.images : [];
-    
-    // Normalize all image paths
-    const normalizedImages = images.map(normalizeImagePath).filter(Boolean);
-    
+
+    // Get image URLs
+    const imageUrls = images.map(getImageUrl).filter(Boolean);
+
     // If no images, try imageUrl
-    if (normalizedImages.length === 0 && prod.imageUrl) {
-      const normalizedUrl = normalizeImagePath(prod.imageUrl);
-      if (normalizedUrl) return [normalizedUrl];
+    if (imageUrls.length === 0 && prod.imageUrl) {
+      const imageUrl = getImageUrl(prod.imageUrl);
+      if (imageUrl) return [imageUrl];
     }
-    
-    return normalizedImages;
+
+    return imageUrls;
   };
 
   const images = getImageList(product);
