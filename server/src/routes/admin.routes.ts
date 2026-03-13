@@ -1,7 +1,6 @@
 import { Router } from 'express';
 import { ProductController } from '../controllers/product.controller.js';
 import { OrderController } from '../controllers/order.controller.js';
-import { CategoryController } from '../controllers/category.controller.js';
 import { AdminController } from '../controllers/admin.controller.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { Role } from '@prisma/client';
@@ -9,7 +8,6 @@ import { Role } from '@prisma/client';
 const router = Router();
 const productController = new ProductController();
 const orderController = new OrderController();
-const categoryController = new CategoryController();
 const adminController = new AdminController();
 
 // Всі маршрути вимагають авторизації та ролі ADMIN
@@ -34,13 +32,8 @@ router.patch('/users/:id/role', adminController.updateUserRole.bind(adminControl
 router.post('/users/:id/reset-password', adminController.resetUserPassword.bind(adminController));
 router.delete('/users/:id', adminController.deleteUser.bind(adminController));
 
-// Categories
-router.get('/categories', categoryController.getAll.bind(categoryController));
-router.get('/categories/tree', categoryController.getAllTree.bind(categoryController));
-router.get('/categories/:id', categoryController.getById.bind(categoryController));
-router.post('/categories', categoryController.create.bind(categoryController));
-router.put('/categories/:id', categoryController.update.bind(categoryController));
-router.delete('/categories/:id', categoryController.delete.bind(categoryController));
+// Categories - REMOVED (Category model not in schema)
+// Categories endpoints are deprecated
 
 // Products
 router.get('/products', productController.getAllAdmin.bind(productController));
