@@ -39,22 +39,6 @@ model Product {
   @@index([title])
 }
 
-model Category {
-  id          String     @id @default(uuid())
-  name        String
-  slug        String     @unique
-  description String?
-  imageUrl    String?
-  parentId    String?
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
-  children    Category[] @relation("CategoryHierarchy")
-
-  @@index([slug])
-  @@index([parentId])
-}
-
 model Order {
   id         String      @id @default(uuid())
   userId     String?

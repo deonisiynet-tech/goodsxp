@@ -134,4 +134,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 # Start Express server which handles both API routes and Next.js pages
 # Next.js runs in Node runtime (not Edge)
 # Run migrations first
-CMD ["sh", "-c", "npx prisma migrate deploy --schema=/app/prisma/schema.prisma && node dist/server.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/server.js"]
