@@ -91,6 +91,9 @@ export default function DashboardView() {
   const [loading, setLoading] = useState(true)
   const [authenticated, setAuthenticated] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [chartLoading, setChartLoading] = useState(true)
+  const [ordersLoading, setOrdersLoading] = useState(true)
+  const [productsLoading, setProductsLoading] = useState(true)
   const router = typeof window !== 'undefined' ? (require('next/navigation').useRouter() as ReturnType<typeof import('next/navigation').useRouter>) : null
 
   // Fetch all dashboard data
@@ -168,6 +171,7 @@ export default function DashboardView() {
           // Fallback to dailyRevenue from main stats
           setSalesData(data.dailyRevenue || [])
         }
+        setChartLoading(false)
 
         // Fetch latest orders
         console.log('📡 Fetching /api/admin/orders?limit=10...')
@@ -187,6 +191,7 @@ export default function DashboardView() {
           // Fallback to recentOrders from main stats
           setLatestOrders(data.recentOrders || [])
         }
+        setOrdersLoading(false)
 
         // Fetch top products
         console.log('📡 Fetching /api/admin/products/top?limit=5...')
@@ -206,12 +211,16 @@ export default function DashboardView() {
           // Fallback to topProducts from main stats
           setTopProducts(data.topProducts || [])
         }
+        setProductsLoading(false)
 
         setError(null)
       } catch (err: any) {
         console.error('❌ Dashboard: Error loading data:', err)
         setError(err.message || 'Failed to load dashboard data')
         toast.error('Не вдалося завантажити статистику: ' + (err.message || ''))
+        setChartLoading(false)
+        setOrdersLoading(false)
+        setProductsLoading(false)
       } finally {
         setLoading(false)
       }
@@ -367,12 +376,12 @@ export default function DashboardView() {
         </div>
 
         {/* Middle: Sales Chart */}
-        <SalesChart data={salesData} loading={false} days={7} />
+        <SalesChart data={salesData} loading={chartLoading} days={7} />
 
         {/* Bottom Row: Top Products, Latest Orders */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <TopProducts products={topProducts} loading={false} />
-          <LatestOrdersTable orders={latestOrders} loading={false} />
+          <TopProducts products={topProducts} loading={productsLoading} />
+          <LatestOrdersTable orders={latestOrders} loading={ordersLoading} />
         </div>
 
         {/* Quick Actions */}
