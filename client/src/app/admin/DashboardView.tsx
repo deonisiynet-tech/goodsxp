@@ -74,10 +74,20 @@ export default function DashboardView() {
   const router = typeof window !== 'undefined' ? (require('next/navigation').useRouter() as ReturnType<typeof import('next/navigation').useRouter>) : null
 
   useEffect(() => {
+    console.log('🔍 Dashboard: Checking authentication...');
+    
     // Check authentication first
-    fetch('/api/admin/auth/me', { credentials: 'include' })
+    fetch('/api/admin/auth/me', { 
+      credentials: 'include',
+      headers: {
+        'Accept': 'application/json',
+      },
+    })
       .then((res) => {
+        console.log('🔍 Dashboard: Auth response status:', res.status);
+        
         if (res.status === 401) {
+          console.log('⚠️ Dashboard: Not authenticated, redirecting to login');
           setAuthenticated(false)
           if (router) router.push('/admin/login?from=/admin')
           throw new Error('Not authenticated')
@@ -85,24 +95,40 @@ export default function DashboardView() {
         return res.json()
       })
       .then((auth) => {
+        console.log('🔍 Dashboard: Auth response:', auth);
+        
         if (!auth.authenticated) {
+          console.log('⚠️ Dashboard: Not authenticated (no user data)');
           setAuthenticated(false)
           if (router) router.push('/admin/login?from=/admin')
           throw new Error('Not authenticated')
         }
-        // Now fetch stats
-        return fetch('/api/admin/stats')
+        
+        console.log('✅ Dashboard: Authenticated, fetching stats...');
+        
+        // Now fetch stats - MUST include credentials for cookie
+        return fetch('/api/admin/stats', {
+          credentials: 'include',
+          headers: {
+            'Accept': 'application/json',
+          },
+        })
       })
       .then((res) => {
-        if (!res.ok) throw new Error('Failed to fetch stats')
+        console.log('📊 Dashboard: Stats response status:', res.status);
+        
+        if (!res.ok) {
+          throw new Error('Failed to fetch stats')
+        }
         return res.json()
       })
       .then((data) => {
+        console.log('✅ Dashboard: Stats loaded:', data);
         setStats(data)
         setLoading(false)
       })
       .catch((err) => {
-        console.error('Error fetching stats:', err)
+        console.error('❌ Dashboard: Error fetching stats:', err)
         if (err.message !== 'Not authenticated') {
           toast.error('Не вдалося завантажити статистику')
         }

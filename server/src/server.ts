@@ -95,24 +95,40 @@ console.log('📡 Server will listen on PORT:', PORT);
 // ==================================
 // CORS Middleware - Configured for production
 // ==================================
-const allowedOrigins = process.env.CLIENT_URL 
+const allowedOrigins = process.env.CLIENT_URL
   ? [process.env.CLIENT_URL, 'http://localhost:3000', 'http://localhost:5000']
   : ['http://localhost:3000', 'http://localhost:5000'];
 
+console.log('🔒 CORS allowed origins:', allowedOrigins);
+
 app.use(cors({
   origin: (origin, callback) => {
-    // Allow requests with no origin (like mobile apps or curl requests)
-    if (!origin) return callback(null, true);
+    console.log('🔒 CORS check:', origin);
     
-    if (allowedOrigins.indexOf(origin) !== -1 || origin.includes('railway.app')) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) {
+      console.log('✅ CORS: No origin (mobile/curl)');
+      return callback(null, true);
     }
+
+    // Check if origin is allowed
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      console.log('✅ CORS: Origin allowed:', origin);
+      return callback(null, true);
+    }
+    
+    // Allow railway.app domains
+    if (origin.includes('railway.app') || origin.includes('goodsxp.store')) {
+      console.log('✅ CORS: Railway domain allowed:', origin);
+      return callback(null, true);
+    }
+    
+    console.log('❌ CORS: Origin rejected:', origin);
+    callback(new Error('Not allowed by CORS'));
   },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  credentials: true,
+  credentials: true, // IMPORTANT: Allow cookies
   optionsSuccessStatus: 200,
 }));
 

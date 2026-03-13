@@ -19,15 +19,15 @@ const API_BASE = '/api'
 
 async function fetchAPI(endpoint: string, options: RequestInit = {}) {
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
-  
+
   const headers: Record<string, string> = {}
-  
+
   // Don't set Content-Type for FormData requests - browser will set it with boundary
   if (!(options.body instanceof FormData)) {
     headers['Content-Type'] = 'application/json'
   }
-  
-  // Add Authorization header if token exists
+
+  // Add Authorization header if token exists (for non-cookie auth)
   if (token) {
     headers['Authorization'] = `Bearer ${token}`
   }
@@ -39,9 +39,11 @@ async function fetchAPI(endpoint: string, options: RequestInit = {}) {
     tokenPreview: token ? `${token.substring(0, 20)}...` : 'none',
   })
 
+  // IMPORTANT: Always include credentials for cookie-based auth (admin)
   const response = await fetch(`${API_BASE}${endpoint}`, {
     ...options,
     headers,
+    credentials: 'include', // Include cookies for admin authentication
   })
 
   console.log('📡 API Response:', {

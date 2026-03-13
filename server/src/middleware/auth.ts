@@ -12,32 +12,54 @@ export interface AuthRequest extends Request {
   };
 }
 
+/**
+ * Authenticate user - supports both Bearer token and Cookie
+ */
 export const authenticate = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const authHeader = req.headers.authorization;
+    let token: string | undefined;
 
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    // First check Authorization header (Bearer token)
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.split(' ')[1];
+      console.log('🔑 Auth: Found Bearer token');
+    }
+
+    // If no Bearer token, check cookies (for admin session)
+    if (!token && req.cookies) {
+      token = req.cookies.admin_session;
+      if (token) {
+        console.log('🔑 Auth: Found admin_session cookie');
+      }
+    }
+
+    // No token found
+    if (!token) {
+      console.log('⚠️ Auth: No token found');
       return res.status(401).json({ error: 'Потрібна авторизація' });
     }
 
-    const token = authHeader.split(' ')[1];
     const secret = process.env.JWT_SECRET || 'default-secret';
 
     const decoded = jwt.verify(token, secret) as { id: string; email: string; role: Role };
-    
-    // Перевіряємо чи існує користувач
+
+    // Check if user exists
     const user = await prisma.user.findUnique({
       where: { id: decoded.id },
       select: { id: true, email: true, role: true },
     });
 
     if (!user) {
+      console.log('⚠️ Auth: User not found');
       return res.status(401).json({ error: 'Користувача не знайдено' });
     }
 
     req.user = user;
+    console.log('✅ Auth: User authenticated:', user.email, user.role);
     next();
-  } catch (error) {
+  } catch (error: any) {
+    console.error('❌ Auth error:', error.message);
     return res.status(401).json({ error: 'Невірний токен авторизації' });
   }
 };
