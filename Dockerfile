@@ -92,6 +92,7 @@ RUN adduser --system --uid 1001 nodejs
 COPY --from=server-builder --chown=nodejs:nodejs /app/dist ./dist
 COPY --from=server-builder --chown=nodejs:nodejs /app/node_modules ./node_modules
 COPY --from=server-builder --chown=nodejs:nodejs /app/package.json ./
+COPY --from=server-builder --chown=nodejs:nodejs /app/prisma ./prisma
 
 # Copy Next.js standalone build to client directory
 # Express server will load Next.js from here
@@ -133,4 +134,4 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 # Start Express server which handles both API routes and Next.js pages
 # Next.js runs in Node runtime (not Edge)
 # Run migrations first
-CMD ["sh", "-c", "npx prisma migrate deploy --schema=./prisma/schema.prisma && node dist/server.js"]
+CMD ["sh", "-c", "npx prisma migrate deploy --schema=/app/prisma/schema.prisma && node dist/server.js"]
