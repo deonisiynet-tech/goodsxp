@@ -75,20 +75,20 @@
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-background;
+  @apply bg-[#0f0f12];
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-muted rounded-full;
+  @apply bg-[#666666] rounded-full;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-secondary;
+  @apply bg-[#a0a0a0];
 }
 
 /* Selection */
 ::selection {
-  @apply bg-primary text-background;
+  @apply bg-[#6366f1] text-white;
 }
 
 /* Custom Animations */

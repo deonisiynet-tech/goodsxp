@@ -34,3 +34,6 @@ next-env.d.ts
 
 # api directory - deprecated (moved to Express)
 /src/app/api
+
+# Old tailwind config
+tailwind.config.js

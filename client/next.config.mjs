@@ -3,17 +3,7 @@ const nextConfig = {
   output: 'standalone',
   reactStrictMode: true,
   
-  // Force Node.js runtime (not Edge)
-  experimental: {
-    runtime: 'nodejs',
-  },
-  
-  // Enable styled-jsx for SSR
-  compiler: {
-    styledJsx: true,
-  },
-  
-  // Ignore lint/type errors during build
+  // ESLint/TypeScript - ignore during build
   eslint: {
     ignoreDuringBuilds: true,
   },

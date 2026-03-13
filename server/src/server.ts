@@ -175,12 +175,13 @@ app.get('/healthz', (_req: Request, res: Response) => {
 });
 
 // API routes - these handle /api/* paths
+// IMPORTANT: /api/admin/auth must be BEFORE /api/admin (which requires auth)
 app.use('/api/auth', authRoutes);
+app.use('/api/admin/auth', adminAuthRoutes);  // Login/logout - NO auth required
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
-app.use('/api/admin', adminRoutes);
+app.use('/api/admin', adminRoutes);           // Admin only - requires auth
 app.use('/api/upload', uploadRoutes);
-app.use('/api/admin/auth', adminAuthRoutes);
 
 // ==================================
 // Next.js Handler - MUST be last
