@@ -1,4 +1,18 @@
-import { Product } from '@/actions/products'
+// API client for Express server
+// Product type definition
+
+export interface Product {
+  id: string
+  title: string
+  description: string
+  price: number
+  imageUrl: string | null
+  images: string[]
+  stock: number
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+}
 
 // API client for Express server
 const API_BASE = '/api'

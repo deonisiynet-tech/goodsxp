@@ -2,12 +2,21 @@
 
 import { useState, useEffect } from 'react'
 import AdminLayout from '@/components/admin/AdminLayout'
-import { getUsers, updateUserRole, User as UserType } from '@/actions/users'
 import toast from 'react-hot-toast'
 import { Users, Search, Shield, UserIcon, RefreshCw } from 'lucide-react'
 
+interface User {
+  id: string
+  email: string
+  role: 'USER' | 'ADMIN'
+  createdAt: string
+  _count: {
+    orders: number
+  }
+}
+
 export default function UsersPage() {
-  const [users, setUsers] = useState<UserType[]>([])
+  const [users, setUsers] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [roleFilter, setRoleFilter] = useState('')
@@ -15,12 +24,22 @@ export default function UsersPage() {
   const loadUsers = async () => {
     try {
       setLoading(true)
-      const loadedUsers = await getUsers({
-        role: roleFilter || undefined,
-        search: search || undefined,
+      const params = new URLSearchParams()
+      if (roleFilter) params.append('role', roleFilter)
+      if (search) params.append('search', search)
+
+      const response = await fetch(`/api/admin/users?${params.toString()}`, {
+        credentials: 'include',
       })
-      setUsers(loadedUsers)
+
+      if (!response.ok) {
+        throw new Error('Failed to load users')
+      }
+
+      const data = await response.json()
+      setUsers(data.users || [])
     } catch (error) {
+      console.error('Error loading users:', error)
       toast.error('Помилка завантаження користувачів')
     } finally {
       setLoading(false)
@@ -38,12 +57,25 @@ export default function UsersPage() {
     if (!confirm(`Ви впевнені, що хочете змінити роль на ${newRole === 'ADMIN' ? 'ADMIN' : 'USER'}?`))
       return
 
-    const result = await updateUserRole(userId, newRole)
-    if (result.success) {
+    try {
+      const response = await fetch(`/api/admin/users/${userId}/role`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ role: newRole }),
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update role')
+      }
+
       toast.success('Роль змінено')
       loadUsers()
-    } else {
-      toast.error(result.error || 'Помилка при зміні ролі')
+    } catch (error: any) {
+      console.error('Error updating role:', error)
+      toast.error(error.message || 'Помилка при зміні ролі')
     }
   }
 

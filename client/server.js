@@ -1,19 +1,15 @@
 /**
- * Custom server for Next.js standalone build with Express integration
- * This file is used when running Next.js standalone with Express
+ * Standalone Next.js server
+ * Note: In this architecture, Express (dist/server.js) loads Next.js directly
+ * This file is kept for reference and standalone deployments
  */
 
 const path = require('path');
-const express = require('express');
 
-// Set production environment
 process.env.NODE_ENV = 'production';
 
-// Get the directory of this file
-const dir = path.join(__dirname);
-
-// Change to the standalone directory
-process.chdir(dir);
+// Get the directory containing this file
+const dir = path.dirname(__filename);
 
 // Initialize Next.js
 const next = require('next');
@@ -25,30 +21,14 @@ const nextApp = next({
 
 const handle = nextApp.getRequestHandler();
 
-// Create Express app
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-// Basic middleware
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
-
-// Health check
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
-
-// All other requests handled by Next.js
-app.all('*', (req, res) => {
-  return handle(req, res);
-});
-
-// Prepare Next.js and start server
+// Prepare and start
 nextApp.prepare().then(() => {
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`> Ready on http://localhost:${PORT}`);
-  });
+  console.log('✅ Next.js standalone server ready');
+  console.log('📁 Running from:', dir);
 }).catch((err) => {
-  console.error('Failed to start server:', err);
+  console.error('Failed to prepare Next.js:', err);
   process.exit(1);
 });
+
+// Export for use by Express
+module.exports = { nextApp, handle, dir };

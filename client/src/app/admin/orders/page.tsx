@@ -1,11 +1,35 @@
 'use client'
 
-import { useState, useEffect, use } from 'react'
+import { useState, useEffect } from 'react'
 import AdminLayout from '@/components/admin/AdminLayout'
-import { getOrders, updateOrderStatus, deleteOrder, Order } from '@/actions/orders'
 import OrderModal from '@/components/admin/OrderModal'
 import toast from 'react-hot-toast'
 import { ShoppingCart, Search, Filter, Eye, Trash2, RefreshCw } from 'lucide-react'
+
+interface Order {
+  id: string
+  userId: string | null
+  name: string
+  phone: string
+  email: string
+  address: string
+  totalPrice: number
+  status: string
+  comment: string | null
+  createdAt: string
+  updatedAt: string
+  items: {
+    id: string
+    productId: string
+    quantity: number
+    price: number
+    product: {
+      id: string
+      title: string
+      imageUrl: string | null
+    }
+  }[]
+}
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([])
@@ -19,13 +43,23 @@ export default function OrdersPage() {
   const loadOrders = async () => {
     try {
       setLoading(true)
-      const loadedOrders = await getOrders({
-        status: statusFilter || undefined,
-        email: searchEmail || undefined,
-        searchId: searchId || undefined,
+      const params = new URLSearchParams()
+      if (statusFilter) params.append('status', statusFilter)
+      if (searchEmail) params.append('email', searchEmail)
+      if (searchId) params.append('searchId', searchId)
+
+      const response = await fetch(`/api/admin/orders?${params.toString()}`, {
+        credentials: 'include',
       })
-      setOrders(loadedOrders)
+
+      if (!response.ok) {
+        throw new Error('Failed to load orders')
+      }
+
+      const data = await response.json()
+      setOrders(data.orders || [])
     } catch (error) {
+      console.error('Error loading orders:', error)
       toast.error('Помилка завантаження замовлень')
     } finally {
       setLoading(false)
@@ -47,12 +81,21 @@ export default function OrdersPage() {
   const handleDelete = async (id: string) => {
     if (!confirm('Ви впевнені, що хочете видалити це замовлення?')) return
 
-    const result = await deleteOrder(id)
-    if (result.success) {
+    try {
+      const response = await fetch(`/api/admin/orders/${id}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete order')
+      }
+
       toast.success('Замовлення видалено')
       loadOrders()
-    } else {
-      toast.error(result.error || 'Помилка при видаленні')
+    } catch (error: any) {
+      console.error('Error deleting order:', error)
+      toast.error(error.message || 'Помилка при видаленні')
     }
   }
 
@@ -63,12 +106,25 @@ export default function OrdersPage() {
   }
 
   const handleStatusChange = async (orderId: string, status: string) => {
-    const result = await updateOrderStatus(orderId, status)
-    if (result.success) {
+    try {
+      const response = await fetch(`/api/admin/orders/${orderId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status }),
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to update status')
+      }
+
       toast.success('Статус оновлено')
       loadOrders()
-    } else {
-      toast.error(result.error || 'Помилка при оновленні статусу')
+    } catch (error: any) {
+      console.error('Error updating status:', error)
+      toast.error(error.message || 'Помилка при оновленні статусу')
     }
   }
 

@@ -17,53 +17,44 @@ console.log('📦 DATABASE_URL:', process.env.DATABASE_URL ? '*** SET ***' : '�
 
 if (!process.env.DATABASE_URL) {
   console.error('❌ FATAL: DATABASE_URL is not set!');
+  process.exit(1);
 }
 
 // ==================================
 // Next.js Initialization
 // ==================================
-console.log('📦 Initializing Next.js...');
-
-// Determine client directory
-// In production (Railway): Next.js standalone is in ./client directory
-// In development: use ../../client relative to dist/server.js
 let clientDir: string;
-let isStandalone = false;
+const isProduction = process.env.NODE_ENV === 'production';
 
-// Check if we're running in standalone mode
-const standalonePath = path.join(process.cwd(), 'client', 'server.js');
-if (fs.existsSync(standalonePath)) {
-  // We're in production - Next.js standalone exists
-  isStandalone = true;
+// In production, Next.js standalone is in ./client directory
+// In development, use relative path from dist/server.js
+if (isProduction) {
   clientDir = path.join(process.cwd(), 'client');
-  console.log('🚀 PRODUCTION MODE: Using Next.js standalone');
+  console.log('🚀 PRODUCTION MODE: Using Next.js standalone from', clientDir);
 } else {
-  // Development mode
   clientDir = path.resolve(__dirname, '../../client');
-  console.log('🛠️ DEVELOPMENT MODE: Using Next.js dev server');
+  console.log('🛠️ DEVELOPMENT MODE: Using Next.js from', clientDir);
 }
 
-console.log('📁 Client directory:', clientDir);
+// Verify client directory exists
+if (!fs.existsSync(clientDir)) {
+  console.error('❌ FATAL: Client directory not found:', clientDir);
+  process.exit(1);
+}
 
-// Check .next directory
-const nextDir = path.join(clientDir, '.next');
-console.log('📁 .next exists:', fs.existsSync(nextDir));
-
-if (fs.existsSync(nextDir)) {
-  try {
-    const nextFiles = fs.readdirSync(nextDir);
-    console.log('📁 .next contents:', nextFiles.slice(0, 10).join(', '));
-  } catch (e) {
-    console.log('⚠️ Could not read .next directory:', e);
+// Verify .next directory exists in production
+if (isProduction) {
+  const nextDir = path.join(clientDir, '.next');
+  if (!fs.existsSync(nextDir)) {
+    console.error('❌ FATAL: .next directory not found:', nextDir);
+    process.exit(1);
   }
+  console.log('✅ .next directory found');
 }
 
 // Initialize Next.js
-const dev = process.env.NODE_ENV !== 'production';
-console.log('🔧 Next.js dev mode:', dev);
-
 const nextApp = next({
-  dev: dev,
+  dev: !isProduction,
   dir: clientDir,
 });
 
@@ -92,13 +83,26 @@ const PORT = Number(process.env.PORT) || 5000;
 console.log('🚀 Initializing Express app...');
 
 // ==================================
-// CORS Middleware
+// CORS Middleware - Configured for production
 // ==================================
+const allowedOrigins = process.env.CLIENT_URL 
+  ? [process.env.CLIENT_URL, 'http://localhost:3000', 'http://localhost:5000']
+  : ['http://localhost:3000', 'http://localhost:5000'];
+
 app.use(cors({
-  origin: '*',
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+    
+    if (allowedOrigins.indexOf(origin) !== -1 || origin.includes('railway.app')) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-  credentials: false,
+  credentials: true,
   optionsSuccessStatus: 200,
 }));
 
@@ -108,12 +112,12 @@ app.use((req, res, next) => {
   next();
 });
 
-// Helmet
+// Helmet - Security headers with relaxed CSP for Next.js
 app.use(helmet({
   contentSecurityPolicy: false,
   crossOriginEmbedderPolicy: false,
   crossOriginOpenerPolicy: false,
-  crossOriginResourcePolicy: false,
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
 
 // Body parsing
@@ -124,27 +128,27 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(cookieParser());
 
 // ==================================
-// Static Files - Uploads Directory
+// Static Files
 // ==================================
 console.log('✅ Setting up static file serving...');
 
-// Serve uploads from root level
+// Serve uploads directory
 const uploadsDir = path.join(process.cwd(), 'uploads');
 if (!fs.existsSync(uploadsDir)) {
   fs.mkdirSync(uploadsDir, { recursive: true });
   console.log('📁 Created uploads directory:', uploadsDir);
 }
 app.use('/uploads', express.static(uploadsDir));
-console.log('📁 Serving static files from:', uploadsDir);
+console.log('📁 Serving uploads from:', uploadsDir);
 
-// Also serve from root public directory (copied from client/public)
+// Serve root public directory
 const rootPublicDir = path.join(process.cwd(), 'public');
 if (fs.existsSync(rootPublicDir)) {
   app.use(express.static(rootPublicDir));
   console.log('📁 Serving root public files from:', rootPublicDir);
 }
 
-// Also serve from client/public for Next.js assets (standalone build)
+// Serve client public directory
 const clientPublicDir = path.join(clientDir, 'public');
 if (fs.existsSync(clientPublicDir)) {
   app.use(express.static(clientPublicDir));
@@ -152,11 +156,11 @@ if (fs.existsSync(clientPublicDir)) {
 }
 
 // ==================================
-// API Routes
+// API Routes - MUST be registered BEFORE Next.js handler
 // ==================================
 console.log('✅ Registering API routes...');
 
-// Health check
+// Health check endpoints
 app.get('/health', (_req: Request, res: Response) => {
   res.status(200).json({
     status: 'healthy',
@@ -170,7 +174,7 @@ app.get('/healthz', (_req: Request, res: Response) => {
   res.status(200).send('OK');
 });
 
-// API routes
+// API routes - these handle /api/* paths
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
@@ -179,7 +183,7 @@ app.use('/api/upload', uploadRoutes);
 app.use('/api/admin/auth', adminAuthRoutes);
 
 // ==================================
-// Next.js Handler
+// Next.js Handler - MUST be last
 // ==================================
 console.log('✅ Registering Next.js handler...');
 
@@ -187,8 +191,9 @@ console.log('✅ Registering Next.js handler...');
 app.all('*', (req: Request, res: Response, next) => {
   const urlPath = req.path;
 
-  // Skip API routes - should not happen as they're handled above
+  // Skip API routes (should not happen as they're handled above)
   if (urlPath.startsWith('/api')) {
+    console.log('⚠️ API route fell through to Next.js handler:', urlPath);
     return next();
   }
 

@@ -2,7 +2,33 @@
 
 import { useState } from 'react'
 import { X } from 'lucide-react'
-import { Order } from '@/actions/orders'
+
+interface OrderItem {
+  id: string
+  productId: string
+  quantity: number
+  price: number
+  product: {
+    id: string
+    title: string
+    imageUrl: string | null
+  }
+}
+
+interface Order {
+  id: string
+  userId: string | null
+  name: string
+  phone: string
+  email: string
+  address: string
+  totalPrice: number
+  status: string
+  comment: string | null
+  createdAt: string
+  updatedAt: string
+  items: OrderItem[]
+}
 
 interface OrderModalProps {
   order: Order

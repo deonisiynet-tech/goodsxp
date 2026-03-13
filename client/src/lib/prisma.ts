@@ -1,33 +1,6 @@
-import { PrismaClient } from '@prisma/client'
+// Prisma client has been moved to server-side only
+// All API calls should go through Express API endpoints
+// This file is kept for backward compatibility but should not be used
 
-const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined
-}
-
-export const prisma = globalForPrisma.prisma ?? new PrismaClient({
-  datasources: {
-    db: {
-      url: process.env.DATABASE_URL,
-    },
-  },
-  log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-})
-
-if (process.env.NODE_ENV !== 'production') {
-  globalForPrisma.prisma = prisma
-}
-
-// Graceful shutdown handling for production
-// Disconnect Prisma when the process exits
-async function gracefulShutdown() {
-  try {
-    await prisma.$disconnect()
-    console.log('✅ Prisma disconnected')
-  } catch (error) {
-    console.error('❌ Error disconnecting Prisma:', error)
-  }
-}
-
-process.on('SIGINT', gracefulShutdown)
-process.on('SIGTERM', gracefulShutdown)
-process.on('exit', gracefulShutdown)
+export const prisma = null
+throw new Error('Prisma client is no longer available on client-side. Use Express API endpoints instead.')

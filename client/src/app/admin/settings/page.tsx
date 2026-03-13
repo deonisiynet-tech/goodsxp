@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react'
 import AdminLayout from '@/components/admin/AdminLayout'
-import { getSettings, updateSettings } from '@/actions/settings'
 import toast from 'react-hot-toast'
 import { Settings as SettingsIcon, Save, RefreshCw, Store, Mail, DollarSign, Power } from 'lucide-react'
 
@@ -22,9 +21,9 @@ const defaultSettings: Settings = {
 
 const currencies = [
   { code: 'UAH', symbol: '₴', name: 'Гривня' },
-  { code: 'USD', symbol: '$', name: 'Долар США' },
-  { code: 'EUR', symbol: '€', name: 'Євро' },
-  { code: 'PLN', symbol: 'zł', name: 'Польський злотий' },
+  { code: 'USD', symbol: '$', name: 'Доллар США' },
+  { code: 'EUR', symbol: '€', name: 'Евро' },
+  { code: 'PLN', symbol: 'zł', name: 'Польский злотый' },
 ]
 
 export default function SettingsPage() {
@@ -39,9 +38,18 @@ export default function SettingsPage() {
   const loadSettings = async () => {
     try {
       setLoading(true)
-      const settings = await getSettings()
+      const response = await fetch('/api/admin/settings', {
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to load settings')
+      }
+
+      const settings = await response.json()
       setForm(settings)
     } catch (error) {
+      console.error('Error loading settings:', error)
       toast.error('Помилка завантаження налаштувань')
     } finally {
       setLoading(false)
@@ -52,20 +60,33 @@ export default function SettingsPage() {
     try {
       setSaving(true)
 
-      const formData = new FormData()
-      formData.append('storeName', form.storeName)
-      formData.append('contactEmail', form.contactEmail)
-      formData.append('currency', form.currency)
-      formData.append('storeEnabled', form.storeEnabled ? 'true' : 'false')
+      // Save each setting individually via API
+      const settingsToUpdate = [
+        { key: 'storeName', value: form.storeName },
+        { key: 'contactEmail', value: form.contactEmail },
+        { key: 'currency', value: form.currency },
+        { key: 'storeEnabled', value: form.storeEnabled ? 'true' : 'false' },
+      ]
 
-      const result = await updateSettings(formData)
-      if (result.success) {
-        toast.success('Налаштування збережено')
-      } else {
-        toast.error(result.error || 'Помилка при збереженні')
+      for (const setting of settingsToUpdate) {
+        const response = await fetch(`/api/admin/settings/${setting.key}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ value: setting.value }),
+          credentials: 'include',
+        })
+
+        if (!response.ok) {
+          throw new Error(`Failed to save ${setting.key}`)
+        }
       }
-    } catch (error) {
-      toast.error('Помилка при збереженні')
+
+      toast.success('Налаштування збережено')
+    } catch (error: any) {
+      console.error('Error saving settings:', error)
+      toast.error(error.message || 'Помилка при збереженні')
     } finally {
       setSaving(false)
     }

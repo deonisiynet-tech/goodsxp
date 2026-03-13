@@ -8,7 +8,19 @@ import { ShoppingCart, Search, SlidersHorizontal } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ProductModal from '@/components/ProductModal';
-import { Product } from '@/actions/products';
+
+interface Product {
+  id: string;
+  title: string;
+  description: string;
+  price: number;
+  imageUrl: string | null;
+  images: string[] | null;
+  stock: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
 
 interface SafeProduct extends Omit<Product, 'images'> {
   images: string[] | null;

@@ -42,20 +42,19 @@ WORKDIR /client
 # Copy client package files
 COPY client/package*.json ./
 
-# Install dependencies (including express for custom server)
+# Install dependencies
 RUN npm install
 
 # Copy all client source files INCLUDING public directory
 COPY client/ .
 
-# Copy Prisma schema for Server Actions
+# Copy Prisma schema for Server Actions (if needed)
 COPY server/prisma ./prisma
 
 # Environment variables for Prisma and Next.js build
+# These are build-time only, runtime values are set via Railway env vars
 ENV DATABASE_URL="postgresql://postgres:postgres@localhost:5432/postgres"
-ENV CLOUDINARY_CLOUD_NAME=dho1q87qk
-ENV CLOUDINARY_API_KEY=679329866265555
-ENV CLOUDINARY_API_SECRET=Y8HzBE5cnLyz_86WXNLQ5tMfblU
+ENV NEXT_PUBLIC_API_URL="/api"
 
 # Generate Prisma Client
 RUN npx prisma generate --schema=./prisma/schema.prisma
@@ -63,20 +62,12 @@ RUN npx prisma generate --schema=./prisma/schema.prisma
 # Build Next.js (creates .next/standalone)
 RUN npm run build
 
-# Verify build output - check standalone and static exist
+# Verify build output
 RUN ls -la /client/.next/standalone && echo "✅ .next/standalone exists"
 RUN ls -la /client/.next/static && echo "✅ .next/static exists"
 
-# Ensure public directory exists (create if missing)
+# Ensure public directory exists
 RUN mkdir -p /client/public && echo "✅ public directory ensured"
-
-# Create placeholder file if public is empty
-RUN if [ ! "$(ls -A /client/public)" ]; then \
-      echo "Public directory placeholder" > /client/public/.gitkeep; \
-      echo "✅ Placeholder created"; \
-    else \
-      echo "✅ Public directory already has files"; \
-    fi
 
 # ==================================
 # PRODUCTION IMAGE - Express + Next.js
@@ -99,24 +90,20 @@ COPY --from=server-builder --chown=nodejs:nodejs /app/package.json ./
 
 # Copy Next.js standalone build to client directory
 # Express server will load Next.js from here
-# The standalone build creates a complete server in .next/standalone
 RUN mkdir -p ./client
 COPY --from=client-builder --chown=nodejs:nodejs /client/.next/standalone/. ./client/
 COPY --from=client-builder --chown=nodejs:nodejs /client/.next/static ./client/.next/static
-# Copy custom server.js for Express integration
 COPY --from=client-builder --chown=nodejs:nodejs /client/server.js ./client/server.js
 COPY --from=client-builder --chown=nodejs:nodejs /client/package.json ./client/package.json
 
 # Copy client public directory to BOTH ./public (root) and ./client/public
-# Root ./public is for direct access via /public/*
-# ./client/public is for Next.js standalone compatibility
 COPY --from=client-builder --chown=nodejs:nodejs /client/public ./public
 COPY --from=client-builder --chown=nodejs:nodejs /client/public ./client/public
 
 # Create uploads directory at root level for local file storage
 RUN mkdir -p ./uploads && chown nodejs:nodejs ./uploads
 
-# Create tmp directory for file uploads
+# Create tmp directory for file uploads (Cloudinary temp files)
 RUN mkdir -p /tmp && chown nodejs:nodejs /tmp
 
 # Verify the build structure
@@ -130,7 +117,6 @@ RUN echo "=== Build Verification ===" && \
 # Set correct permissions for all directories
 RUN chown -R nodejs:nodejs /app
 
-# Set correct permissions
 USER nodejs
 
 EXPOSE 5000

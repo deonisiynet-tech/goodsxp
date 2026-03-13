@@ -6,6 +6,19 @@ import { productsApi } from '@/lib/products-api'
 import toast from 'react-hot-toast'
 import { X, Upload, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
 
+interface Product {
+  id: string
+  title: string
+  description: string
+  price: number
+  imageUrl: string | null
+  images: string[]
+  stock: number
+  isActive: boolean
+  createdAt: string
+  updatedAt: string
+}
+
 interface ProductModalProps {
   product: Product | null
   onClose: () => void
