@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
 import { productsApi } from '@/lib/products-api'
 import toast from 'react-hot-toast'
@@ -43,19 +43,29 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
     register,
     handleSubmit,
     formState: { errors },
+    reset,
   } = useForm({
-    defaultValues: product
-      ? {
-          title: product.title,
-          description: product.description,
-          price: product.price,
-          stock: product.stock,
-          isActive: product.isActive,
-        }
-      : {
-          isActive: true,
-        },
+    defaultValues: {
+      title: product?.title || '',
+      description: product?.description || '',
+      price: product?.price || 0,
+      stock: product?.stock || 0,
+      isActive: product?.isActive ?? true,
+    },
   })
+
+  // Reset form when product changes (e.g., when opening modal for edit)
+  useEffect(() => {
+    reset({
+      title: product?.title || '',
+      description: product?.description || '',
+      price: product?.price || 0,
+      stock: product?.stock || 0,
+      isActive: product?.isActive ?? true,
+    })
+    setExistingImages(product?.images || [])
+    setNewImages([])
+  }, [product, reset])
 
   const onSubmit = async (data: any) => {
     try {
