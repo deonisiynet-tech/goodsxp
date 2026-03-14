@@ -2,8 +2,11 @@ import { Request, Response, NextFunction } from 'express';
 import { ProductService } from '../services/product.service.js';
 import { AuthRequest } from '../middleware/auth.js';
 import { processImageUpload } from '../middleware/upload.js';
+import { AdminService } from '../services/admin.service.js';
+import { ActionType } from '@prisma/client';
 
 const productService = new ProductService();
+const adminService = new AdminService();
 
 export class ProductController {
   // Public routes
@@ -93,6 +96,16 @@ export class ProductController {
         isActive: isActive === 'true',
       });
 
+      // Log the action
+      await adminService.logAction({
+        adminId: req.user!.id,
+        action: ActionType.CREATE,
+        entity: 'Product',
+        entityId: product.id,
+        details: `Created product: ${title}`,
+        ipAddress: req.ip,
+      });
+
       res.status(201).json(product);
     } catch (error) {
       next(error);
@@ -141,6 +154,17 @@ export class ProductController {
       }
 
       const product = await productService.update(id, updateData);
+
+      // Log the action
+      await adminService.logAction({
+        adminId: req.user!.id,
+        action: ActionType.UPDATE,
+        entity: 'Product',
+        entityId: id,
+        details: `Updated product: ${title || id}`,
+        ipAddress: req.ip,
+      });
+
       res.json(product);
     } catch (error) {
       next(error);
@@ -149,7 +173,19 @@ export class ProductController {
 
   async delete(req: AuthRequest, res: Response, next: NextFunction) {
     try {
+      const product = await productService.getById(req.params.id);
       const result = await productService.delete(req.params.id);
+
+      // Log the action
+      await adminService.logAction({
+        adminId: req.user!.id,
+        action: ActionType.DELETE,
+        entity: 'Product',
+        entityId: req.params.id,
+        details: `Deleted product: ${product.title}`,
+        ipAddress: req.ip,
+      });
+
       res.json(result);
     } catch (error) {
       next(error);

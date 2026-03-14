@@ -1,8 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import { OrderService } from '../services/order.service.js';
 import { AuthRequest } from '../middleware/auth.js';
+import { AdminService } from '../services/admin.service.js';
+import { ActionType } from '@prisma/client';
 
 const orderService = new OrderService();
+const adminService = new AdminService();
 
 export class OrderController {
   async create(req: Request, res: Response, next: NextFunction) {
@@ -66,6 +69,17 @@ export class OrderController {
       const { id } = req.params;
       const { status } = req.body;
       const order = await orderService.updateStatus(id, status);
+
+      // Log the action
+      await adminService.logAction({
+        adminId: req.user!.id,
+        action: ActionType.UPDATE,
+        entity: 'Order',
+        entityId: id,
+        details: `Updated order status to ${status}`,
+        ipAddress: req.ip,
+      });
+
       res.json(order);
     } catch (error) {
       next(error);
@@ -75,6 +89,16 @@ export class OrderController {
   async delete(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const result = await orderService.delete(req.params.id);
+
+      // Log the action
+      await adminService.logAction({
+        adminId: req.user!.id,
+        action: ActionType.DELETE,
+        entity: 'Order',
+        entityId: req.params.id,
+        ipAddress: req.ip,
+      });
+
       res.json(result);
     } catch (error) {
       next(error);
