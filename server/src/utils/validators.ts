@@ -44,6 +44,9 @@ export const paginationSchema = z.object({
   page: z.coerce.number().positive().int().optional().default(1),
   limit: z.coerce.number().positive().int().max(100).optional().default(20),
   search: z.string().optional(),
-  sortBy: z.enum(['createdAt', 'price', 'title']).optional().default('createdAt'),
+  sortBy: z.enum(['createdAt', 'price', 'title', 'popularity']).optional().default('createdAt'),
   sortOrder: z.enum(['asc', 'desc']).optional().default('desc'),
+  category: z.string().optional(),
+  minPrice: z.coerce.number().positive().optional(),
+  maxPrice: z.coerce.number().positive().optional(),
 });
