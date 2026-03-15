@@ -9,6 +9,9 @@ import { ArrowLeft, ShoppingCart, Check, ChevronLeft, ChevronRight } from 'lucid
 import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import SimilarProducts from '@/components/SimilarProducts';
+import RecentlyViewed from '@/components/RecentlyViewed';
+import ReviewsBlock from '@/components/ReviewsBlock';
 
 interface Product {
   id: string;
@@ -33,6 +36,7 @@ export default function ProductPage() {
   useEffect(() => {
     if (params.id) {
       loadProduct(params.id as string);
+      saveToRecentlyViewed(params.id as string);
     }
   }, [params.id]);
 
@@ -45,6 +49,28 @@ export default function ProductPage() {
       router.push('/catalog');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const saveToRecentlyViewed = (productId: string) => {
+    try {
+      const viewed = localStorage.getItem('recentlyViewed');
+      let viewedList: any[] = viewed ? JSON.parse(viewed) : [];
+      
+      // Add current product to the beginning
+      viewedList.unshift({
+        id: productId,
+        viewedAt: new Date().toISOString(),
+      });
+      
+      // Remove duplicates and limit to 6
+      viewedList = Array.from(
+        new Map(viewedList.map((item) => [item.id, item])).values()
+      ).slice(0, 6);
+      
+      localStorage.setItem('recentlyViewed', JSON.stringify(viewedList));
+    } catch (error) {
+      console.error('Failed to save recently viewed:', error);
     }
   };
 
@@ -65,45 +91,31 @@ export default function ProductPage() {
     toast.success('Товар додано до кошика');
   };
 
-  // Helper to get image URL - handles both Cloudinary and local paths
   const getImageUrl = (img: string): string => {
     if (!img) return ''
-    // If it's already a full URL (Cloudinary), return as is
     if (img.startsWith('http://') || img.startsWith('https://')) {
       return img
     }
-    // If it's a local path starting with /, return as is
     if (img.startsWith('/')) {
       return img
     }
-    // Otherwise prepend /
     return `/${img}`
   };
 
-  // Safe image list getter - NEVER returns undefined/null
   const getImageList = (prod: Product | null): string[] => {
     if (!prod) return [];
-
-    // Safely get images array
     const images = Array.isArray(prod.images) ? prod.images : [];
-
-    // Get image URLs
     const imageUrls = images.map(getImageUrl).filter(Boolean);
-
-    // If no images, try imageUrl
     if (imageUrls.length === 0 && prod.imageUrl) {
       const imageUrl = getImageUrl(prod.imageUrl);
       if (imageUrl) return [imageUrl];
     }
-
     return imageUrls;
   };
 
   const images = getImageList(product);
-
-  // Safe selected image index
-  const safeSelectedIndex = images.length > 0 
-    ? Math.min(selectedImage, images.length - 1) 
+  const safeSelectedIndex = images.length > 0
+    ? Math.min(selectedImage, images.length - 1)
     : 0;
 
   if (loading) {
@@ -298,6 +310,15 @@ export default function ProductPage() {
             </div>
           </div>
         </div>
+
+        {/* Recently Viewed */}
+        <RecentlyViewed />
+
+        {/* Similar Products */}
+        <SimilarProducts productId={product.id} currentProductTitle={product.title} />
+
+        {/* Customer Reviews */}
+        <ReviewsBlock productId={product.id} />
       </main>
       <Footer />
     </div>

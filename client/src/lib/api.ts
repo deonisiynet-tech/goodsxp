@@ -48,9 +48,26 @@ export const authApi = {
 
 // Products API
 export const productsApi = {
-  getAll: (params?: { page?: number; limit?: number; search?: string }) =>
+  getAll: (params?: { 
+    page?: number; 
+    limit?: number; 
+    search?: string;
+    category?: string;
+    minPrice?: number;
+    maxPrice?: number;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  }) =>
     api.get('/products', { params }),
+  search: (q: string, limit?: number) =>
+    api.get('/products/search', { params: { q, limit } }),
+  getSimilar: (id: string, limit?: number) =>
+    api.get(`/products/${id}/similar`, { params: { limit } }),
   getById: (id: string) => api.get(`/products/${id}`),
+  getReviews: (id: string, sort?: 'date' | 'rating') =>
+    api.get(`/products/${id}/reviews`, { params: { sort } }),
+  createReview: (id: string, data: { name: string; rating: number; comment?: string }) =>
+    api.post(`/products/${id}/reviews`, data),
   getAllAdmin: (params?: { page?: number; limit?: number; search?: string }) =>
     api.get('/admin/products', { params }),
   create: (data: FormData) =>

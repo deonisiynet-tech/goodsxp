@@ -12,14 +12,44 @@ export class ProductController {
   // Public routes
   async getAll(req: Request, res: Response, next: NextFunction) {
     try {
-      const { page, limit, search, sortBy, sortOrder } = req.query;
+      const { page, limit, search, sortBy, sortOrder, category, minPrice, maxPrice } = req.query;
       const result = await productService.getAll({
         page: page ? Number(page) : 1,
         limit: limit ? Number(limit) : 20,
         search: search as string,
-        sortBy: sortBy as 'createdAt' | 'price' | 'title',
+        sortBy: sortBy as 'createdAt' | 'price' | 'title' | 'popularity',
         sortOrder: sortOrder as 'asc' | 'desc',
+        category: category as string,
+        minPrice: minPrice ? Number(minPrice) : undefined,
+        maxPrice: maxPrice ? Number(maxPrice) : undefined,
       });
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async search(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { q, limit } = req.query;
+      const result = await productService.search(
+        q as string,
+        limit ? Number(limit) : 20
+      );
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getSimilar(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const { limit } = req.query;
+      const result = await productService.getSimilar(
+        id,
+        limit ? Number(limit) : 4
+      );
       res.json(result);
     } catch (error) {
       next(error);

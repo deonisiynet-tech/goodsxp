@@ -6,6 +6,7 @@ const footerLinks = {
     { href: '/delivery', label: 'Доставка' },
     { href: '/payment', label: 'Оплата' },
     { href: '/warranty', label: 'Гарантія' },
+    { href: '/return-policy', label: 'Повернення' },
   ],
   info: [
     { href: '/about', label: 'Про нас' },
