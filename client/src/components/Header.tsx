@@ -2,17 +2,9 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ShoppingCart, User, Menu, X, Search } from 'lucide-react';
+import { ShoppingCart, User, Menu, X } from 'lucide-react';
 import { useCartStore } from '@/lib/store';
-import { useState, useEffect, useRef } from 'react';
-import { productsApi } from '@/lib/api';
-
-interface SearchResult {
-  id: string;
-  title: string;
-  price: number;
-  imageUrl: string | null;
-}
+import { useState, useEffect } from 'react';
 
 const navLinks = [
   { href: '/', label: 'Головна' },
@@ -29,11 +21,6 @@ export default function Header() {
   const [user, setUser] = useState<any>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-  const [showSearchResults, setShowSearchResults] = useState(false);
-  const [isSearching, setIsSearching] = useState(false);
-  const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -48,59 +35,11 @@ export default function Header() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Close search results when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-        setShowSearchResults(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
-  // Debounced search
-  useEffect(() => {
-    const timer = setTimeout(async () => {
-      if (searchQuery.trim().length >= 2) {
-        setIsSearching(true);
-        try {
-          const response = await productsApi.search(searchQuery, 8);
-          setSearchResults(response.data.products);
-          setShowSearchResults(true);
-        } catch (error) {
-          console.error('Search error:', error);
-        } finally {
-          setIsSearching(false);
-        }
-      } else {
-        setSearchResults([]);
-        setShowSearchResults(false);
-      }
-    }, 300);
-
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
-
   const handleLogout = () => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     setUser(null);
     window.location.href = '/';
-  };
-
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      router.push(`/catalog?search=${encodeURIComponent(searchQuery)}`);
-      setShowSearchResults(false);
-    }
-  };
-
-  const handleResultClick = (productId: string) => {
-    router.push(`/catalog/${productId}`);
-    setShowSearchResults(false);
-    setSearchQuery('');
   };
 
   return (
@@ -115,75 +54,6 @@ export default function Header() {
           <Link href="/" className="text-xl font-bold tracking-wider text-primary shrink-0">
             GoodsXP
           </Link>
-
-          {/* Search Bar - Desktop */}
-          <div className="hidden md:flex flex-1 max-w-xl" ref={searchRef}>
-            <form onSubmit={handleSearchSubmit} className="relative w-full">
-              <input
-                type="text"
-                placeholder="Пошук товарів..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onFocus={() => searchQuery.trim().length >= 2 && setShowSearchResults(true)}
-                className="w-full bg-surfaceLight border border-border rounded-lg py-2.5 pl-10 pr-4 text-sm text-secondary focus:outline-none focus:border-primary transition-colors"
-              />
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={18} />
-              {isSearching && (
-                <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                  <div className="w-4 h-4 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-                </div>
-              )}
-
-              {/* Search Results Dropdown */}
-              {showSearchResults && searchResults.length > 0 && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-surface border border-border rounded-lg shadow-xl overflow-hidden z-50">
-                  <div className="max-h-96 overflow-y-auto">
-                    {searchResults.map((product) => (
-                      <button
-                        key={product.id}
-                        onClick={() => handleResultClick(product.id)}
-                        className="w-full flex items-center gap-3 p-3 hover:bg-surfaceLight transition-colors text-left"
-                      >
-                        <img
-                          src={product.imageUrl || '/placeholder.jpg'}
-                          alt={product.title}
-                          className="w-12 h-12 object-cover rounded"
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).src = 'https://via.placeholder.com/100?text=No+Image';
-                          }}
-                        />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-medium truncate">{product.title}</p>
-                          <p className="text-xs text-muted">
-                            {Number(product.price).toLocaleString('uk-UA')} ₴
-                          </p>
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                  <div className="border-t border-border p-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        router.push(`/catalog?search=${encodeURIComponent(searchQuery)}`);
-                        setShowSearchResults(false);
-                      }}
-                      className="w-full text-center text-sm text-primary hover:underline"
-                    >
-                      Дивитися всі результати →
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* No Results */}
-              {showSearchResults && searchQuery.trim().length >= 2 && searchResults.length === 0 && !isSearching && (
-                <div className="absolute top-full left-0 right-0 mt-2 bg-surface border border-border rounded-lg shadow-xl p-4 z-50">
-                  <p className="text-sm text-muted text-center">Товари не знайдено</p>
-                </div>
-              )}
-            </form>
-          </div>
 
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center gap-8">
@@ -250,20 +120,6 @@ export default function Header() {
               {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
           </div>
-        </div>
-
-        {/* Mobile Search Bar */}
-        <div className="md:hidden pb-4">
-          <form onSubmit={handleSearchSubmit} className="relative">
-            <input
-              type="text"
-              placeholder="Пошук товарів..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-surfaceLight border border-border rounded-lg py-2.5 pl-10 pr-4 text-sm text-secondary focus:outline-none focus:border-primary transition-colors"
-            />
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={18} />
-          </form>
         </div>
       </div>
 

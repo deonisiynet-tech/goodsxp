@@ -93,17 +93,31 @@ export default function CatalogContent() {
   const loadProducts = async () => {
     try {
       setLoading(true);
-      const response = await productsApi.getAll({
-        search,
+      
+      // Build params object only with meaningful values
+      const params: Record<string, string | number | undefined> = {
         limit: 50,
         sortBy,
         sortOrder,
-        category: selectedCategory || undefined,
-        minPrice: priceRange[0],
-        maxPrice: priceRange[1],
-      });
+      };
+      
+      if (search && search.trim()) {
+        params.search = search.trim();
+      }
+      if (selectedCategory) {
+        params.category = selectedCategory;
+      }
+      if (priceRange[0] > 0) {
+        params.minPrice = priceRange[0];
+      }
+      if (priceRange[1] > 0 && priceRange[1] < 100000) {
+        params.maxPrice = priceRange[1];
+      }
+      
+      const response = await productsApi.getAll(params);
       let filteredProducts = response.data.products;
 
+      // Additional client-side price filtering (backend already filters)
       filteredProducts = filteredProducts.filter(
         (p: SafeProduct) => p.price >= priceRange[0] && p.price <= priceRange[1]
       );

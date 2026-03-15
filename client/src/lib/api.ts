@@ -48,17 +48,28 @@ export const authApi = {
 
 // Products API
 export const productsApi = {
-  getAll: (params?: { 
-    page?: number; 
-    limit?: number; 
+  getAll: (params?: {
+    page?: number;
+    limit?: number;
     search?: string;
     category?: string;
     minPrice?: number;
     maxPrice?: number;
     sortBy?: string;
     sortOrder?: 'asc' | 'desc';
-  }) =>
-    api.get('/products', { params }),
+  }) => {
+    // Only send parameters that have meaningful values
+    const queryParams: Record<string, string | number> = {};
+    if (params?.page) queryParams.page = params.page;
+    if (params?.limit) queryParams.limit = params.limit;
+    if (params?.search && params.search.trim()) queryParams.search = params.search.trim();
+    if (params?.category) queryParams.category = params.category;
+    if (params?.minPrice !== undefined && params.minPrice > 0) queryParams.minPrice = params.minPrice;
+    if (params?.maxPrice !== undefined && params.maxPrice > 0 && params.maxPrice < 100000) queryParams.maxPrice = params.maxPrice;
+    if (params?.sortBy) queryParams.sortBy = params.sortBy;
+    if (params?.sortOrder) queryParams.sortOrder = params.sortOrder;
+    return api.get('/products', { params: queryParams });
+  },
   search: (q: string, limit?: number) =>
     api.get('/products/search', { params: { q, limit } }),
   getSimilar: (id: string, limit?: number) =>
