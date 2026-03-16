@@ -8,17 +8,17 @@ import ProductList from '@/components/ProductList';
 
 // ===== SUBCOMPONENTS =====
 
-function BenefitItem({ 
-  icon: Icon, 
-  text 
-}: { 
-  icon: any; 
+function BenefitItem({
+  icon: Icon,
+  text
+}: {
+  icon: any;
   text: string;
 }) {
   return (
     <div className="flex flex-col items-center text-center">
       <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary/20 to-purple-500/20 border border-primary/30 flex items-center justify-center mb-3">
-        <Icon size={24} className="text-primary" strokeWidth={1.5} />
+        <Icon size={24} className="text-white" strokeWidth={1.5} />
       </div>
       <span className="text-muted font-medium">{text}</span>
     </div>
@@ -257,7 +257,7 @@ function AdvantageCard({
       <div className={`absolute inset-0 bg-gradient-to-br ${gradient} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
       <div className="relative z-10">
         <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-          <Icon size={24} className="text-primary" strokeWidth={1.5} />
+          <Icon size={24} className="text-white" strokeWidth={1.5} />
         </div>
         <h3 className="text-lg font-semibold mb-2">{title}</h3>
         <p className="text-muted text-sm leading-relaxed">{description}</p>
@@ -323,9 +323,9 @@ function StatCard({ icon: Icon, label }: { icon: any; label: string }) {
   return (
     <div className="group p-6 rounded-2xl bg-surface/50 backdrop-blur-sm border border-border/50 hover:border-purple-500/50 transition-all duration-300 hover:shadow-[0_0_30px_rgba(168,85,247,0.2)] hover:-translate-y-1">
       <div className="w-14 h-14 mx-auto mb-4 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-        <Icon size={24} className="text-primary" strokeWidth={1.5} />
+        <Icon size={24} className="text-white" strokeWidth={1.5} />
       </div>
-      <div className="text-sm font-medium text-primary text-center">{label}</div>
+      <div className="text-sm font-medium text-white text-center">{label}</div>
     </div>
   );
 }

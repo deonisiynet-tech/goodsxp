@@ -20,7 +20,7 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12">
           {/* Brand */}
           <div>
-            <Link href="/" className="text-xl font-bold tracking-wider text-primary mb-4 block">
+            <Link href="/" className="text-xl font-bold tracking-wider text-white mb-4 block">
               GoodsXP
             </Link>
             <p className="text-muted text-sm leading-relaxed">
