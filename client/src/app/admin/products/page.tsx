@@ -85,7 +85,7 @@ export default function ProductsPage() {
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-primary">Товари</h1>
+            <h1 className="text-3xl font-bold text-white">Товари</h1>
             <p className="text-muted mt-1">Управління асортиментом магазину</p>
           </div>
           <div className="flex gap-2">

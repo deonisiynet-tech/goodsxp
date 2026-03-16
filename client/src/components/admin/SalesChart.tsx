@@ -19,7 +19,7 @@ export default function SalesChart({ data = [], loading = false, days = 7 }: Sal
     return (
       <div className="card p-6">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-primary">Графік продажів</h2>
+          <h2 className="text-lg font-semibold text-white">Графік продажів</h2>
         </div>
         <div className="h-64 flex items-center justify-center">
           <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
@@ -59,7 +59,7 @@ export default function SalesChart({ data = [], loading = false, days = 7 }: Sal
     <div className="card p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-lg font-semibold text-primary">Графік продажів</h2>
+          <h2 className="text-lg font-semibold text-white">Графік продажів</h2>
           <p className="text-sm text-muted mt-1">Дохід за останні {days} днів</p>
         </div>
         <div className="flex items-center gap-2 text-green-400">

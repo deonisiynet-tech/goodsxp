@@ -156,7 +156,7 @@ export default function OrdersPage() {
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-primary">Замовлення</h1>
+            <h1 className="text-3xl font-bold text-white">Замовлення</h1>
             <p className="text-muted mt-1">Управління замовленнями клієнтів</p>
           </div>
           <button onClick={loadOrders} className="btn-secondary flex items-center gap-2" disabled={loading}>

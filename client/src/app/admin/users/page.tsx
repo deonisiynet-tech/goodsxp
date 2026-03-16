@@ -85,7 +85,7 @@ export default function UsersPage() {
         {/* Header */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
           <div>
-            <h1 className="text-3xl font-bold text-primary">Користувачі</h1>
+            <h1 className="text-3xl font-bold text-white">Користувачі</h1>
             <p className="text-muted mt-1">Управління користувачами та правами доступу</p>
           </div>
           <button onClick={loadUsers} className="btn-secondary flex items-center gap-2" disabled={loading}>

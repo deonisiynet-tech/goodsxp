@@ -64,7 +64,7 @@ export default function LatestOrdersTable({ orders = [], loading = false }: Late
     return (
       <div className="card p-6">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-primary">Останні замовлення</h2>
+          <h2 className="text-lg font-semibold text-white">Останні замовлення</h2>
         </div>
         <div className="space-y-4">
           {[...Array(5)].map((_, i) => (
@@ -94,12 +94,12 @@ export default function LatestOrdersTable({ orders = [], loading = false }: Late
     <div className="card p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-lg font-semibold text-primary">Останні замовлення</h2>
+          <h2 className="text-lg font-semibold text-white">Останні замовлення</h2>
           <p className="text-sm text-muted mt-1">10 останніх замовлень</p>
         </div>
         <Link
           href="/admin/orders"
-          className="text-sm text-primary hover:text-primary/80 font-medium"
+          className="text-sm text-white hover:text-primary font-medium"
         >
           Всі замовлення →
         </Link>

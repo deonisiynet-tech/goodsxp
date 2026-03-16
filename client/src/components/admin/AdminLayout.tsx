@@ -86,7 +86,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="flex items-center justify-between h-16 px-6 border-b border-border">
-            <h1 className="text-xl font-bold text-primary">GoodsXP</h1>
+            <h1 className="text-xl font-bold text-white">GoodsXP</h1>
             <button
               onClick={() => setSidebarOpen(false)}
               className="lg:hidden text-muted hover:text-primary"
@@ -104,8 +104,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
                 onClick={() => setSidebarOpen(false)}
                 className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${
                   isActive(item.href)
-                    ? 'bg-primary/10 text-primary border border-primary/20'
-                    : 'text-muted hover:text-primary hover:bg-surface'
+                    ? 'bg-primary/10 text-white border border-primary/20'
+                    : 'text-white hover:text-primary hover:bg-surface'
                 }`}
               >
                 <item.icon size={20} />
@@ -119,7 +119,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             <button
               onClick={handleLogout}
               disabled={loggingOut}
-              className="flex items-center gap-3 w-full px-4 py-3 text-muted hover:text-primary hover:bg-surface rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex items-center gap-3 w-full px-4 py-3 text-white hover:text-primary hover:bg-surface rounded-xl transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <LogOut size={20} className={loggingOut ? 'animate-pulse' : ''} />
               <span className="font-medium">{loggingOut ? 'Вихід...' : 'Вийти'}</span>
@@ -142,7 +142,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
           <div className="flex items-center gap-4">
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
-                <BarChart3 size={16} className="text-primary" />
+                <BarChart3 size={16} className="text-white" />
               </div>
               <span className="text-sm text-muted">Admin Panel</span>
             </div>

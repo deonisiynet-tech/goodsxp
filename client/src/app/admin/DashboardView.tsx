@@ -343,7 +343,7 @@ export default function DashboardView() {
       <div className="space-y-6">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-primary mb-2">Dashboard</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">Dashboard</h1>
           <p className="text-muted">Огляд статистики магазину</p>
         </div>
 

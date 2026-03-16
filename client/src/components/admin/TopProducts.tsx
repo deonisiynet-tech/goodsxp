@@ -26,7 +26,7 @@ export default function TopProducts({ products = [], loading = false }: TopProdu
     return (
       <div className="card p-6">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-lg font-semibold text-primary">Топ товарів</h2>
+          <h2 className="text-lg font-semibold text-white">Топ товарів</h2>
         </div>
         <div className="space-y-4">
           {[...Array(5)].map((_, i) => (
@@ -63,10 +63,10 @@ export default function TopProducts({ products = [], loading = false }: TopProdu
     <div className="card p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-lg font-semibold text-primary">Топ товарів</h2>
+          <h2 className="text-lg font-semibold text-white">Топ товарів</h2>
           <p className="text-sm text-muted mt-1">Найпопулярніші за кількістю замовлень</p>
         </div>
-        <div className="flex items-center gap-2 text-primary">
+        <div className="flex items-center gap-2 text-white">
           <TrendingUp size={20} />
           <span className="text-sm font-medium">{products.length} товарів</span>
         </div>
