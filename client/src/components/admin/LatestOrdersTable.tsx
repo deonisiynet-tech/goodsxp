@@ -139,17 +139,17 @@ export default function LatestOrdersTable({ orders = [], loading = false }: Late
                   <td className="px-4 py-4">
                     <Link
                       href={`/admin/orders`}
-                      className="font-mono text-sm text-primary hover:underline"
+                      className="font-mono text-sm text-white hover:underline"
                     >
                       #{order.id.slice(0, 8).toUpperCase()}
                     </Link>
                   </td>
                   <td className="px-4 py-4">
-                    <div className="font-medium text-primary">{order.name}</div>
+                    <div className="font-medium text-white">{order.name}</div>
                     <div className="text-sm text-muted">{order.email}</div>
                   </td>
                   <td className="px-4 py-4">
-                    <span className="font-medium text-primary">
+                    <span className="font-medium text-white">
                       {formatCurrency(order.totalPrice)}
                     </span>
                   </td>

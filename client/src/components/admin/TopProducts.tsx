@@ -104,7 +104,7 @@ export default function TopProducts({ products = [], loading = false }: TopProdu
 
               {/* Product Info */}
               <div className="flex-1 min-w-0">
-                <h3 className="font-medium text-primary truncate">
+                <h3 className="font-medium text-white truncate">
                   {product.product?.title || 'Товар видалено'}
                 </h3>
                 <div className="flex items-center gap-2 mt-1">

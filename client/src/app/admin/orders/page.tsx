@@ -226,17 +226,17 @@ export default function OrdersPage() {
               <tbody className="divide-y divide-border">
                 {orders.map((order) => (
                   <tr key={order.id} className="hover:bg-surfaceLight transition-colors">
-                    <td className="px-6 py-4 font-mono text-sm text-primary">
+                    <td className="px-6 py-4 font-mono text-sm text-white">
                       {order.id.slice(0, 8)}...
                     </td>
                     <td className="px-6 py-4">
                       <div>
-                        <div className="font-medium text-primary">{order.name}</div>
+                        <div className="font-medium text-white">{order.name}</div>
                         <div className="text-sm text-muted">{order.email}</div>
                         <div className="text-sm text-muted">{order.phone}</div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 font-medium text-primary">
+                    <td className="px-6 py-4 font-medium text-white">
                       {Number(order.totalPrice).toLocaleString('uk-UA')} ₴
                     </td>
                     <td className="px-6 py-4">

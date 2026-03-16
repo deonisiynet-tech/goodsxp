@@ -125,6 +125,36 @@ model AdminLog {
   @@index([entity])
 }
 
+// System-wide logging with levels (INFO, WARNING, ERROR)
+model SystemLog {
+  id        String    @id @default(uuid())
+  timestamp DateTime  @default(now())
+  level     LogLevel  @default(INFO)
+  message   String
+  userId    String?
+  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  ipAddress String?
+  source    LogSource @default(SYSTEM)
+  metadata  String?   // JSON string for additional data
+
+  @@index([level])
+  @@index([timestamp])
+  @@index([source])
+  @@index([userId])
+}
+
+enum LogLevel {
+  INFO
+  WARNING
+  ERROR
+}
+
+enum LogSource {
+  ADMIN_PANEL
+  API
+  SYSTEM
+}
+
 model SiteSettings {
   id          String   @id @default(uuid())
   key         String   @unique

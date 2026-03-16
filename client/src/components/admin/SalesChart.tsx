@@ -45,7 +45,7 @@ export default function SalesChart({ data = [], loading = false, days = 7 }: Sal
       return (
         <div className="bg-surfaceLight border border-border rounded-lg p-3 shadow-lg">
           <p className="text-sm text-muted mb-1">{label}</p>
-          <p className="text-lg font-bold text-primary">{formatCurrency(payload[0].value)}</p>
+          <p className="text-lg font-bold text-white">{formatCurrency(payload[0].value)}</p>
         </div>
       );
     }

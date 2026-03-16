@@ -25,6 +25,9 @@ router.get('/products/top', adminController.getTopProducts.bind(adminController)
 
 // Admin Logs
 router.get('/logs', adminController.getLogs.bind(adminController));
+router.get('/logs/system', adminController.getSystemLogs.bind(adminController));
+router.post('/logs/clear', adminController.clearLogs.bind(adminController));
+router.get('/logs/stats', adminController.getLogStats.bind(adminController));
 
 // Site Settings
 router.get('/settings', adminController.getSettings.bind(adminController));

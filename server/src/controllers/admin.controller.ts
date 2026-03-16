@@ -1,9 +1,11 @@
 import { Request, Response, NextFunction } from 'express';
 import { AdminService } from '../services/admin.service.js';
+import { LoggerService } from '../services/logger.service.js';
 import { AuthRequest } from '../middleware/auth.js';
-import { ActionType } from '@prisma/client';
+import { ActionType, LogLevel, LogSource } from '@prisma/client';
 
 const adminService = new AdminService();
+const loggerService = new LoggerService();
 
 export class AdminController {
   // ==================== USERS ====================
@@ -135,7 +137,21 @@ export class AdminController {
   // ==================== ADMIN LOGS ====================
   async getLogs(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { page, limit, adminId, action } = req.query;
+      const { page, limit, adminId, action, level, source, search } = req.query;
+      
+      // If level or source is specified, use system logs
+      if (level || source) {
+        const result = await loggerService.getSystemLogs({
+          page: page ? Number(page) : 1,
+          limit: limit ? Number(limit) : 50,
+          level: level as LogLevel,
+          source: source as LogSource,
+          search: search as string,
+        });
+        return res.json(result);
+      }
+      
+      // Otherwise use admin logs (legacy)
       const result = await adminService.getAdminLogs({
         page: page ? Number(page) : 1,
         limit: limit ? Number(limit) : 50,
@@ -143,6 +159,52 @@ export class AdminController {
         action: action as string,
       });
       res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // ==================== SYSTEM LOGS ====================
+  async getSystemLogs(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { page, limit, level, source, search, startDate, endDate } = req.query;
+      const result = await loggerService.getSystemLogs({
+        page: page ? Number(page) : 1,
+        limit: limit ? Number(limit) : 50,
+        level: level as LogLevel,
+        source: source as LogSource,
+        search: search as string,
+        startDate: startDate ? new Date(startDate as string) : undefined,
+        endDate: endDate ? new Date(endDate as string) : undefined,
+      });
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async clearLogs(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const result = await loggerService.clearLogs();
+
+      // Log this action
+      await loggerService.adminAction(
+        'Admin cleared all system logs',
+        req.user?.id,
+        req.ip as string
+      );
+
+      res.json({ success: true, ...result });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async getLogStats(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { days } = req.query;
+      const stats = await loggerService.getStats(days ? Number(days) : 7);
+      res.json(stats);
     } catch (error) {
       next(error);
     }

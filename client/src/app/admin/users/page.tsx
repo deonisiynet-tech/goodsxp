@@ -143,7 +143,7 @@ export default function UsersPage() {
                 {users.map((user) => (
                   <tr key={user.id} className="hover:bg-surfaceLight transition-colors">
                     <td className="px-6 py-4">
-                      <div className="font-medium text-primary">{user.email}</div>
+                      <div className="font-medium text-white">{user.email}</div>
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
@@ -168,7 +168,7 @@ export default function UsersPage() {
                       })}
                     </td>
                     <td className="px-6 py-4 text-sm">
-                      <span className="text-primary font-medium">{user._count.orders}</span>
+                      <span className="text-white font-medium">{user._count.orders}</span>
                       <span className="text-muted"> зам.</span>
                     </td>
                     <td className="px-6 py-4 text-right">

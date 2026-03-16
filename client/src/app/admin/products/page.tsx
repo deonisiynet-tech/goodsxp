@@ -165,10 +165,10 @@ export default function ProductsPage() {
                   </div>
                 </div>
                 <div className="p-4">
-                  <h3 className="font-semibold text-primary mb-2 truncate">{product.title}</h3>
+                  <h3 className="font-semibold text-white mb-2 truncate">{product.title}</h3>
                   <p className="text-sm text-muted mb-3 line-clamp-2">{product.description}</p>
                   <div className="flex items-center justify-between mb-3">
-                    <p className="text-2xl font-bold text-primary">
+                    <p className="text-2xl font-bold text-white">
                       {product.price.toLocaleString('uk-UA')} ₴
                     </p>
                     <div className="flex items-center gap-2">

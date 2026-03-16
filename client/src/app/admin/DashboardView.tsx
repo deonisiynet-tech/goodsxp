@@ -71,7 +71,7 @@ function StatCard({ title, value, icon: Icon, color }: StatCardProps) {
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm text-muted mb-1">{title}</p>
-          <p className="text-3xl font-bold text-primary">{(value ?? 0).toLocaleString('uk-UA')}</p>
+          <p className="text-3xl font-bold text-white">{(value ?? 0).toLocaleString('uk-UA')}</p>
         </div>
         <div className={`p-4 rounded-2xl border ${colorClasses[color]}`}>
           <Icon size={28} />
@@ -274,7 +274,7 @@ export default function DashboardView() {
       <AdminLayout>
         <div className="min-h-screen bg-surface flex items-center justify-center">
           <div className="text-center max-w-md p-6">
-            <h2 className="text-2xl font-bold text-primary mb-4">Помилка завантаження</h2>
+            <h2 className="text-2xl font-bold text-white mb-4">Помилка завантаження</h2>
             <p className="text-muted mb-4">{error || 'Не вдалося завантажити дані'}</p>
             <button
               onClick={() => window.location.reload()}
@@ -387,7 +387,7 @@ export default function DashboardView() {
         {/* Quick Actions */}
         <section className="mt-8">
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-2xl font-bold text-primary">Швидкі дії</h2>
+            <h2 className="text-2xl font-bold text-white">Швидкі дії</h2>
             <button onClick={handleCreate} className="btn-primary flex items-center gap-2">
               <Plus size={20} />
               Додати товар

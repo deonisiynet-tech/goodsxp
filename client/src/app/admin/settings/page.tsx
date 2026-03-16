@@ -132,7 +132,7 @@ export default function SettingsPage() {
                 <Store className="text-blue-400" size={24} />
               </div>
               <div>
-                <h3 className="font-semibold text-primary">Назва магазину</h3>
+                <h3 className="font-semibold text-white">Назва магазину</h3>
                 <p className="text-sm text-muted">Відображається на сайті</p>
               </div>
             </div>
@@ -152,7 +152,7 @@ export default function SettingsPage() {
                 <Mail className="text-green-400" size={24} />
               </div>
               <div>
-                <h3 className="font-semibold text-primary">Контактний email</h3>
+                <h3 className="font-semibold text-white">Контактний email</h3>
                 <p className="text-sm text-muted">Для зв'язку з клієнтами</p>
               </div>
             </div>
@@ -172,7 +172,7 @@ export default function SettingsPage() {
                 <DollarSign className="text-purple-400" size={24} />
               </div>
               <div>
-                <h3 className="font-semibold text-primary">Валюта</h3>
+                <h3 className="font-semibold text-white">Валюта</h3>
                 <p className="text-sm text-muted">Основна валюта магазину</p>
               </div>
             </div>
@@ -196,7 +196,7 @@ export default function SettingsPage() {
                 <Power className="text-yellow-400" size={24} />
               </div>
               <div>
-                <h3 className="font-semibold text-primary">Статус магазину</h3>
+                <h3 className="font-semibold text-white">Статус магазину</h3>
                 <p className="text-sm text-muted">Включений чи вимкнений</p>
               </div>
             </div>

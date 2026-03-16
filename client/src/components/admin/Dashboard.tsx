@@ -25,7 +25,7 @@ function StatCard({ title, value, icon: Icon, color, trend }: StatCardProps) {
       <div className="flex items-center justify-between">
         <div>
           <p className="text-sm text-muted mb-1">{title}</p>
-          <p className="text-3xl font-bold text-primary">{value}</p>
+          <p className="text-3xl font-bold text-white">{value}</p>
           {trend && (
             <p className="text-xs text-green-400 mt-2 flex items-center gap-1">
               <TrendingUp size={12} />
@@ -157,7 +157,7 @@ export default function Dashboard({ stats, loading }: DashboardProps) {
             </div>
             <div>
               <p className="text-sm text-muted">Замовлень сьогодні</p>
-              <p className="text-2xl font-bold text-primary">{data.ordersToday}</p>
+              <p className="text-2xl font-bold text-white">{data.ordersToday}</p>
             </div>
           </div>
         </div>
@@ -169,7 +169,7 @@ export default function Dashboard({ stats, loading }: DashboardProps) {
             </div>
             <div>
               <p className="text-sm text-muted">В обробці</p>
-              <p className="text-2xl font-bold text-primary">{data.processing}</p>
+              <p className="text-2xl font-bold text-white">{data.processing}</p>
             </div>
           </div>
         </div>
@@ -181,7 +181,7 @@ export default function Dashboard({ stats, loading }: DashboardProps) {
             </div>
             <div>
               <p className="text-sm text-muted">Виконані</p>
-              <p className="text-2xl font-bold text-primary">{data.delivered}</p>
+              <p className="text-2xl font-bold text-white">{data.delivered}</p>
             </div>
           </div>
         </div>
@@ -189,7 +189,7 @@ export default function Dashboard({ stats, loading }: DashboardProps) {
 
       {/* Chart */}
       <div className="card p-6">
-        <h2 className="text-lg font-semibold text-primary mb-6">Замовлення по дням (останні 7 днів)</h2>
+        <h2 className="text-lg font-semibold text-white mb-6">Замовлення по дням (останні 7 днів)</h2>
         {chartData.length > 0 ? (
           <div className="flex items-end justify-between gap-2 h-48">
             {chartData.map((day, index) => {
