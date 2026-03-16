@@ -9,9 +9,6 @@ import { ArrowLeft, ShoppingCart, Check, ChevronLeft, ChevronRight } from 'lucid
 import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import SimilarProducts from '@/components/SimilarProducts';
-import RecentlyViewed from '@/components/RecentlyViewed';
-import ReviewsBlock from '@/components/ReviewsBlock';
 
 interface Product {
   id: string;
@@ -36,7 +33,6 @@ export default function ProductPage() {
   useEffect(() => {
     if (params.id) {
       loadProduct(params.id as string);
-      saveToRecentlyViewed(params.id as string);
     }
   }, [params.id]);
 
@@ -49,28 +45,6 @@ export default function ProductPage() {
       router.push('/catalog');
     } finally {
       setLoading(false);
-    }
-  };
-
-  const saveToRecentlyViewed = (productId: string) => {
-    try {
-      const viewed = localStorage.getItem('recentlyViewed');
-      let viewedList: any[] = viewed ? JSON.parse(viewed) : [];
-      
-      // Add current product to the beginning
-      viewedList.unshift({
-        id: productId,
-        viewedAt: new Date().toISOString(),
-      });
-      
-      // Remove duplicates and limit to 6
-      viewedList = Array.from(
-        new Map(viewedList.map((item) => [item.id, item])).values()
-      ).slice(0, 6);
-      
-      localStorage.setItem('recentlyViewed', JSON.stringify(viewedList));
-    } catch (error) {
-      console.error('Failed to save recently viewed:', error);
     }
   };
 
@@ -310,15 +284,6 @@ export default function ProductPage() {
             </div>
           </div>
         </div>
-
-        {/* Recently Viewed */}
-        <RecentlyViewed />
-
-        {/* Similar Products */}
-        <SimilarProducts productId={product.id} currentProductTitle={product.title} />
-
-        {/* Customer Reviews */}
-        <ReviewsBlock productId={product.id} />
       </main>
       <Footer />
     </div>
