@@ -51,7 +51,7 @@ export default function Header() {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16 md:h-20 gap-4">
           {/* Logo */}
-          <Link href="/" className="text-xl font-bold tracking-wider text-white shrink-0">
+          <Link href="/" className="text-xl font-bold tracking-wider text-primary shrink-0">
             GoodsXP
           </Link>
 
@@ -61,7 +61,7 @@ export default function Header() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="text-sm font-light tracking-wide text-white hover:text-primary transition-colors duration-200"
+                className="text-sm font-light tracking-wide text-secondary hover:text-primary transition-colors duration-200"
               >
                 {link.label}
               </Link>
@@ -73,7 +73,7 @@ export default function Header() {
             {/* Cart */}
             <Link
               href="/cart"
-              className="relative flex items-center gap-2 text-white hover:text-primary transition-colors"
+              className="relative flex items-center gap-2 text-secondary hover:text-primary transition-colors"
             >
               <ShoppingCart size={22} strokeWidth={1.5} />
               <span className="hidden md:inline text-sm font-light">Кошик</span>
@@ -90,14 +90,14 @@ export default function Header() {
                 {user.role === 'ADMIN' && (
                   <Link
                     href="/admin"
-                    className="text-sm font-light text-white hover:text-primary transition-colors"
+                    className="text-sm font-light text-secondary hover:text-primary transition-colors"
                   >
                     Адмінка
                   </Link>
                 )}
                 <button
                   onClick={handleLogout}
-                  className="text-sm font-light text-white hover:text-primary transition-colors"
+                  className="text-sm font-light text-secondary hover:text-primary transition-colors"
                 >
                   Вийти
                 </button>
@@ -105,7 +105,7 @@ export default function Header() {
             ) : (
               <Link
                 href="/login"
-                className="flex items-center gap-2 text-white hover:text-primary transition-colors"
+                className="flex items-center gap-2 text-secondary hover:text-primary transition-colors"
               >
                 <User size={22} strokeWidth={1.5} />
                 <span className="hidden md:inline text-sm font-light">Увійти</span>
@@ -115,7 +115,7 @@ export default function Header() {
             {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden text-white"
+              className="lg:hidden text-primary"
             >
               {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
@@ -132,7 +132,7 @@ export default function Header() {
                 key={link.href}
                 href={link.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className="text-lg font-light text-white hover:text-primary transition-colors py-2"
+                className="text-lg font-light text-secondary hover:text-primary transition-colors py-2"
               >
                 {link.label}
               </Link>

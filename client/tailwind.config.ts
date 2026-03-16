@@ -14,10 +14,10 @@ const config: Config = {
         surface: '#121212',
         surfaceLight: '#1a1a1a',
         border: '#26262b',
-        primary: '#a855f7',
+        primary: '#6366f1',
         secondary: '#a0a0a0',
         muted: '#666666',
-        accent: '#ec4899',
+        accent: '#333333',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],
