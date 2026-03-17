@@ -72,34 +72,34 @@ function PaymentMethodCard({
 }
 
 // ===== TIMELINE STEP COMPONENT =====
-function TimelineStep({ 
-  number, 
-  title, 
+function TimelineStep({
+  number,
+  title,
   icon: Icon,
-  isLast 
-}: { 
-  number: number; 
-  title: string; 
+  isLast
+}: {
+  number: number;
+  title: string;
   icon: any;
   isLast: boolean;
 }) {
   return (
-    <div className="relative flex items-center gap-4">
+    <div className="relative flex flex-col items-center flex-1">
       {/* Icon */}
-      <div className="flex-shrink-0">
-        <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/20 to-purple-500/20 border border-primary/30 flex items-center justify-center">
-          <Icon size={20} className="text-primary" strokeWidth={1.5} />
+      <div className="flex-shrink-0 mb-4">
+        <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-primary/20 to-purple-500/20 border border-primary/30 flex items-center justify-center">
+          <Icon size={22} className="text-primary" strokeWidth={1.5} />
         </div>
       </div>
 
       {/* Title */}
-      <div className="flex-1">
-        <span className="font-medium">{title}</span>
+      <div className="text-center">
+        <span className="font-medium text-sm md:text-base">{title}</span>
       </div>
 
-      {/* Connection Line */}
+      {/* Connection Line Desktop */}
       {!isLast && (
-        <div className="absolute left-6 top-12 w-0.5 h-8 bg-gradient-to-b from-primary/50 to-transparent hidden md:block" />
+        <div className="hidden md:block absolute top-7 left-1/2 w-full h-0.5 bg-gradient-to-r from-primary/30 to-primary/50" />
       )}
     </div>
   );
@@ -282,7 +282,7 @@ export default function PaymentPage() {
               </div>
 
               <div className="relative">
-                <div className="flex flex-col md:flex-row justify-between items-start gap-4 md:gap-2">
+                <div className="flex flex-col md:flex-row justify-between items-center gap-8 md:gap-0">
                   {timelineSteps.map((step, index) => (
                     <TimelineStep
                       key={index}
@@ -293,9 +293,6 @@ export default function PaymentPage() {
                     />
                   ))}
                 </div>
-
-                {/* Connection Line Desktop */}
-                <div className="hidden md:block absolute top-6 left-6 right-6 h-0.5 bg-gradient-to-r from-primary/30 via-primary/50 to-primary/30" />
               </div>
             </div>
           </div>
