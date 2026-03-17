@@ -8,6 +8,7 @@ import ProductModal from './ProductModal';
 
 interface Product {
   id: string;
+  sku: string | null;
   title: string;
   price: number;
   stock: number;

@@ -375,7 +375,7 @@ export default function CatalogContent() {
 
                       {/* SKU */}
                       <p className="text-xs text-[#9ca3af] mb-2 font-mono">
-                        SKU: {product.sku.slice(0, 8).toUpperCase()}
+                        SKU: {product.sku ? product.sku.slice(0, 8).toUpperCase() : 'N/A'}
                       </p>
 
                       {/* Rating */}

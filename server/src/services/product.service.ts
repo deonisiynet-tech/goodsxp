@@ -96,6 +96,7 @@ export class ProductService {
     images?: string[];
     stock?: number;
     isActive?: boolean;
+    sku?: string;
   }) {
     const product = await prisma.product.create({
       data: {
@@ -106,6 +107,7 @@ export class ProductService {
         images: data.images ?? [],
         stock: data.stock ?? 0,
         isActive: data.isActive ?? true,
+        sku: data.sku ?? null,
       },
     });
 

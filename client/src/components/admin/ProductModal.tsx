@@ -8,6 +8,7 @@ import { X, Upload, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface Product {
   id: string
+  sku: string | null
   title: string
   description: string
   price: number
@@ -99,7 +100,8 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
         console.log('📝 Update result:', result)
         toast.success('Товар оновлено')
       } else {
-        // Create new product
+        // Create new product - generate SKU automatically
+        const generatedSku = 'SKU-' + Math.random().toString(36).substring(2, 10).toUpperCase()
         const result = await productsApi.create({
           title: data.title,
           description: data.description,
@@ -107,6 +109,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
           stock: data.stock,
           isActive: data.isActive,
           images: allImageUrls,
+          sku: generatedSku,
         })
         console.log('📦 Create result:', result)
         toast.success('Товар створено')
