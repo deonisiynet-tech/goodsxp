@@ -73,6 +73,11 @@ export class ProductService {
         isActive: true,
         createdAt: true,
         updatedAt: true,
+        reviews: {
+          select: {
+            rating: true,
+          },
+        },
       },
     });
 
@@ -80,7 +85,22 @@ export class ProductService {
       throw new AppError('Товар не знайдено', 404);
     }
 
-    return product;
+    // Calculate average rating
+    const averageRating =
+      product.reviews.length > 0
+        ? product.reviews.reduce((sum, r) => sum + r.rating, 0) / product.reviews.length
+        : 0;
+
+    const reviewCount = product.reviews.length;
+
+    // Remove reviews from returned object
+    const { reviews, ...productWithoutReviews } = product;
+
+    return {
+      ...productWithoutReviews,
+      averageRating,
+      reviewCount,
+    };
   }
 
   async create(data: {

@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { productsApi } from '@/lib/api';
 import { useCartStore } from '@/lib/store';
 import toast from 'react-hot-toast';
-import { ShoppingCart } from 'lucide-react';
+import { ShoppingCart, Star } from 'lucide-react';
 
 interface Product {
   id: string;
@@ -14,6 +14,8 @@ interface Product {
   price: number;
   imageUrl: string | null;
   stock: number;
+  averageRating?: number;
+  reviewCount?: number;
 }
 
 interface ProductListProps {
@@ -133,6 +135,29 @@ export default function ProductList({ title = 'Каталог товарів', l
                   <h3 className="font-medium text-base mb-2 line-clamp-2 group-hover:text-secondary transition-colors">
                     {product.title}
                   </h3>
+                  
+                  {/* Rating */}
+                  {product.averageRating !== undefined && product.reviewCount !== undefined && (
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="flex items-center gap-0.5">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star
+                            key={star}
+                            size={14}
+                            className={`${
+                              star <= Math.round(product.averageRating!)
+                                ? 'fill-yellow-500 text-yellow-500'
+                                : 'text-gray-600'
+                            }`}
+                          />
+                        ))}
+                      </div>
+                      <span className="text-xs text-muted">
+                        {product.reviewCount} відгуків
+                      </span>
+                    </div>
+                  )}
+                  
                   <div className="flex items-center justify-between">
                     <span className="text-lg font-light">
                       {Number(product.price).toLocaleString('uk-UA')} ₴

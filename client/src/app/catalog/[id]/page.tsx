@@ -57,7 +57,24 @@ export default function ProductPage() {
   const loadProduct = async (id: string) => {
     try {
       const response = await productsApi.getById(id);
-      setProduct(response.data);
+      const productData = response.data;
+      
+      // Calculate average rating from reviews
+      const reviewsResponse = await fetch(`/api/products/${id}/reviews`);
+      if (reviewsResponse.ok) {
+        const reviewsData = await reviewsResponse.json();
+        const reviews = reviewsData.reviews || [];
+        if (reviews.length > 0) {
+          const avgRating = reviews.reduce((sum: number, r: Review) => sum + r.rating, 0) / reviews.length;
+          productData.averageRating = avgRating;
+          productData.reviewCount = reviews.length;
+        } else {
+          productData.averageRating = 0;
+          productData.reviewCount = 0;
+        }
+      }
+      
+      setProduct(productData);
     } catch (error: any) {
       toast.error('Товар не знайдено');
       router.push('/catalog');

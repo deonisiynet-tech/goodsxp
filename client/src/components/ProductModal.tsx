@@ -260,12 +260,8 @@ export default function ProductModal({ product, isOpen, onClose }: ProductModalP
               {/* Additional Info */}
               <div className="border-t border-[#26262b] mt-8 pt-6 space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-[#9ca3af]">Артикул:</span>
-                  <span className="text-white">{product.id.slice(0, 8).toUpperCase()}</span>
-                </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-[#9ca3af]">Категорія:</span>
-                  <span className="text-white">Електроніка</span>
+                  <span className="text-[#9ca3af]">Гарантія:</span>
+                  <span className="text-white">12 місяців</span>
                 </div>
               </div>
             </div>
