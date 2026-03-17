@@ -33,7 +33,7 @@ const values = [
 ];
 
 const stats = [
-  { number: '1000+', label: 'Задоволених клієнтів', icon: Users },
+  { number: '100%', label: 'Надійний сервіс', icon: Shield },
   { number: '98%', label: 'Позитивних відгуків', icon: Star },
   { number: '24/7', label: 'Підтримка клієнтів', icon: Zap },
   { number: '1-3', label: 'Дні доставки', icon: Truck },
