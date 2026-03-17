@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, Truck, Shield, RefreshCw, Star, Smartphone, Laptop, Headphones, Zap, MessageCircle, Package, CreditCard, Headset } from 'lucide-react';
+import { ArrowRight, Truck, Shield, RefreshCw, Star, Zap, CheckCircle } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ProductList from '@/components/ProductList';
@@ -29,7 +29,7 @@ export default function Home() {
   return (
     <div className="min-h-screen flex flex-col overflow-x-hidden">
       <Header />
-      
+
       <main className="flex-1">
         {/* ===== HERO SECTION ===== */}
         <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
@@ -38,7 +38,6 @@ export default function Home() {
             <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-pink-500/10" />
             <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-purple-500/20 rounded-full blur-[120px] animate-pulse" />
             <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-pink-500/10 rounded-full blur-[120px] animate-pulse delay-1000" />
-            {/* Blue accent elements for depth */}
             <div className="absolute top-1/3 right-1/4 w-[300px] h-[300px] bg-blue-500/5 rounded-full blur-[100px]" />
             <div className="absolute bottom-1/3 left-1/4 w-[400px] h-[400px] bg-blue-500/5 rounded-full blur-[100px]" />
           </div>
@@ -55,11 +54,13 @@ export default function Home() {
                 <span className="font-medium">Нові надходження 2026</span>
               </div>
 
-              {/* Main Heading */}
+              {/* Main Heading - top white, bottom gradient */}
               <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight animate-slide-up">
-                <span className="block text-white drop-shadow-[0_0_30px_rgba(168,85,247,0.3)]">Розумна електроніка</span>
+                <span className="block text-white drop-shadow-[0_0_30px_rgba(168,85,247,0.3)]">
+                  Розумна електроніка
+                </span>
                 <span className="block bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient drop-shadow-[0_0_30px_rgba(168,85,247,0.3)]">
-                  для сучасного ритму
+                  для сучасного життя
                 </span>
               </h1>
 
@@ -94,115 +95,46 @@ export default function Home() {
                   text="Доставка по Україні"
                 />
                 <BenefitItem
-                  icon={MessageCircle}
-                  text="Жива підтримка менеджера"
-                />
-                <BenefitItem
                   icon={Shield}
                   text="Безпечна оплата"
+                />
+                <BenefitItem
+                  icon={RefreshCw}
+                  text="Гарантія повернення"
                 />
               </div>
             </div>
           </div>
         </section>
 
-        {/* ===== ADVANTAGES SECTION ===== */}
+        {/* ===== ADVANTAGES SECTION - 4 INFO BLOCKS ===== */}
         <section className="py-24 bg-surface/50">
           <div className="container mx-auto px-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <AdvantageCard
                 icon={Truck}
-                title="Швидка доставка"
-                description="Відправляємо в день замовлення. Доставка 1-3 дні по Україні."
+                title="Доставка"
+                description="Швидка доставка по Україні: 1–3 дні"
                 gradient="from-blue-500/20 to-cyan-500/20"
               />
               <AdvantageCard
                 icon={Shield}
-                title="Безпечна оплата"
-                description="Захищені платежі. Оплата при отриманні або онлайн."
+                title="Оплата"
+                description="Безпечна оплата: онлайн або при отриманні"
                 gradient="from-green-500/20 to-emerald-500/20"
               />
               <AdvantageCard
                 icon={RefreshCw}
                 title="Гарантія повернення"
-                description="14 днів на повернення. Офіційна гарантія до 36 місяців."
+                description="14 днів на повернення товару відповідно до законодавства України"
                 gradient="from-purple-500/20 to-pink-500/20"
               />
               <AdvantageCard
-                icon={Star}
-                title="Перевірені постачальники"
-                description="Тільки оригінальна продукція від офіційних дистриб'юторів."
+                icon={CheckCircle}
+                title="Якість перевірена партнерами"
+                description="Всі товари перевірені нашими надійними партнерами, щоб гарантувати вам безпечну та якісну покупку"
                 gradient="from-orange-500/20 to-yellow-500/20"
               />
-            </div>
-          </div>
-        </section>
-
-        {/* ===== CATEGORIES SECTION ===== */}
-        <section className="py-24">
-          <div className="container mx-auto px-4">
-            <div className="text-center mb-12">
-              <h2 className="text-4xl md:text-5xl font-bold mb-4">Популярні категорії</h2>
-              <p className="text-muted text-lg">Обирай свою категорію та знаходь найкраще</p>
-            </div>
-
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
-              <CategoryCard
-                icon={Smartphone}
-                title="Смартфони"
-                image="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600&h=600&fit=crop"
-                href="/catalog?category=smartphones"
-              />
-              <CategoryCard
-                icon={Laptop}
-                title="Ноутбуки"
-                image="https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=600&h=600&fit=crop"
-                href="/catalog?category=laptops"
-              />
-              <CategoryCard
-                icon={Headphones}
-                title="Аксесуари"
-                image="https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&h=600&fit=crop"
-                href="/catalog?category=accessories"
-              />
-              <CategoryCard
-                icon={Zap}
-                title="Гаджети"
-                image="https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=600&h=600&fit=crop"
-                href="/catalog?category=gadgets"
-              />
-            </div>
-          </div>
-        </section>
-
-        {/* ===== WHY CHOOSE US ===== */}
-        <section className="py-24 bg-surface/50">
-          <div className="container mx-auto px-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
-              <div>
-                <h2 className="text-4xl md:text-5xl font-bold mb-6">
-                  Чому обирають GoodsXP
-                </h2>
-                <p className="text-muted text-lg mb-8 leading-relaxed">
-                  Ми не просто магазин — ми ваш надійний партнер у світі технологій. 
-                  Кожен товар проходить ретельну перевірку, а наша команда експертів 
-                  готова допомогти з вибором у будь-який час.
-                </p>
-                
-                <div className="space-y-4">
-                  <FeatureItem text="Офіційна гарантія на всі товари" />
-                  <FeatureItem text="Професійна консультація" />
-                  <FeatureItem text="Швидка обробка замовлень" />
-                  <FeatureItem text="Постійні оновлення асортименту" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <StatCard icon={Truck} label="Стабільні поставки" />
-                <StatCard icon={Shield} label="Гарантія безпеки" />
-                <StatCard icon={Star} label="Високий рейтинг" />
-                <StatCard icon={Headset} label="Жива підтримка" />
-              </div>
             </div>
           </div>
         </section>
@@ -220,11 +152,10 @@ export default function Home() {
                   Готові до покупок?
                 </h2>
                 <p className="text-muted text-lg mb-8 max-w-2xl mx-auto">
-                  Приєднуйтесь до сотень задоволених клієнтів. 
-                  Знайдіть ідеальний гаджет вже сьогодні.
+                  Відкрийте для себе кращі гаджети на GoodsXP вже сьогодні
                 </p>
-                <Link 
-                  href="/catalog" 
+                <Link
+                  href="/catalog"
                   className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-primary to-purple-400 text-background font-semibold rounded-2xl transition-all duration-300 hover:shadow-[0_0_40px_rgba(255,255,255,0.3)] hover:scale-105"
                 >
                   Перейти до каталогу
@@ -242,13 +173,13 @@ export default function Home() {
 }
 
 function AdvantageCard({
-  icon: Icon, 
-  title, 
+  icon: Icon,
+  title,
   description,
-  gradient 
-}: { 
-  icon: any; 
-  title: string; 
+  gradient
+}: {
+  icon: any;
+  title: string;
   description: string;
   gradient: string;
 }) {
@@ -262,70 +193,6 @@ function AdvantageCard({
         <h3 className="text-lg font-semibold mb-2">{title}</h3>
         <p className="text-muted text-sm leading-relaxed">{description}</p>
       </div>
-    </div>
-  );
-}
-
-function CategoryCard({ 
-  icon: Icon, 
-  title, 
-  image,
-  href
-}: { 
-  icon: any; 
-  title: string; 
-  image: string;
-  href: string;
-}) {
-  return (
-    <Link 
-      href={href}
-      className="group relative aspect-[3/4] rounded-2xl overflow-hidden bg-surface border border-border"
-    >
-      <div className="absolute inset-0">
-        <img 
-          src={image} 
-          alt={title}
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-transparent" />
-      </div>
-      
-      <div className="absolute inset-0 flex flex-col items-center justify-center p-4">
-        <div className="w-16 h-16 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center mb-4 group-hover:scale-110 transition-transform duration-300">
-          <Icon size={32} className="text-white" strokeWidth={1.5} />
-        </div>
-        <h3 className="text-xl font-bold text-white mb-2">{title}</h3>
-        <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          <span className="inline-flex items-center gap-1 text-sm text-white/80">
-            Переглянути <ArrowRight size={16} />
-          </span>
-        </div>
-      </div>
-    </Link>
-  );
-}
-
-function FeatureItem({ text }: { text: string }) {
-  return (
-    <div className="flex items-center gap-3">
-      <div className="w-6 h-6 rounded-full bg-gradient-to-r from-primary to-purple-400 flex items-center justify-center flex-shrink-0">
-        <svg className="w-4 h-4 text-background" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-        </svg>
-      </div>
-      <span className="text-muted">{text}</span>
-    </div>
-  );
-}
-
-function StatCard({ icon: Icon, label }: { icon: any; label: string }) {
-  return (
-    <div className="group p-6 rounded-2xl bg-surface/50 backdrop-blur-sm border border-border/50 hover:border-purple-500/50 transition-all duration-300 hover:shadow-[0_0_30px_rgba(168,85,247,0.2)] hover:-translate-y-1">
-      <div className="w-14 h-14 mx-auto mb-4 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
-        <Icon size={24} className="text-white" strokeWidth={1.5} />
-      </div>
-      <div className="text-sm font-medium text-white text-center">{label}</div>
     </div>
   );
 }

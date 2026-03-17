@@ -132,7 +132,7 @@ export default function ContactsPage() {
     {
       icon: Clock,
       title: 'Графік роботи',
-      value: 'Пн–Сб: 9:00 – 20:00',
+      value: 'ПН – НД (9:00 – 20:00)',
       buttonText: 'Написати прямо зараз',
       buttonHref: 'https://t.me/goodsxp',
       gradient: 'bg-gradient-to-br from-orange-500/10 to-yellow-500/10',

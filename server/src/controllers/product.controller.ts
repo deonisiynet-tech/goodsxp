@@ -12,13 +12,14 @@ export class ProductController {
   // Public routes
   async getAll(req: Request, res: Response, next: NextFunction) {
     try {
-      const { page, limit, search, sortBy, sortOrder } = req.query;
+      const { page, limit, search, sortBy, sortOrder, sku } = req.query;
       const result = await productService.getAll({
         page: page ? Number(page) : 1,
         limit: limit ? Number(limit) : 20,
         search: search as string,
         sortBy: sortBy as 'createdAt' | 'price' | 'title',
         sortOrder: sortOrder as 'asc' | 'desc',
+        sku: sku as string,
       });
       res.json(result);
     } catch (error) {

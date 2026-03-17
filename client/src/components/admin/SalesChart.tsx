@@ -14,7 +14,7 @@ interface SalesChartProps {
   days?: number;
 }
 
-export default function SalesChart({ data = [], loading = false, days = 7 }: SalesChartProps) {
+export default function SalesChart({ data = [], loading = false, days = 30 }: SalesChartProps) {
   if (loading) {
     return (
       <div className="card p-6">

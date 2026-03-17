@@ -8,30 +8,31 @@ datasource db {
 }
 
 model User {
-  id        String     @id @default(uuid())
-  email     String     @unique
-  password  String
-  role      Role       @default(USER)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  logs      AdminLog[]
-  orders    Order[]
+  id         String      @id @default(uuid())
+  email      String      @unique
+  password   String
+  role       Role        @default(USER)
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+  logs       AdminLog[]
+  orders     Order[]
+  systemLogs SystemLog[]
 
   @@index([email])
   @@index([role])
 }
 
 model Category {
-  id          String    @id @default(uuid())
+  id          String     @id @default(uuid())
   name        String
-  slug        String    @unique
+  slug        String     @unique
   description String?
   parentId    String?
-  parent      Category? @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children    Category[] @relation("CategoryHierarchy")
   products    Product[]
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 
   @@index([slug])
   @@index([parentId])
@@ -39,6 +40,7 @@ model Category {
 
 model Product {
   id          String      @id @default(uuid())
+  sku         String      @unique @default(uuid())
   title       String
   description String
   price       Decimal     @db.Decimal(10, 2)
@@ -56,6 +58,7 @@ model Product {
   @@index([isActive])
   @@index([createdAt])
   @@index([title])
+  @@index([sku])
   @@index([categoryId])
 }
 
@@ -135,7 +138,7 @@ model SystemLog {
   user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   ipAddress String?
   source    LogSource @default(SYSTEM)
-  metadata  String?   // JSON string for additional data
+  metadata  String? // JSON string for additional data
 
   @@index([level])
   @@index([timestamp])

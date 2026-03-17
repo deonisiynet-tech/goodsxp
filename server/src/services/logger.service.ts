@@ -36,28 +36,30 @@ export class LoggerService {
    * Log an INFO level message
    */
   async info(message: string, options?: Omit<LogEntry, 'level'>): Promise<void> {
-    await this.log({ level: LogLevel.INFO, message, ...options });
+    await this.log({ level: LogLevel.INFO, message, source: LogSource.SYSTEM, ...options });
   }
 
   /**
    * Log a WARNING level message
    */
   async warn(message: string, options?: Omit<LogEntry, 'level'>): Promise<void> {
-    await this.log({ level: LogLevel.WARNING, message, ...options });
+    await this.log({ level: LogLevel.WARNING, message, source: LogSource.SYSTEM, ...options });
   }
 
   /**
    * Log an ERROR level message
    */
   async error(message: string, options?: Omit<LogEntry, 'level'>): Promise<void> {
-    await this.log({ level: LogLevel.ERROR, message, ...options });
+    await this.log({ level: LogLevel.ERROR, message, source: LogSource.SYSTEM, ...options });
   }
 
   /**
    * Log admin panel action
    */
   async adminAction(message: string, userId?: string, ipAddress?: string): Promise<void> {
-    await this.info(message, {
+    await this.log({
+      level: LogLevel.INFO,
+      message,
       userId,
       ipAddress,
       source: LogSource.ADMIN_PANEL,
@@ -68,7 +70,9 @@ export class LoggerService {
    * Log API request
    */
   async apiRequest(message: string, userId?: string, ipAddress?: string): Promise<void> {
-    await this.info(message, {
+    await this.log({
+      level: LogLevel.INFO,
+      message,
       userId,
       ipAddress,
       source: LogSource.API,
@@ -79,7 +83,9 @@ export class LoggerService {
    * Log system event
    */
   async systemEvent(message: string, metadata?: Record<string, any>): Promise<void> {
-    await this.info(message, {
+    await this.log({
+      level: LogLevel.INFO,
+      message,
       source: LogSource.SYSTEM,
       metadata,
     });
@@ -89,7 +95,9 @@ export class LoggerService {
    * Log error event
    */
   async systemError(message: string, userId?: string, ipAddress?: string, metadata?: Record<string, any>): Promise<void> {
-    await this.error(message, {
+    await this.log({
+      level: LogLevel.ERROR,
+      message,
       userId,
       ipAddress,
       source: LogSource.SYSTEM,

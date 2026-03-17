@@ -153,9 +153,9 @@ export default function DashboardView() {
         console.log('✅ Dashboard: Stats loaded:', data)
         setStats(data)
 
-        // Fetch sales data for chart (last 7 days)
-        console.log('📡 Fetching /api/admin/stats/sales?days=7...')
-        const salesRes = await fetch('/api/admin/stats/sales?days=7', {
+        // Fetch sales data for chart (last 30 days)
+        console.log('📡 Fetching /api/admin/stats/sales?days=30...')
+        const salesRes = await fetch('/api/admin/stats/sales?days=30', {
           credentials: 'include',
           headers: {
             'Accept': 'application/json',
@@ -376,7 +376,7 @@ export default function DashboardView() {
         </div>
 
         {/* Middle: Sales Chart */}
-        <SalesChart data={salesData} loading={chartLoading} days={7} />
+        <SalesChart data={salesData} loading={chartLoading} days={30} />
 
         {/* Bottom Row: Top Products, Latest Orders */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

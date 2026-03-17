@@ -76,7 +76,7 @@ export default function Footer() {
                   support@goodsxp.store
                 </a>
               </li>
-              <li>Пн-Пт: 9:00 - 20:00</li>
+              <li>ПН – НД (9:00 – 20:00)</li>
             </ul>
           </div>
         </div>

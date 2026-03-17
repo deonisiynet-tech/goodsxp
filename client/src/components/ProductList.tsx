@@ -9,6 +9,7 @@ import { ShoppingCart } from 'lucide-react';
 
 interface Product {
   id: string;
+  sku: string;
   title: string;
   description: string;
   price: number;
@@ -61,8 +62,26 @@ export default function ProductList({ title = 'Каталог товарів', l
     return (
       <section className="py-16 md:py-24">
         <div className="container mx-auto px-4">
-          <div className="flex justify-center items-center py-20">
-            <div className="w-12 h-12 border-2 border-primary border-t-transparent rounded-full animate-spin" />
+          {title && (
+            <div className="flex justify-between items-center mb-10">
+              <h2 className="section-title">{title}</h2>
+              {showAllLink && (
+                <div className="h-4 w-24 bg-[#1f1f23] rounded animate-pulse" />
+              )}
+            </div>
+          )}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {Array.from({ length: limit > 8 ? 8 : limit }).map((_, i) => (
+              <div key={i} className="animate-pulse">
+                <div className="aspect-square bg-[#1f1f23] rounded-xl mb-4" />
+                <div className="h-4 bg-[#1f1f23] rounded mb-2" />
+                <div className="h-4 bg-[#1f1f23] rounded w-2/3 mb-4" />
+                <div className="flex justify-between">
+                  <div className="h-6 bg-[#1f1f23] rounded w-1/3" />
+                  <div className="h-8 bg-[#1f1f23] rounded w-8" />
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -115,6 +134,9 @@ export default function ProductList({ title = 'Каталог товарів', l
                   <h3 className="font-medium text-base mb-2 line-clamp-2 group-hover:text-secondary transition-colors">
                     {product.title}
                   </h3>
+                  <p className="text-xs text-[#9ca3af] mb-2 font-mono">
+                    SKU: {product.sku.slice(0, 8).toUpperCase()}
+                  </p>
                   <div className="flex items-center justify-between">
                     <span className="text-lg font-light">
                       {Number(product.price).toLocaleString('uk-UA')} ₴

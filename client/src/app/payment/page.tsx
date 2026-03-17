@@ -139,7 +139,7 @@ export default function PaymentPage() {
 
   const timelineSteps = [
     { number: 1, title: 'Оформлення замовлення', icon: FileText },
-    { number: 2, title: 'Узгодження деталей', icon: CheckCircle },
+    { number: 2, title: 'Уточнення деталей', icon: CheckCircle },
     { number: 3, title: 'Оплата', icon: Wallet },
     { number: 4, title: 'Відправка товару', icon: Package },
   ];
@@ -277,7 +277,7 @@ export default function PaymentPage() {
               <div className="text-center mb-12">
                 <h2 className="text-3xl md:text-4xl font-bold mb-4">Процес оплати</h2>
                 <p className="text-muted text-lg">
-                  Простий і прозорий процес з 5 кроків
+                  Простий і прозорий процес у 4 кроки
                 </p>
               </div>
 

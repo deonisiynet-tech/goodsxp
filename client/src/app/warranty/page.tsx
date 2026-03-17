@@ -404,15 +404,15 @@ export default function WarrantyPage() {
               </div>
               <div className="text-center p-6">
                 <div className="text-5xl font-bold bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent mb-2">
-                  1000+
+                  24/7
                 </div>
-                <p className="text-muted">задоволених клієнтів</p>
+                <p className="text-muted">швидка підтримка клієнтів</p>
               </div>
               <div className="text-center p-6">
                 <div className="text-5xl font-bold bg-gradient-to-r from-primary to-purple-400 bg-clip-text text-transparent mb-2">
-                  3 дні
+                  100%
                 </div>
-                <p className="text-muted">середній термін обробки</p>
+                <p className="text-muted">надійний сервіс</p>
               </div>
             </div>
           </div>
