@@ -191,4 +191,30 @@ export class ProductController {
       next(error);
     }
   }
+
+  // Review methods
+  async getReviews(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const reviews = await productService.getReviews(id);
+      res.json({ reviews });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async createReview(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const { name, rating, comment } = req.body;
+
+      const review = await productService.createReview(id, { name, rating, comment });
+      res.status(201).json(review);
+    } catch (error: any) {
+      if (error.message.includes('не знайдено')) {
+        return res.status(404).json({ message: error.message });
+      }
+      next(error);
+    }
+  }
 }

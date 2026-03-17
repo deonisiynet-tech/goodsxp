@@ -5,10 +5,19 @@ import { useParams, useRouter } from 'next/navigation';
 import { productsApi } from '@/lib/api';
 import { useCartStore } from '@/lib/store';
 import toast from 'react-hot-toast';
-import { ArrowLeft, ShoppingCart, Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Check, ChevronLeft, ChevronRight, Star, Send } from 'lucide-react';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+
+interface Review {
+  id: string;
+  productId: string;
+  name: string;
+  rating: number;
+  comment: string | null;
+  createdAt: string;
+}
 
 interface Product {
   id: string;
@@ -19,6 +28,8 @@ interface Product {
   images: string[] | null;
   stock: number;
   isActive: boolean;
+  averageRating?: number;
+  reviewCount?: number;
 }
 
 export default function ProductPage() {
@@ -28,11 +39,18 @@ export default function ProductPage() {
   const [loading, setLoading] = useState(true);
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [reviews, setReviews] = useState<Review[]>([]);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [newRating, setNewRating] = useState(5);
+  const [newName, setNewName] = useState('');
+  const [newComment, setNewComment] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
   const addItem = useCartStore((state) => state.addItem);
 
   useEffect(() => {
     if (params.id) {
       loadProduct(params.id as string);
+      loadReviews(params.id as string);
     }
   }, [params.id]);
 
@@ -45,6 +63,61 @@ export default function ProductPage() {
       router.push('/catalog');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadReviews = async (productId: string) => {
+    try {
+      const response = await fetch(`/api/products/${productId}/reviews`);
+      if (response.ok) {
+        const data = await response.json();
+        setReviews(data.reviews || []);
+      }
+    } catch (error) {
+      console.error('Failed to load reviews:', error);
+    }
+  };
+
+  const submitReview = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!product) return;
+
+    setSubmittingReview(true);
+    try {
+      const response = await fetch(`/api/products/${product.id}/reviews`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newName,
+          rating: newRating,
+          comment: newComment,
+        }),
+      });
+
+      if (response.ok) {
+        const newReview = await response.json();
+        setReviews((prev) => [...prev, newReview]);
+        setShowReviewForm(false);
+        setNewName('');
+        setNewComment('');
+        setNewRating(5);
+        toast.success('Відгук додано!');
+        loadProduct(product.id);
+      } else {
+        const error = await response.json();
+        toast.error(error.message || 'Помилка при додаванні відгуку');
+      }
+    } catch (error) {
+      toast.error('Помилка при додаванні відгуку');
+    } finally {
+      setSubmittingReview(false);
+    }
+  };
+
+  const scrollToReviews = () => {
+    const reviewsSection = document.getElementById('reviews-section');
+    if (reviewsSection) {
+      reviewsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
 
@@ -212,6 +285,30 @@ export default function ProductPage() {
           {/* Info */}
           <div className="flex flex-col">
             <h1 className="text-3xl md:text-4xl font-light mb-4">{product.title}</h1>
+            
+            {/* Rating */}
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center gap-1">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star
+                    key={star}
+                    size={18}
+                    className={`${
+                      product.averageRating && star <= Math.round(product.averageRating)
+                        ? 'fill-yellow-500 text-yellow-500'
+                        : 'text-gray-600'
+                    }`}
+                  />
+                ))}
+              </div>
+              <button
+                onClick={scrollToReviews}
+                className="text-sm text-purple-400 hover:text-purple-300 transition-colors"
+              >
+                {product.reviewCount || 0} відгуків
+              </button>
+            </div>
+
             <p className="text-4xl font-light mb-6">
               {Number(product.price).toLocaleString('uk-UA')} ₴
             </p>
@@ -270,20 +367,142 @@ export default function ProductPage() {
             {/* Additional Info */}
             <div className="border-t border-border mt-8 pt-8 space-y-4">
               <div className="flex justify-between text-sm">
-                <span className="text-muted">Артикул:</span>
-                <span>{product.id.slice(0, 8).toUpperCase()}</span>
-              </div>
-              <div className="flex justify-between text-sm">
-                <span className="text-muted">Категорія:</span>
-                <span>Електроніка</span>
-              </div>
-              <div className="flex justify-between text-sm">
                 <span className="text-muted">Гарантія:</span>
                 <span>12 місяців</span>
               </div>
             </div>
           </div>
         </div>
+
+        {/* Reviews Section */}
+        <div id="reviews-section" className="mt-16 border-t border-border pt-12">
+          <h2 className="text-3xl font-light mb-8">Відгуки</h2>
+          
+          {reviews.length === 0 ? (
+            <div className="text-center py-12">
+              <p className="text-muted mb-6">Відгуків поки немає. Будьте першим, хто залишить відгук.</p>
+              <button
+                onClick={() => setShowReviewForm(true)}
+                className="btn-primary inline-flex items-center gap-2"
+              >
+                <Send size={18} />
+                Залишити відгук
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className="space-y-6 mb-8">
+                {reviews.map((review) => (
+                  <div key={review.id} className="card p-6">
+                    <div className="flex items-start justify-between mb-4">
+                      <div>
+                        <h4 className="font-medium text-white mb-1">{review.name}</h4>
+                        <div className="flex items-center gap-1">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <Star
+                              key={star}
+                              size={14}
+                              className={`${
+                                star <= review.rating
+                                  ? 'fill-yellow-500 text-yellow-500'
+                                  : 'text-gray-600'
+                              }`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <span className="text-xs text-muted">
+                        {new Date(review.createdAt).toLocaleDateString('uk-UA')}
+                      </span>
+                    </div>
+                    {review.comment && (
+                      <p className="text-muted text-sm leading-relaxed">{review.comment}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+              <button
+                onClick={() => setShowReviewForm(true)}
+                className="btn-primary inline-flex items-center gap-2"
+              >
+                <Send size={18} />
+                Залишити відгук
+              </button>
+            </>
+          )}
+        </div>
+
+        {/* Review Form Modal */}
+        {showReviewForm && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => setShowReviewForm(false)} />
+            <div className="relative bg-[#18181c] border border-purple-500/30 rounded-2xl p-8 max-w-md w-full shadow-2xl shadow-purple-500/20">
+              <h3 className="text-2xl font-light mb-6">Залишити відгук</h3>
+              <form onSubmit={submitReview} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium mb-2">Рейтинг</label>
+                  <div className="flex gap-2">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        type="button"
+                        onClick={() => setNewRating(star)}
+                        className="transition-transform hover:scale-110"
+                      >
+                        <Star
+                          size={28}
+                          className={`${
+                            star <= newRating
+                              ? 'fill-yellow-500 text-yellow-500'
+                              : 'text-gray-600'
+                          }`}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Ім'я</label>
+                  <input
+                    type="text"
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    required
+                    className="input-field"
+                    placeholder="Ваше ім'я"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium mb-2">Коментар</label>
+                  <textarea
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    rows={4}
+                    className="input-field resize-none"
+                    placeholder="Ваш відгук..."
+                  />
+                </div>
+                <div className="flex gap-4 pt-4">
+                  <button
+                    type="submit"
+                    disabled={submittingReview}
+                    className="btn-primary flex-1 flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    <Send size={18} />
+                    {submittingReview ? 'Відправка...' : 'Надіслати відгук'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowReviewForm(false)}
+                    className="btn-secondary flex-1"
+                  >
+                    Скасувати
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </main>
       <Footer />
     </div>

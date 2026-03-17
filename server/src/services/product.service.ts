@@ -180,4 +180,36 @@ export class ProductService {
       },
     };
   }
+
+  async getReviews(productId: string) {
+    return prisma.review.findMany({
+      where: { productId },
+      orderBy: { createdAt: 'desc' },
+    });
+  }
+
+  async createReview(productId: string, data: { name: string; rating: number; comment?: string }) {
+    const product = await prisma.product.findUnique({ where: { id: productId } });
+    if (!product) {
+      throw new Error('Товар не знайдено');
+    }
+
+    const review = await prisma.review.create({
+      data: {
+        productId,
+        name: data.name,
+        rating: data.rating,
+        comment: data.comment,
+      },
+    });
+
+    // Update product average rating
+    const stats = await prisma.review.aggregate({
+      where: { productId },
+      _avg: { rating: true },
+      _count: { rating: true },
+    });
+
+    return review;
+  }
 }

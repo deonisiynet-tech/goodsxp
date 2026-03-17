@@ -11,6 +11,10 @@ const controller = new ProductController();
 router.get('/', controller.getAll);
 router.get('/:id', controller.getById);
 
+// Review routes
+router.get('/:id/reviews', controller.getReviews);
+router.post('/:id/reviews', controller.createReview);
+
 // Admin routes
 router.use(authenticate, authorize(Role.ADMIN));
 router.get('/admin/all', controller.getAllAdmin);
