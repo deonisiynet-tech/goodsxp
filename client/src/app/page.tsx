@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, Truck, Shield, RefreshCw, Star, Zap, CheckCircle } from 'lucide-react';
+import { ArrowRight, Truck, Shield, RefreshCw, Star, Zap, CheckCircle, Headset, Package } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ProductList from '@/components/ProductList';
@@ -142,6 +142,38 @@ export default function Home() {
         {/* ===== POPULAR PRODUCTS ===== */}
         <ProductList title="Популярні товари" limit={8} showAllLink />
 
+        {/* ===== WHY CHOOSE US ===== */}
+        <section className="py-24 bg-surface/50">
+          <div className="container mx-auto px-4">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+              <div>
+                <h2 className="text-4xl md:text-5xl font-bold mb-6">
+                  Чому обирають GoodsXP
+                </h2>
+                <p className="text-muted text-lg mb-8 leading-relaxed">
+                  Ми не просто магазин — ми ваш надійний партнер у світі технологій.
+                  Кожен товар проходить ретельну перевірку, а наша команда експертів
+                  готова допомогти з вибором у будь-який час.
+                </p>
+
+                <div className="space-y-4">
+                  <FeatureItem text="Офіційна гарантія на всі товари" />
+                  <FeatureItem text="Професійна консультація" />
+                  <FeatureItem text="Швидка обробка замовлень" />
+                  <FeatureItem text="Постійні оновлення асортименту" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <StatCard icon={Truck} label="Стабільні поставки" />
+                <StatCard icon={Shield} label="Гарантія безпеки" />
+                <StatCard icon={Star} label="Високий рейтинг" />
+                <StatCard icon={Headset} label="Жива підтримка" />
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* ===== CTA SECTION ===== */}
         <section className="py-24">
           <div className="container mx-auto px-4">
@@ -193,6 +225,30 @@ function AdvantageCard({
         <h3 className="text-lg font-semibold mb-2">{title}</h3>
         <p className="text-muted text-sm leading-relaxed">{description}</p>
       </div>
+    </div>
+  );
+}
+
+function FeatureItem({ text }: { text: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="w-6 h-6 rounded-full bg-gradient-to-r from-primary to-purple-400 flex items-center justify-center flex-shrink-0">
+        <svg className="w-4 h-4 text-background" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+        </svg>
+      </div>
+      <span className="text-muted">{text}</span>
+    </div>
+  );
+}
+
+function StatCard({ icon: Icon, label }: { icon: any; label: string }) {
+  return (
+    <div className="group p-6 rounded-2xl bg-surface/50 backdrop-blur-sm border border-border/50 hover:border-purple-500/50 transition-all duration-300 hover:shadow-[0_0_30px_rgba(168,85,247,0.2)] hover:-translate-y-1">
+      <div className="w-14 h-14 mx-auto mb-4 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 flex items-center justify-center group-hover:scale-110 transition-transform duration-300">
+        <Icon size={24} className="text-white" strokeWidth={1.5} />
+      </div>
+      <div className="text-sm font-medium text-white text-center">{label}</div>
     </div>
   );
 }
