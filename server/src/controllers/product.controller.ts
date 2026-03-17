@@ -54,7 +54,7 @@ export class ProductController {
 
   async create(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { title, description, price, stock, isActive, images } = req.body;
+      const { title, description, price, originalPrice, discountPrice, stock, isActive, images, isFeatured, isPopular } = req.body;
 
       let imageUrl: string | undefined = undefined;
       let imagesArray: string[] = [];
@@ -90,10 +90,14 @@ export class ProductController {
         title,
         description,
         price: Number(price),
+        originalPrice: originalPrice ? Number(originalPrice) : null,
+        discountPrice: discountPrice ? Number(discountPrice) : null,
         imageUrl: imageUrl || undefined,
         images: imagesArray,
         stock: stock ? Number(stock) : 0,
         isActive: isActive === 'true',
+        isFeatured: isFeatured === 'true' || isFeatured === true,
+        isPopular: isPopular === 'true' || isPopular === true,
       });
 
       // Log the action

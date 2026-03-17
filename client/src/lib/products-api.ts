@@ -6,6 +6,10 @@ export interface Product {
   title: string
   description: string
   price: number
+  originalPrice: number | null
+  discountPrice: number | null
+  isFeatured: boolean
+  isPopular: boolean
   imageUrl: string | null
   images: string[]
   stock: number
@@ -94,17 +98,25 @@ export const productsApi = {
     title: string
     description: string
     price: number
+    originalPrice?: number | null
+    discountPrice?: number | null
     stock: number
     isActive: boolean
     images: string[]
+    isFeatured?: boolean
+    isPopular?: boolean
   }) => {
     const formData = new FormData()
     formData.append('title', data.title)
     formData.append('description', data.description)
     formData.append('price', String(data.price))
+    if (data.originalPrice) formData.append('originalPrice', String(data.originalPrice))
+    if (data.discountPrice) formData.append('discountPrice', String(data.discountPrice))
     formData.append('stock', String(data.stock))
     formData.append('isActive', String(data.isActive))
     formData.append('images', JSON.stringify(data.images))
+    if (data.isFeatured) formData.append('isFeatured', String(data.isFeatured))
+    if (data.isPopular) formData.append('isPopular', String(data.isPopular))
 
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
     console.log('🔑 Create product - Token exists:', !!token)
@@ -121,17 +133,25 @@ export const productsApi = {
     title: string
     description: string
     price: number
+    originalPrice?: number | null
+    discountPrice?: number | null
     stock: number
     isActive: boolean
     images: string[]
+    isFeatured?: boolean
+    isPopular?: boolean
   }) => {
     const formData = new FormData()
     formData.append('title', data.title)
     formData.append('description', data.description)
     formData.append('price', String(data.price))
+    if (data.originalPrice) formData.append('originalPrice', String(data.originalPrice))
+    if (data.discountPrice) formData.append('discountPrice', String(data.discountPrice))
     formData.append('stock', String(data.stock))
     formData.append('isActive', String(data.isActive))
     formData.append('images', JSON.stringify(data.images))
+    if (data.isFeatured) formData.append('isFeatured', String(data.isFeatured))
+    if (data.isPopular) formData.append('isPopular', String(data.isPopular))
 
     return fetchAPI(`/products/${id}`, {
       method: 'PUT',

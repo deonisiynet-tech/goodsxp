@@ -24,10 +24,14 @@ interface Product {
   title: string;
   description: string | null;
   price: number;
+  originalPrice: number | null;
+  discountPrice: number | null;
   imageUrl: string | null;
   images: string[] | null;
   stock: number;
   isActive: boolean;
+  isFeatured: boolean;
+  isPopular: boolean;
   averageRating?: number;
   reviewCount?: number;
 }
@@ -302,7 +306,26 @@ export default function ProductPage() {
           {/* Info */}
           <div className="flex flex-col">
             <h1 className="text-3xl md:text-4xl font-light mb-4">{product.title}</h1>
-            
+
+            {/* Badges */}
+            <div className="flex flex-wrap gap-2 mb-4">
+              {product.isFeatured && (
+                <span className="px-3 py-1.5 bg-gradient-to-r from-orange-500 to-red-500 text-white text-sm font-bold rounded-lg shadow-lg">
+                  🔥 Хіт продаж
+                </span>
+              )}
+              {product.isPopular && (
+                <span className="px-3 py-1.5 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-sm font-bold rounded-lg shadow-lg">
+                  ⭐ Популярний товар
+                </span>
+              )}
+              {product.discountPrice && product.originalPrice && (
+                <span className="px-3 py-1.5 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-sm font-bold rounded-lg shadow-lg">
+                  -{Math.round((1 - product.discountPrice / product.originalPrice) * 100)}% Знижка
+                </span>
+              )}
+            </div>
+
             {/* Rating */}
             <div className="flex items-center gap-3 mb-4">
               <div className="flex items-center gap-1">
@@ -326,9 +349,23 @@ export default function ProductPage() {
               </button>
             </div>
 
-            <p className="text-4xl font-light mb-6">
-              {Number(product.price).toLocaleString('uk-UA')} ₴
-            </p>
+            {/* Price with discount */}
+            <div className="mb-6">
+              {product.discountPrice && product.originalPrice ? (
+                <div className="flex items-baseline gap-3">
+                  <span className="text-4xl font-bold text-white">
+                    {Number(product.discountPrice).toLocaleString('uk-UA')} ₴
+                  </span>
+                  <span className="text-xl text-muted line-through">
+                    {Number(product.originalPrice).toLocaleString('uk-UA')} ₴
+                  </span>
+                </div>
+              ) : (
+                <p className="text-4xl font-light mb-6">
+                  {Number(product.price).toLocaleString('uk-UA')} ₴
+                </p>
+              )}
+            </div>
 
             <div
               className={`mb-6 ${
