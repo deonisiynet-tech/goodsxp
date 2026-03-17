@@ -75,15 +75,15 @@
 }
 
 ::-webkit-scrollbar-track {
-  @apply bg-[#0f0f12];
+  @apply bg-[#0a0a0e];
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-gradient-to-b from-purple-600 to-pink-500 rounded-full;
+  @apply bg-gradient-to-b from-purple-700 to-pink-700 rounded-full;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-gradient-to-b from-purple-500 to-pink-400;
+  @apply bg-gradient-to-b from-purple-600 to-pink-600;
 }
 
 /* Selection */

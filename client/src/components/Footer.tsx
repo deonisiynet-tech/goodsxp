@@ -15,7 +15,7 @@ const footerLinks = {
 
 export default function Footer() {
   return (
-    <footer className="bg-gradient-to-b from-[#0a0a0c] via-[#08080a] to-[#050507] border-t border-purple-500/15">
+    <footer className="bg-gradient-to-b from-[#0d0d10] via-[#0a0a0e] to-[#08080c] border-t border-purple-500/20">
       <div className="container mx-auto px-4 py-12 md:py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12">
           {/* Brand */}
@@ -82,7 +82,7 @@ export default function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="border-t border-purple-500/10 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+        <div className="border-t border-purple-500/20 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-muted text-sm">
             © {new Date().getFullYear()} GoodsXP. Всі права захищено.
           </p>
