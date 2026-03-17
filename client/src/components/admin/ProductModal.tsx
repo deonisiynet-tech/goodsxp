@@ -44,18 +44,13 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
     handleSubmit,
     formState: { errors },
     reset,
-    watch,
   } = useForm({
     defaultValues: {
       title: product?.title || '',
       description: product?.description || '',
       price: product?.price || 0,
-      originalPrice: product?.originalPrice || 0,
-      discountPrice: product?.discountPrice || 0,
       stock: product?.stock || 0,
       isActive: product?.isActive ?? true,
-      isFeatured: product?.isFeatured ?? false,
-      isPopular: product?.isPopular ?? false,
     },
   })
 
@@ -65,12 +60,8 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
       title: product?.title || '',
       description: product?.description || '',
       price: product?.price || 0,
-      originalPrice: product?.originalPrice || 0,
-      discountPrice: product?.discountPrice || 0,
       stock: product?.stock || 0,
       isActive: product?.isActive ?? true,
-      isFeatured: product?.isFeatured ?? false,
-      isPopular: product?.isPopular ?? false,
     })
     setExistingImages(product?.images || [])
     setNewImages([])
@@ -91,8 +82,6 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
         price: data.price,
         stock: data.stock,
         isActive: data.isActive,
-        isFeatured: data.isFeatured,
-        isPopular: data.isPopular,
         imagesCount: allImageUrls.length,
         images: allImageUrls,
       })
@@ -103,12 +92,8 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
           title: data.title,
           description: data.description,
           price: data.price,
-          originalPrice: data.originalPrice,
-          discountPrice: data.discountPrice,
           stock: data.stock,
           isActive: data.isActive,
-          isFeatured: data.isFeatured,
-          isPopular: data.isPopular,
           images: allImageUrls,
         })
         console.log('📝 Update result:', result)
@@ -119,12 +104,8 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
           title: data.title,
           description: data.description,
           price: data.price,
-          originalPrice: data.originalPrice,
-          discountPrice: data.discountPrice,
           stock: data.stock,
           isActive: data.isActive,
-          isFeatured: data.isFeatured,
-          isPopular: data.isPopular,
           images: allImageUrls,
         })
         console.log('📦 Create result:', result)
@@ -281,9 +262,9 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
             )}
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-2 gap-4">
             <div>
-              <label className="block text-sm font-medium mb-1">Ціна (звичайна) *</label>
+              <label className="block text-sm font-medium mb-1">Ціна (₴) *</label>
               <input
                 {...register('price', {
                   required: 'Ціна обов\'язкова',
@@ -299,78 +280,19 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
             </div>
 
             <div>
-              <label className="block text-sm font-medium mb-1">
-                <span className="text-purple-400">Ціна (оригінальна)</span>
-              </label>
+              <label className="block text-sm font-medium mb-1">Залишок (шт.) *</label>
               <input
-                {...register('originalPrice', {
-                  min: { value: 0, message: 'Ціна має бути додатною' },
+                {...register('stock', {
+                  required: 'Залишок обов\'язковий',
+                  min: { value: 0, message: 'Некоректне значення' },
                 })}
                 type="number"
-                step="0.01"
                 className="input-field"
-                placeholder="999"
               />
-              <p className="text-xs text-muted mt-1">Для знижки</p>
+              {errors.stock && (
+                <p className="text-red-400 text-sm mt-1">{errors.stock.message as string}</p>
+              )}
             </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                <span className="text-pink-400">Ціна зі знижкою</span>
-              </label>
-              <input
-                {...register('discountPrice', {
-                  min: { value: 0, message: 'Ціна має бути додатною' },
-                })}
-                type="number"
-                step="0.01"
-                className="input-field"
-                placeholder="699"
-              />
-              <p className="text-xs text-muted mt-1">Необов'язково</p>
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">Залишок (шт.) *</label>
-            <input
-              {...register('stock', {
-                required: 'Залишок обов\'язковий',
-                min: { value: 0, message: 'Некоректне значення' },
-              })}
-              type="number"
-              className="input-field"
-            />
-            {errors.stock && (
-              <p className="text-red-400 text-sm mt-1">{errors.stock.message as string}</p>
-            )}
-          </div>
-
-          {/* Badges */}
-          <div className="grid grid-cols-2 gap-4">
-            <label className="flex items-center gap-3 p-4 rounded-xl border border-border hover:border-purple-500/50 cursor-pointer transition-colors bg-surface/50">
-              <input
-                type="checkbox"
-                {...register('isFeatured')}
-                className="w-5 h-5 rounded accent-purple-500"
-              />
-              <div>
-                <span className="font-medium text-white">🔥 Хіт продаж</span>
-                <p className="text-xs text-muted">Показувати бейдж на товарі</p>
-              </div>
-            </label>
-
-            <label className="flex items-center gap-3 p-4 rounded-xl border border-border hover:border-purple-500/50 cursor-pointer transition-colors bg-surface/50">
-              <input
-                type="checkbox"
-                {...register('isPopular')}
-                className="w-5 h-5 rounded accent-purple-500"
-              />
-              <div>
-                <span className="font-medium text-white">⭐ Популярний товар</span>
-                <p className="text-xs text-muted">Показувати бейдж на товарі</p>
-              </div>
-            </label>
           </div>
 
           {/* Image Gallery */}
