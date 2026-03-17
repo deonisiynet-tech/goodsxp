@@ -10,7 +10,6 @@ import ProductModal from '@/components/ProductModal';
 
 interface Product {
   id: string;
-  sku: string;
   title: string;
   description: string;
   price: number;
@@ -372,11 +371,6 @@ export default function CatalogContent() {
                       <h3 className="font-medium text-sm md:text-base mb-2 text-white line-clamp-2 min-h-[2.5rem]">
                         {product.title}
                       </h3>
-
-                      {/* SKU */}
-                      <p className="text-xs text-[#9ca3af] mb-2 font-mono">
-                        SKU: {product.sku ? product.sku.slice(0, 8).toUpperCase() : 'N/A'}
-                      </p>
 
                       {/* Rating */}
                       {product.averageRating !== undefined && product.reviewCount !== undefined && (

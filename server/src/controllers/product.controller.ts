@@ -12,14 +12,13 @@ export class ProductController {
   // Public routes
   async getAll(req: Request, res: Response, next: NextFunction) {
     try {
-      const { page, limit, search, sortBy, sortOrder, sku } = req.query;
+      const { page, limit, search, sortBy, sortOrder } = req.query;
       const result = await productService.getAll({
         page: page ? Number(page) : 1,
         limit: limit ? Number(limit) : 20,
         search: search as string,
         sortBy: sortBy as 'createdAt' | 'price' | 'title',
         sortOrder: sortOrder as 'asc' | 'desc',
-        sku: sku as string,
       });
       res.json(result);
     } catch (error) {
@@ -55,7 +54,7 @@ export class ProductController {
 
   async create(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { title, description, price, stock, isActive, images, sku } = req.body;
+      const { title, description, price, stock, isActive, images } = req.body;
 
       let imageUrl: string | undefined = undefined;
       let imagesArray: string[] = [];
@@ -95,7 +94,6 @@ export class ProductController {
         images: imagesArray,
         stock: stock ? Number(stock) : 0,
         isActive: isActive === 'true',
-        sku: sku || undefined,
       });
 
       // Log the action

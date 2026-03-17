@@ -49,5 +49,4 @@ export const paginationSchema = z.object({
   category: z.string().optional(),
   minPrice: z.coerce.number().positive().optional(),
   maxPrice: z.coerce.number().positive().optional(),
-  sku: z.string().optional(),
 });

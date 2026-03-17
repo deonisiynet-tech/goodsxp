@@ -8,13 +8,12 @@ interface ProductFilters {
   search?: string;
   sortBy?: 'createdAt' | 'price' | 'title';
   sortOrder?: 'asc' | 'desc';
-  sku?: string;
 }
 
 export class ProductService {
   async getAll(filters: ProductFilters) {
     const validated = paginationSchema.parse(filters);
-    const { page, limit, search, sortBy, sortOrder, sku } = validated;
+    const { page, limit, search, sortBy, sortOrder } = validated;
 
     const skip = (page - 1) * limit;
 
@@ -24,10 +23,8 @@ export class ProductService {
         OR: [
           { title: { contains: search, mode: 'insensitive' as const } },
           { description: { contains: search, mode: 'insensitive' as const } },
-          { sku: { contains: search, mode: 'insensitive' as const } },
         ],
       }),
-      ...(sku && { sku: { contains: sku, mode: 'insensitive' as const } }),
     };
 
     const [products, total] = await Promise.all([
@@ -38,7 +35,6 @@ export class ProductService {
         orderBy: { [sortBy]: sortOrder },
         select: {
           id: true,
-          sku: true,
           title: true,
           description: true,
           price: true,
@@ -68,7 +64,6 @@ export class ProductService {
       where: { id },
       select: {
         id: true,
-        sku: true,
         title: true,
         description: true,
         price: true,
@@ -96,7 +91,6 @@ export class ProductService {
     images?: string[];
     stock?: number;
     isActive?: boolean;
-    sku?: string;
   }) {
     const product = await prisma.product.create({
       data: {
@@ -107,7 +101,6 @@ export class ProductService {
         images: data.images ?? [],
         stock: data.stock ?? 0,
         isActive: data.isActive ?? true,
-        sku: data.sku ?? null,
       },
     });
 
@@ -142,7 +135,7 @@ export class ProductService {
 
   async getAllAdmin(filters: ProductFilters) {
     const validated = paginationSchema.parse(filters);
-    const { page, limit, search, sortBy, sortOrder, sku } = validated;
+    const { page, limit, search, sortBy, sortOrder } = validated;
 
     const skip = (page - 1) * limit;
 
@@ -151,7 +144,6 @@ export class ProductService {
           OR: [
             { title: { contains: search, mode: 'insensitive' as const } },
             { description: { contains: search, mode: 'insensitive' as const } },
-            { sku: { contains: search, mode: 'insensitive' as const } },
           ],
         }
       : {};
@@ -164,7 +156,6 @@ export class ProductService {
         orderBy: { [sortBy]: sortOrder },
         select: {
           id: true,
-          sku: true,
           title: true,
           description: true,
           price: true,

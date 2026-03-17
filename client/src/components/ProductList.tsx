@@ -9,7 +9,6 @@ import { ShoppingCart } from 'lucide-react';
 
 interface Product {
   id: string;
-  sku: string;
   title: string;
   description: string;
   price: number;
@@ -134,9 +133,6 @@ export default function ProductList({ title = 'Каталог товарів', l
                   <h3 className="font-medium text-base mb-2 line-clamp-2 group-hover:text-secondary transition-colors">
                     {product.title}
                   </h3>
-                  <p className="text-xs text-[#9ca3af] mb-2 font-mono">
-                    SKU: {product.sku ? product.sku.slice(0, 8).toUpperCase() : 'N/A'}
-                  </p>
                   <div className="flex items-center justify-between">
                     <span className="text-lg font-light">
                       {Number(product.price).toLocaleString('uk-UA')} ₴

@@ -3,7 +3,6 @@
 
 export interface Product {
   id: string
-  sku: string | null
   title: string
   description: string
   price: number
@@ -98,7 +97,6 @@ export const productsApi = {
     stock: number
     isActive: boolean
     images: string[]
-    sku?: string
   }) => {
     const formData = new FormData()
     formData.append('title', data.title)
@@ -107,7 +105,6 @@ export const productsApi = {
     formData.append('stock', String(data.stock))
     formData.append('isActive', String(data.isActive))
     formData.append('images', JSON.stringify(data.images))
-    if (data.sku) formData.append('sku', data.sku)
 
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null
     console.log('🔑 Create product - Token exists:', !!token)
@@ -127,7 +124,6 @@ export const productsApi = {
     stock: number
     isActive: boolean
     images: string[]
-    sku?: string
   }) => {
     const formData = new FormData()
     formData.append('title', data.title)
@@ -136,7 +132,6 @@ export const productsApi = {
     formData.append('stock', String(data.stock))
     formData.append('isActive', String(data.isActive))
     formData.append('images', JSON.stringify(data.images))
-    if (data.sku) formData.append('sku', data.sku)
 
     return fetchAPI(`/products/${id}`, {
       method: 'PUT',
