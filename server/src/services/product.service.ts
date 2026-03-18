@@ -1,7 +1,6 @@
 import prisma from '../prisma/client.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { productSchema, productUpdateSchema, paginationSchema } from '../utils/validators.js';
-import { Decimal } from '@prisma/client/runtime/library.js';
 
 interface ProductFilters {
   page?: number;
@@ -122,8 +121,8 @@ export class ProductService {
         title: data.title,
         description: data.description,
         price: data.price,
-        originalPrice: data.originalPrice ? new Decimal(data.originalPrice) : null,
-        discountPrice: data.discountPrice ? new Decimal(data.discountPrice) : null,
+        originalPrice: data.originalPrice ?? null,
+        discountPrice: data.discountPrice ?? null,
         isFeatured: data.isFeatured ?? false,
         isPopular: data.isPopular ?? false,
         imageUrl: data.imageUrl ?? null,
