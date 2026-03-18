@@ -11,6 +11,7 @@
     "start": "node dist/server.js",
     "migrate": "tsx src/prisma/migrate.ts",
     "migrate:dev": "prisma migrate dev",
+    "check-db": "tsx src/prisma/check-db.ts",
     "prisma:generate": "dotenv -e .env -- prisma generate",
     "prisma:migrate": "dotenv -e .env -- prisma migrate dev",
     "prisma:migrate:prod": "tsx src/prisma/migrate.ts",

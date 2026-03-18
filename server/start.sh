@@ -6,7 +6,7 @@
 set -e
 
 echo "🔄 Running Prisma migrations..."
-npx prisma migrate deploy --schema=./prisma/schema.prisma
+node dist/prisma/migrate.js
 
 echo "✅ Migrations complete"
 echo "🚀 Starting server..."
