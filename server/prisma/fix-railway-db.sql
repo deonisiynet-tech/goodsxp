@@ -6,6 +6,39 @@
 -- БЕЗ втрати існуючих даних
 -- =====================================================
 
+-- 0. Створюємо ENUM типи якщо їх немає
+-- =====================================================
+
+DO $$ BEGIN
+  CREATE TYPE "Role" AS ENUM ('USER', 'ADMIN');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "OrderStatus" AS ENUM ('NEW', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "ActionType" AS ENUM ('CREATE', 'UPDATE', 'DELETE', 'LOGIN', 'LOGOUT', 'PASSWORD_RESET', 'SETTINGS_UPDATE');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "LogLevel" AS ENUM ('INFO', 'WARNING', 'ERROR');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
+DO $$ BEGIN
+  CREATE TYPE "LogSource" AS ENUM ('ADMIN_PANEL', 'API', 'SYSTEM');
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;
+
 -- 1. Додаємо відсутні колонки в Product (якщо їх немає)
 -- =====================================================
 

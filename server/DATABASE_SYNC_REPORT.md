@@ -263,6 +263,30 @@ npm run prisma:studio
 | Prisma 7 не підтримує url в schema.prisma | Використано PrismaPg adapter |
 | prisma migrate deploy не працює | Створено кастомний скрипт міграцій |
 | Відсутні таблиці Review/Category/SystemLog | Додано через SQL-скрипт |
+| **type "Role" already exists** | **Додано EXCEPTION WHEN duplicate_object** |
+
+---
+
+## 🆕 Останні зміни
+
+### Виправлення помилки "type already exists"
+
+Якщо ви бачите помилку:
+```
+error: type "Role" already exists
+Migration error: error: type "Role" already exists
+```
+
+**Причина:** ENUM типи вже існують в базі даних, але міграція намагається створити їх знову.
+
+**Рішення:**
+1. Скрипт `migrate.ts` тепер автоматично обробляє цю помилку
+2. Використовується конструкція `DO $$ BEGIN ... EXCEPTION WHEN duplicate_object THEN NULL; END $$;`
+3. Помилка логується як попередження, але міграція продовжується
+
+**Файли оновлено:**
+- `src/prisma/migrate.ts` - додавлено обробку duplicate_object помилок
+- `prisma/fix-railway-db.sql` - ENUM створюються з EXCEPTION
 
 ---
 

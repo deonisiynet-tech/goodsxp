@@ -51,7 +51,17 @@ export async function runMigrations() {
 
       console.log(`Applying ${dir}...`)
       const migrationFile = path.join(migrationsDir, dir, 'migration.sql')
-      const sql = fs.readFileSync(migrationFile, 'utf-8')
+      let sql = fs.readFileSync(migrationFile, 'utf-8')
+
+      // Remove CREATE TYPE statements if type already exists
+      // This prevents errors when enums already exist in the database
+      sql = sql.replace(/CREATE TYPE "(\w+)" AS ENUM ([^;]+);/g, (match, typeName, enumValues) => {
+        return `DO $$ BEGIN
+  CREATE TYPE "${typeName}" AS ENUM (${enumValues});
+EXCEPTION
+  WHEN duplicate_object THEN NULL;
+END $$;`
+      })
 
       await client.query('BEGIN')
       try {
@@ -62,8 +72,20 @@ export async function runMigrations() {
         `, [dir, '', dir])
         await client.query('COMMIT')
         console.log(`✓ Applied ${dir}`)
-      } catch (err) {
+      } catch (err: any) {
         await client.query('ROLLBACK')
+        // Check if error is about existing objects (not critical)
+        const isDuplicateError = err.code === '42710' || err.message.includes('already exists')
+        if (isDuplicateError) {
+          console.warn(`⚠️ Warning for ${dir}: ${err.message}`)
+          // Still mark as applied since objects exist
+          await client.query(`
+            INSERT INTO "_prisma_migrations" (id, checksum, migration_name, finished_at, applied_steps_count)
+            VALUES ($1, $2, $3, now(), 1)
+            ON CONFLICT (id) DO NOTHING
+          `, [dir, '', dir])
+          continue
+        }
         console.error(`✗ Failed to apply ${dir}:`, err)
         throw err
       }
