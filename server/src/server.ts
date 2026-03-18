@@ -80,6 +80,7 @@ import uploadRoutes from './routes/upload.routes.js';
 import adminAuthRoutes from './routes/admin.auth.routes.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 import { initializeAdmin } from './utils/initAdmin.js';
+import { runMigrations } from './prisma/migrate.js';
 console.log('✅ All imports completed successfully');
 
 // ==================================
@@ -240,6 +241,15 @@ console.log('🎧 ABOUT TO LISTEN on port', PORT);
 
 nextApp.prepare().then(async () => {
   console.log('✅ Next.js prepared successfully');
+
+  // Run migrations first
+  console.log('🔄 Running database migrations...');
+  try {
+    await runMigrations();
+    console.log('✅ Database migrations completed');
+  } catch (err: any) {
+    console.error('⚠️ Migration warning:', err.message);
+  }
 
   // Initialize admin user
   await initializeAdmin();

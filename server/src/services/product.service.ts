@@ -143,9 +143,19 @@ export class ProductService {
       throw new AppError('Товар не знайдено', 404);
     }
 
+    // Only include fields that exist in the Prisma schema
+    const updateData: any = {};
+    if (validated.title !== undefined) updateData.title = validated.title;
+    if (validated.description !== undefined) updateData.description = validated.description;
+    if (validated.price !== undefined) updateData.price = validated.price;
+    if (validated.imageUrl !== undefined) updateData.imageUrl = validated.imageUrl;
+    if (validated.images !== undefined) updateData.images = validated.images;
+    if (validated.stock !== undefined) updateData.stock = validated.stock;
+    if (validated.isActive !== undefined) updateData.isActive = validated.isActive;
+
     const product = await prisma.product.update({
       where: { id },
-      data: validated,
+      data: updateData,
     });
 
     return product;
