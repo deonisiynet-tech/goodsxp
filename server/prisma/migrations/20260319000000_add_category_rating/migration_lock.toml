@@ -1,4 +1,0 @@
-# Migration lock file for Prisma
-# This file ensures migration consistency across environments
-
-provider = "postgresql"
