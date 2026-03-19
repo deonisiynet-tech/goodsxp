@@ -1,8 +1,10 @@
 # Root Dockerfile for Railway - Fullstack Build
 # Next.js 14 + Express API Server + Cloudinary Support
-# 
+#
 # IMPORTANT: Next.js runs in NODE runtime (not Edge)
 # All API routes are handled by Express server
+#
+# BUILD VERSION: 2026-03-19-fix-prisma-fields
 
 FROM node:20-alpine AS base
 

@@ -1,6 +1,7 @@
 import prisma from '../prisma/client.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { productSchema, productUpdateSchema, paginationSchema } from '../utils/validators.js';
+import { Product } from '@prisma/client';
 
 interface ProductFilters {
   page?: number;
@@ -8,6 +9,42 @@ interface ProductFilters {
   search?: string;
   sortBy?: 'createdAt' | 'price' | 'title';
   sortOrder?: 'asc' | 'desc';
+}
+
+interface ProductWithReviews extends Omit<Product, 'reviews'> {
+  reviews: { rating: number }[];
+}
+
+interface ProductCreateInput {
+  title: string;
+  description: string;
+  price: number;
+  categoryId?: string | null;
+  rating?: number | null;
+  originalPrice?: number | null;
+  discountPrice?: number | null;
+  isFeatured?: boolean;
+  isPopular?: boolean;
+  imageUrl?: string | null;
+  images?: string[];
+  stock?: number;
+  isActive?: boolean;
+}
+
+interface ProductUpdateInput {
+  title?: string;
+  description?: string;
+  price?: number;
+  categoryId?: string | null;
+  rating?: number | null;
+  originalPrice?: number | null;
+  discountPrice?: number | null;
+  isFeatured?: boolean;
+  isPopular?: boolean;
+  imageUrl?: string | null;
+  images?: string[];
+  stock?: number;
+  isActive?: boolean;
 }
 
 export class ProductService {
@@ -91,7 +128,7 @@ export class ProductService {
           },
         },
       },
-    });
+    }) as ProductWithReviews | null;
 
     if (!product) {
       throw new AppError('Товар не знайдено', 404);
@@ -115,21 +152,7 @@ export class ProductService {
     };
   }
 
-  async create(data: {
-    title: string;
-    description: string;
-    price: number;
-    categoryId?: string | null;
-    rating?: number | null;
-    originalPrice?: number | null;
-    discountPrice?: number | null;
-    isFeatured?: boolean;
-    isPopular?: boolean;
-    imageUrl?: string | null;
-    images?: string[];
-    stock?: number;
-    isActive?: boolean;
-  }) {
+  async create(data: ProductCreateInput) {
     const product = await prisma.product.create({
       data: {
         title: data.title,
@@ -151,29 +174,26 @@ export class ProductService {
     return product;
   }
 
-  async update(id: string, data: Partial<typeof productSchema._type>) {
-    const validated = productUpdateSchema.parse(data);
-
+  async update(id: string, data: ProductUpdateInput) {
     const existing = await prisma.product.findUnique({ where: { id } });
     if (!existing) {
       throw new AppError('Товар не знайдено', 404);
     }
 
-    // Only include fields that exist in the Prisma schema
-    const updateData: any = {};
-    if (validated.title !== undefined) updateData.title = validated.title;
-    if (validated.description !== undefined) updateData.description = validated.description;
-    if (validated.price !== undefined) updateData.price = validated.price;
-    if (validated.categoryId !== undefined) updateData.categoryId = validated.categoryId;
-    if (validated.rating !== undefined) updateData.rating = validated.rating;
-    if (validated.originalPrice !== undefined) updateData.originalPrice = validated.originalPrice;
-    if (validated.discountPrice !== undefined) updateData.discountPrice = validated.discountPrice;
-    if (validated.isFeatured !== undefined) updateData.isFeatured = validated.isFeatured;
-    if (validated.isPopular !== undefined) updateData.isPopular = validated.isPopular;
-    if (validated.imageUrl !== undefined) updateData.imageUrl = validated.imageUrl;
-    if (validated.images !== undefined) updateData.images = validated.images;
-    if (validated.stock !== undefined) updateData.stock = validated.stock;
-    if (validated.isActive !== undefined) updateData.isActive = validated.isActive;
+    const updateData: ProductUpdateInput = {};
+    if (data.title !== undefined) updateData.title = data.title;
+    if (data.description !== undefined) updateData.description = data.description;
+    if (data.price !== undefined) updateData.price = data.price;
+    if (data.categoryId !== undefined) updateData.categoryId = data.categoryId;
+    if (data.rating !== undefined) updateData.rating = data.rating;
+    if (data.originalPrice !== undefined) updateData.originalPrice = data.originalPrice;
+    if (data.discountPrice !== undefined) updateData.discountPrice = data.discountPrice;
+    if (data.isFeatured !== undefined) updateData.isFeatured = data.isFeatured;
+    if (data.isPopular !== undefined) updateData.isPopular = data.isPopular;
+    if (data.imageUrl !== undefined) updateData.imageUrl = data.imageUrl;
+    if (data.images !== undefined) updateData.images = data.images;
+    if (data.stock !== undefined) updateData.stock = data.stock;
+    if (data.isActive !== undefined) updateData.isActive = data.isActive;
 
     const product = await prisma.product.update({
       where: { id },

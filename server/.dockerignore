@@ -2,7 +2,8 @@ node_modules
 dist
 .git
 *.md
-.env
+# .env - needed for Prisma
+#.env
 .env.local
 .dockerignore
 .vscode
