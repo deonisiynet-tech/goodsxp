@@ -5,7 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc && cp -r prisma/migrations dist/prisma/migrations 2>/dev/null || xcopy /E /I prisma\\migrations dist\\prisma\\migrations",
+    "build": "tsc && xcopy /E /I /Y prisma\\migrations dist\\prisma\\migrations",
     "build:client": "cd ../client && npm install && npm run build",
     "build:all": "npm run build:client && npm run build",
     "start": "node dist/server.js",
