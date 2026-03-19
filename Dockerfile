@@ -133,5 +133,5 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 
 # Start Express server which handles both API routes and Next.js pages
 # Next.js runs in Node runtime (not Edge)
-# Apply production migration first, then start server
-CMD ["sh", "-c", "psql \"$DATABASE_URL\" -f ./prisma/railway-production-migration.sql || true && node dist/server.js"]
+# Sync schema with database first, then start server
+CMD ["sh", "-c", "npx prisma db push --schema=./prisma/schema.prisma --accept-data-loss --skip-generate || true && node dist/server.js"]

@@ -13,6 +13,9 @@ export async function runMigrations() {
   const client = await pool.connect()
 
   try {
+    console.log('🔄 Starting migrations...')
+    console.log('📂 Migrations directory:', path.join(__dirname, '../../prisma/migrations'))
+
     // Create migrations table if not exists
     await client.query(`
       CREATE TABLE IF NOT EXISTS "_prisma_migrations" (
@@ -31,10 +34,26 @@ export async function runMigrations() {
     const applied = await client.query('SELECT migration_name FROM "_prisma_migrations" WHERE finished_at IS NOT NULL')
     const appliedNames = new Set(applied.rows.map(r => r.migration_name))
 
-    console.log('Applied migrations:', appliedNames)
+    console.log('✅ Applied migrations:', appliedNames)
 
-    // Read migration directories
-    const migrationsDir = path.join(__dirname, '../../prisma/migrations')
+    // Read migration directories - try multiple paths for production
+    let migrationsDir = path.join(__dirname, '../../prisma/migrations')
+    if (!fs.existsSync(migrationsDir)) {
+      // Try dist path for production
+      migrationsDir = path.join(__dirname, '../prisma/migrations')
+    }
+    if (!fs.existsSync(migrationsDir)) {
+      // Try relative to cwd
+      migrationsDir = path.join(process.cwd(), 'prisma/migrations')
+    }
+
+    console.log('📁 Using migrations directory:', migrationsDir)
+
+    if (!fs.existsSync(migrationsDir)) {
+      console.warn('⚠️ Migrations directory not found, skipping migrations')
+      return
+    }
+
     const migrationDirs = fs.readdirSync(migrationsDir)
       .filter(dir => dir.match(/^\d{14}_/))
       .filter(dir => {
