@@ -29,19 +29,19 @@ CMD ["sh", "-c", "npx prisma migrate deploy --schema=./prisma/schema.prisma && n
 
 ---
 
-### 2. Оновлено package.json
+### 2. Оновлено package.json (КРИТИЧНО)
 
 **Було:**
-```json
-"build": "tsc && cp -r prisma/migrations dist/prisma/migrations 2>/dev/null || xcopy /E /I prisma\\migrations dist\\prisma\\migrations"
-```
-
-**Стало:**
 ```json
 "build": "tsc && xcopy /E /I /Y prisma\\migrations dist\\prisma\\migrations"
 ```
 
-**Чому:** Тепер міграції коректно копіюються в `dist/prisma/migrations/` під час збірки на Windows.
+**Стало:**
+```json
+"build": "tsc && node -e \"const fs=require('fs');const path=require('path');const src=path.join(__dirname,'prisma','migrations');const dst=path.join(__dirname,'dist','prisma','migrations');fs.mkdirSync(dst,{recursive:true});fs.cpSync(src,dst,{recursive:true,force:true});\""
+```
+
+**Чому:** `xcopy` — це Windows команда, яка **не працює в Docker/Linux**. Тепер використовується Node.js скрипт, який працює крос-платформово.
 
 ---
 

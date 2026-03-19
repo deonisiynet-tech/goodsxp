@@ -5,7 +5,7 @@
   "main": "dist/server.js",
   "scripts": {
     "dev": "tsx watch src/server.ts",
-    "build": "tsc && xcopy /E /I /Y prisma\\migrations dist\\prisma\\migrations",
+    "build": "tsc && node -e \"const fs=require('fs');const path=require('path');const src=path.join(__dirname,'prisma','migrations');const dst=path.join(__dirname,'dist','prisma','migrations');fs.mkdirSync(dst,{recursive:true});fs.cpSync(src,dst,{recursive:true,force:true});\"",
     "build:client": "cd ../client && npm install && npm run build",
     "build:all": "npm run build:client && npm run build",
     "start": "node dist/server.js",
