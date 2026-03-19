@@ -1,40 +1,20 @@
 -- CreateEnum
-DO $$ BEGIN
-  CREATE TYPE "Role" AS ENUM ('USER', 'ADMIN');
-EXCEPTION
-  WHEN duplicate_object THEN NULL;
-END $$;
+CREATE TYPE "Role" AS ENUM ('USER', 'ADMIN');
 
 -- CreateEnum
-DO $$ BEGIN
-  CREATE TYPE "OrderStatus" AS ENUM ('NEW', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED');
-EXCEPTION
-  WHEN duplicate_object THEN NULL;
-END $$;
+CREATE TYPE "OrderStatus" AS ENUM ('NEW', 'PROCESSING', 'SHIPPED', 'DELIVERED', 'CANCELLED');
 
 -- CreateEnum
-DO $$ BEGIN
-  CREATE TYPE "ActionType" AS ENUM ('CREATE', 'UPDATE', 'DELETE', 'LOGIN', 'LOGOUT', 'PASSWORD_RESET', 'SETTINGS_UPDATE');
-EXCEPTION
-  WHEN duplicate_object THEN NULL;
-END $$;
+CREATE TYPE "ActionType" AS ENUM ('CREATE', 'UPDATE', 'DELETE', 'LOGIN', 'LOGOUT', 'PASSWORD_RESET', 'SETTINGS_UPDATE');
 
 -- CreateEnum
-DO $$ BEGIN
-  CREATE TYPE "LogLevel" AS ENUM ('INFO', 'WARNING', 'ERROR');
-EXCEPTION
-  WHEN duplicate_object THEN NULL;
-END $$;
+CREATE TYPE "LogLevel" AS ENUM ('INFO', 'WARNING', 'ERROR');
 
 -- CreateEnum
-DO $$ BEGIN
-  CREATE TYPE "LogSource" AS ENUM ('ADMIN_PANEL', 'API', 'SYSTEM');
-EXCEPTION
-  WHEN duplicate_object THEN NULL;
-END $$;
+CREATE TYPE "LogSource" AS ENUM ('ADMIN_PANEL', 'API', 'SYSTEM');
 
 -- CreateTable
-CREATE TABLE IF NOT EXISTS "User" (
+CREATE TABLE "User" (
     "id" TEXT NOT NULL,
     "email" TEXT NOT NULL,
     "password" TEXT NOT NULL,
@@ -46,7 +26,7 @@ CREATE TABLE IF NOT EXISTS "User" (
 );
 
 -- CreateTable
-CREATE TABLE IF NOT EXISTS "Category" (
+CREATE TABLE "Category" (
     "id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "slug" TEXT NOT NULL,
@@ -59,7 +39,7 @@ CREATE TABLE IF NOT EXISTS "Category" (
 );
 
 -- CreateTable
-CREATE TABLE IF NOT EXISTS "Product" (
+CREATE TABLE "Product" (
     "id" TEXT NOT NULL,
     "title" TEXT NOT NULL,
     "description" TEXT NOT NULL,
@@ -81,7 +61,7 @@ CREATE TABLE IF NOT EXISTS "Product" (
 );
 
 -- CreateTable
-CREATE TABLE IF NOT EXISTS "Review" (
+CREATE TABLE "Review" (
     "id" TEXT NOT NULL,
     "productId" TEXT NOT NULL,
     "name" TEXT NOT NULL,
@@ -93,7 +73,7 @@ CREATE TABLE IF NOT EXISTS "Review" (
 );
 
 -- CreateTable
-CREATE TABLE IF NOT EXISTS "Order" (
+CREATE TABLE "Order" (
     "id" TEXT NOT NULL,
     "userId" TEXT,
     "name" TEXT NOT NULL,
@@ -110,7 +90,7 @@ CREATE TABLE IF NOT EXISTS "Order" (
 );
 
 -- CreateTable
-CREATE TABLE IF NOT EXISTS "OrderItem" (
+CREATE TABLE "OrderItem" (
     "id" TEXT NOT NULL,
     "orderId" TEXT NOT NULL,
     "productId" TEXT NOT NULL,
@@ -121,7 +101,7 @@ CREATE TABLE IF NOT EXISTS "OrderItem" (
 );
 
 -- CreateTable
-CREATE TABLE IF NOT EXISTS "AdminLog" (
+CREATE TABLE "AdminLog" (
     "id" TEXT NOT NULL,
     "adminId" TEXT NOT NULL,
     "action" "ActionType" NOT NULL,
@@ -136,7 +116,7 @@ CREATE TABLE IF NOT EXISTS "AdminLog" (
 );
 
 -- CreateTable
-CREATE TABLE IF NOT EXISTS "SystemLog" (
+CREATE TABLE "SystemLog" (
     "id" TEXT NOT NULL,
     "timestamp" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
     "level" "LogLevel" NOT NULL DEFAULT 'INFO',
@@ -150,7 +130,7 @@ CREATE TABLE IF NOT EXISTS "SystemLog" (
 );
 
 -- CreateTable
-CREATE TABLE IF NOT EXISTS "SiteSettings" (
+CREATE TABLE "SiteSettings" (
     "id" TEXT NOT NULL,
     "key" TEXT NOT NULL,
     "value" TEXT NOT NULL,

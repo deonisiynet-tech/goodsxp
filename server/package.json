@@ -18,7 +18,8 @@
     "prisma:migrate": "dotenv -e .env -- prisma migrate dev --schema ./prisma/schema.prisma",
     "prisma:migrate:prod": "prisma migrate deploy --schema ./prisma/schema.prisma",
     "prisma:studio": "dotenv -e .env -- prisma studio --schema ./prisma/schema.prisma",
-    "seed": "dotenv -e .env -- tsx src/prisma/seed.ts"
+    "seed": "dotenv -e .env -- tsx src/prisma/seed.ts",
+    "cleanup:migrations": "node cleanup-migrations.js"
   },
   "prisma": {
     "schema": "./prisma/schema.prisma",
