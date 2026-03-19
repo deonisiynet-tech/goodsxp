@@ -25,7 +25,10 @@ COPY server/package*.json ./
 COPY server/prisma ./prisma
 
 # Install ALL dependencies (postinstall will run prisma generate)
-RUN npm install
+# Clean Prisma cache first to ensure fresh generation
+RUN npm install && \
+    rm -rf node_modules/.prisma && \
+    npx prisma generate --schema=./prisma/schema.prisma
 
 # Copy server source files
 COPY server/tsconfig.json ./

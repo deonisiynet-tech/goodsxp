@@ -1,7 +1,6 @@
 import prisma from '../prisma/client.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { productSchema, productUpdateSchema, paginationSchema } from '../utils/validators.js';
-import { Product } from '@prisma/client';
 
 interface ProductFilters {
   page?: number;
@@ -9,10 +8,6 @@ interface ProductFilters {
   search?: string;
   sortBy?: 'createdAt' | 'price' | 'title';
   sortOrder?: 'asc' | 'desc';
-}
-
-interface ProductWithReviews extends Omit<Product, 'reviews'> {
-  reviews: { rating: number }[];
 }
 
 interface ProductCreateInput {
@@ -87,7 +82,7 @@ export class ProductService {
           isActive: true,
           createdAt: true,
         },
-      }),
+      }) as Promise<any[]>,
       prisma.product.count({ where }),
     ]);
 
@@ -128,7 +123,7 @@ export class ProductService {
           },
         },
       },
-    }) as ProductWithReviews | null;
+    }) as any;
 
     if (!product) {
       throw new AppError('Товар не знайдено', 404);
@@ -137,7 +132,7 @@ export class ProductService {
     // Calculate average rating
     const averageRating =
       product.reviews.length > 0
-        ? product.reviews.reduce((sum, r) => sum + r.rating, 0) / product.reviews.length
+        ? product.reviews.reduce((sum: number, r: { rating: number }) => sum + r.rating, 0) / product.reviews.length
         : 0;
 
     const reviewCount = product.reviews.length;
@@ -169,7 +164,7 @@ export class ProductService {
         stock: data.stock ?? 0,
         isActive: data.isActive ?? true,
       },
-    });
+    }) as any;
 
     return product;
   }
@@ -198,7 +193,7 @@ export class ProductService {
     const product = await prisma.product.update({
       where: { id },
       data: updateData,
-    });
+    }) as any;
 
     return product;
   }
@@ -252,7 +247,7 @@ export class ProductService {
           createdAt: true,
           updatedAt: true,
         },
-      }),
+      }) as Promise<any[]>,
       prisma.product.count({ where }),
     ]);
 

@@ -16,6 +16,7 @@ model User {
   logs       AdminLog[]
   orders     Order[]
   systemLogs SystemLog[]
+
   @@index([email])
   @@index([role])
 }
@@ -28,9 +29,9 @@ model Category {
   parentId    String?
   parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children    Category[] @relation("CategoryHierarchy")
-  products    Product[]
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
+
   @@index([slug])
   @@index([parentId])
 }
@@ -40,9 +41,6 @@ model Product {
   title         String
   description   String
   price         Decimal     @db.Decimal(10, 2)
-  categoryId    String?
-  category      Category?   @relation(fields: [categoryId], references: [id])
-  rating        Decimal?    @db.Decimal(3, 2)
   originalPrice Decimal?    @db.Decimal(10, 2)
   discountPrice Decimal?    @db.Decimal(10, 2)
   isFeatured    Boolean     @default(false)
@@ -55,13 +53,12 @@ model Product {
   updatedAt     DateTime    @updatedAt
   orderItems    OrderItem[]
   reviews       Review[]
+
   @@index([isActive])
   @@index([createdAt])
   @@index([title])
   @@index([isFeatured])
   @@index([isPopular])
-  @@index([categoryId])
-  @@index([rating])
 }
 
 model Review {
@@ -72,6 +69,7 @@ model Review {
   rating    Int
   comment   String?
   createdAt DateTime @default(now())
+
   @@index([productId])
   @@index([createdAt])
   @@index([rating])
@@ -91,6 +89,7 @@ model Order {
   updatedAt  DateTime    @updatedAt
   user       User?       @relation(fields: [userId], references: [id])
   items      OrderItem[]
+
   @@index([status])
   @@index([createdAt])
   @@index([email])
@@ -105,6 +104,7 @@ model OrderItem {
   price     Decimal @db.Decimal(10, 2)
   order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
   product   Product @relation(fields: [productId], references: [id])
+
   @@index([orderId])
   @@index([productId])
 }
@@ -120,12 +120,14 @@ model AdminLog {
   userAgent String?
   createdAt DateTime   @default(now())
   admin     User       @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
   @@index([adminId])
   @@index([action])
   @@index([createdAt])
   @@index([entity])
 }
 
+// System-wide logging with levels (INFO, WARNING, ERROR)
 model SystemLog {
   id        String    @id @default(uuid())
   timestamp DateTime  @default(now())
@@ -135,11 +137,24 @@ model SystemLog {
   user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   ipAddress String?
   source    LogSource @default(SYSTEM)
-  metadata  String?
+  metadata  String? // JSON string for additional data
+
   @@index([level])
   @@index([timestamp])
   @@index([source])
   @@index([userId])
+}
+
+enum LogLevel {
+  INFO
+  WARNING
+  ERROR
+}
+
+enum LogSource {
+  ADMIN_PANEL
+  API
+  SYSTEM
 }
 
 model SiteSettings {
@@ -150,6 +165,7 @@ model SiteSettings {
   type        String   @default("text")
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
   @@index([key])
 }
 
@@ -174,16 +190,4 @@ enum ActionType {
   LOGOUT
   PASSWORD_RESET
   SETTINGS_UPDATE
-}
-
-enum LogLevel {
-  INFO
-  WARNING
-  ERROR
-}
-
-enum LogSource {
-  ADMIN_PANEL
-  API
-  SYSTEM
 }
