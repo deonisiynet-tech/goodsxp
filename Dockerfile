@@ -19,17 +19,17 @@ WORKDIR /app
 # Copy server package files
 COPY server/package*.json ./
 
-# Install ALL dependencies
+# Copy Prisma schema BEFORE npm install (needed for postinstall script)
+COPY server/prisma ./prisma
+
+# Install ALL dependencies (postinstall will run prisma generate)
 RUN npm install
 
 # Copy server source files
 COPY server/tsconfig.json ./
 COPY server/src ./src
 
-# Copy Prisma schema
-COPY server/prisma ./prisma
-
-# Generate Prisma Client
+# Generate Prisma Client explicitly (with DATABASE_URL for validation)
 ENV DATABASE_URL="postgresql://postgres:postgres@localhost:5432/postgres"
 RUN npx prisma generate --schema=./prisma/schema.prisma
 

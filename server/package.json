@@ -9,17 +9,18 @@
     "build:client": "cd ../client && npm install && npm run build",
     "build:all": "npm run build:client && npm run build",
     "start": "node dist/server.js",
-    "postinstall": "prisma generate",
+    "postinstall": "prisma generate --schema ./prisma/schema.prisma",
     "migrate": "tsx src/prisma/migrate.ts",
     "migrate:dev": "prisma migrate dev",
     "check-db": "tsx src/prisma/check-db.ts",
-    "prisma:generate": "dotenv -e .env -- prisma generate",
-    "prisma:migrate": "dotenv -e .env -- prisma migrate dev",
+    "prisma:generate": "dotenv -e .env -- prisma generate --schema ./prisma/schema.prisma",
+    "prisma:migrate": "dotenv -e .env -- prisma migrate dev --schema ./prisma/schema.prisma",
     "prisma:migrate:prod": "tsx src/prisma/migrate.ts",
-    "prisma:studio": "dotenv -e .env -- prisma studio",
+    "prisma:studio": "dotenv -e .env -- prisma studio --schema ./prisma/schema.prisma",
     "seed": "dotenv -e .env -- tsx src/prisma/seed.ts"
   },
   "prisma": {
+    "schema": "./prisma/schema.prisma",
     "seed": "tsx src/prisma/seed.ts"
   },
   "dependencies": {

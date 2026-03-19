@@ -27,8 +27,8 @@ coverage/
 .nyc_output/
 
 # Env files (we use root .env)
-server/.env
-client/.env.local
+# server/.env - needed for build
+# client/.env.local
 *.env.example
 
 # Build artifacts
