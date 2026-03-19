@@ -38,6 +38,12 @@ export class ProductService {
           title: true,
           description: true,
           price: true,
+          categoryId: true,
+          rating: true,
+          originalPrice: true,
+          discountPrice: true,
+          isFeatured: true,
+          isPopular: true,
           imageUrl: true,
           images: true,
           stock: true,
@@ -67,6 +73,12 @@ export class ProductService {
         title: true,
         description: true,
         price: true,
+        categoryId: true,
+        rating: true,
+        originalPrice: true,
+        discountPrice: true,
+        isFeatured: true,
+        isPopular: true,
         imageUrl: true,
         images: true,
         stock: true,
@@ -107,6 +119,8 @@ export class ProductService {
     title: string;
     description: string;
     price: number;
+    categoryId?: string | null;
+    rating?: number | null;
     originalPrice?: number | null;
     discountPrice?: number | null;
     isFeatured?: boolean;
@@ -121,6 +135,8 @@ export class ProductService {
         title: data.title,
         description: data.description,
         price: data.price,
+        categoryId: data.categoryId ?? null,
+        rating: data.rating ?? null,
         originalPrice: data.originalPrice ?? null,
         discountPrice: data.discountPrice ?? null,
         isFeatured: data.isFeatured ?? false,
@@ -148,6 +164,12 @@ export class ProductService {
     if (validated.title !== undefined) updateData.title = validated.title;
     if (validated.description !== undefined) updateData.description = validated.description;
     if (validated.price !== undefined) updateData.price = validated.price;
+    if (validated.categoryId !== undefined) updateData.categoryId = validated.categoryId;
+    if (validated.rating !== undefined) updateData.rating = validated.rating;
+    if (validated.originalPrice !== undefined) updateData.originalPrice = validated.originalPrice;
+    if (validated.discountPrice !== undefined) updateData.discountPrice = validated.discountPrice;
+    if (validated.isFeatured !== undefined) updateData.isFeatured = validated.isFeatured;
+    if (validated.isPopular !== undefined) updateData.isPopular = validated.isPopular;
     if (validated.imageUrl !== undefined) updateData.imageUrl = validated.imageUrl;
     if (validated.images !== undefined) updateData.images = validated.images;
     if (validated.stock !== undefined) updateData.stock = validated.stock;
@@ -197,6 +219,12 @@ export class ProductService {
           title: true,
           description: true,
           price: true,
+          categoryId: true,
+          rating: true,
+          originalPrice: true,
+          discountPrice: true,
+          isFeatured: true,
+          isPopular: true,
           imageUrl: true,
           images: true,
           stock: true,
@@ -246,6 +274,12 @@ export class ProductService {
       where: { productId },
       _avg: { rating: true },
       _count: { rating: true },
+    });
+
+    // Update the product rating
+    await prisma.product.update({
+      where: { id: productId },
+      data: { rating: stats._avg.rating ? Math.round(stats._avg.rating * 100) / 100 : 0 },
     });
 
     return review;

@@ -9,6 +9,7 @@
     "build:client": "cd ../client && npm install && npm run build",
     "build:all": "npm run build:client && npm run build",
     "start": "node dist/server.js",
+    "postinstall": "prisma generate",
     "migrate": "tsx src/prisma/migrate.ts",
     "migrate:dev": "prisma migrate dev",
     "check-db": "tsx src/prisma/check-db.ts",
