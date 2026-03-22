@@ -1,12 +1,11 @@
-# Миграция для добавления поля slug в таблицу Product
+-- Міграція для додавання поля slug до таблиці Product
+-- Виконайте цей SQL у Railway Console
 
--- Эта миграция добавляет поле slug для SEO-URL товаров
-
--- 1. Добавляем временное поле slug
+-- 1. Додаємо поле slug (тимчасово NULL)
 ALTER TABLE "Product" ADD COLUMN IF NOT EXISTS "slug" TEXT;
 
--- 2. Заполняем существующие товары slug на основе title
--- Для каждого товара создаём уникальный slug
+-- 2. Заповнюємо slug для існуючих товарів
+-- Генерація slug з title + випадковий суфікс для унікальності
 UPDATE "Product"
 SET "slug" = LOWER(
     REGEXP_REPLACE(
@@ -21,20 +20,17 @@ SET "slug" = LOWER(
         'g'
     )
 ) || '-' || SUBSTRING(MD5(id || RANDOM()::TEXT) FROM 1 FOR 6)
-WHERE slug IS NULL;
+WHERE slug IS NULL OR slug = '';
 
--- 3. Создаём индекс для slug
+-- 3. Створюємо індекс для швидкого пошуку
 CREATE INDEX IF NOT EXISTS "Product_slug_idx" ON "Product"("slug");
 
--- 4. Добавляем ограничение уникальности
-DO $$
-BEGIN
-    IF NOT EXISTS (
-        SELECT 1 FROM pg_constraint WHERE conname = 'Product_slug_key'
-    ) THEN
-        ALTER TABLE "Product" ADD CONSTRAINT "Product_slug_key" UNIQUE ("slug");
-    END IF;
-END $$;
+-- 4. Додаємо обмеження унікальності
+ALTER TABLE "Product" DROP CONSTRAINT IF EXISTS "Product_slug_key";
+ALTER TABLE "Product" ADD CONSTRAINT "Product_slug_key" UNIQUE ("slug");
 
--- 5. Делаем slug NOT NULL
+-- 5. Робимо поле NOT NULL
 ALTER TABLE "Product" ALTER COLUMN "slug" SET NOT NULL;
+
+-- Перевірка результату
+SELECT id, title, slug FROM "Product" LIMIT 10;
