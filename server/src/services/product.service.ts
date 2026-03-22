@@ -1,6 +1,7 @@
 import prisma from '../prisma/client.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { productSchema, productUpdateSchema, paginationSchema } from '../utils/validators.js';
+import { Prisma } from '@prisma/client';
 
 interface ProductFilters {
   page?: number;
@@ -42,6 +43,10 @@ interface ProductUpdateInput {
   isActive?: boolean;
 }
 
+interface ReviewSortOptions {
+  sortBy?: 'newest' | 'best' | 'worst';
+}
+
 export class ProductService {
   async getAll(filters: ProductFilters) {
     const validated = paginationSchema.parse(filters);
@@ -67,6 +72,7 @@ export class ProductService {
         orderBy: { [sortBy]: sortOrder },
         select: {
           id: true,
+          slug: true,
           title: true,
           description: true,
           price: true,
@@ -81,13 +87,32 @@ export class ProductService {
           stock: true,
           isActive: true,
           createdAt: true,
+          reviews: {
+            select: {
+              rating: true,
+            },
+          },
         },
       }) as Promise<any[]>,
       prisma.product.count({ where }),
     ]);
 
+    // Calculate average rating for each product
+    const productsWithRating = products.map((product: any) => {
+      const { reviews, ...rest } = product;
+      const averageRating =
+        reviews.length > 0
+          ? reviews.reduce((sum: number, r: { rating: number }) => sum + r.rating, 0) / reviews.length
+          : 0;
+      return {
+        ...rest,
+        averageRating: Math.round(averageRating * 10) / 10,
+        reviewCount: reviews.length,
+      };
+    });
+
     return {
-      products,
+      products: productsWithRating,
       pagination: {
         page,
         limit,
@@ -102,6 +127,7 @@ export class ProductService {
       where: { id },
       select: {
         id: true,
+        slug: true,
         title: true,
         description: true,
         price: true,
@@ -142,17 +168,80 @@ export class ProductService {
 
     return {
       ...productWithoutReviews,
-      averageRating,
+      averageRating: Math.round(averageRating * 10) / 10,
+      reviewCount,
+    };
+  }
+
+  async getBySlug(slug: string) {
+    const product = await prisma.product.findUnique({
+      where: { slug },
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        description: true,
+        price: true,
+        categoryId: true,
+        rating: true,
+        originalPrice: true,
+        discountPrice: true,
+        isFeatured: true,
+        isPopular: true,
+        imageUrl: true,
+        images: true,
+        stock: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+        reviews: {
+          select: {
+            rating: true,
+          },
+        },
+      },
+    }) as any;
+
+    if (!product) {
+      throw new AppError('Товар не знайдено', 404);
+    }
+
+    // Calculate average rating
+    const averageRating =
+      product.reviews.length > 0
+        ? product.reviews.reduce((sum: number, r: { rating: number }) => sum + r.rating, 0) / product.reviews.length
+        : 0;
+
+    const reviewCount = product.reviews.length;
+
+    // Remove reviews from returned object
+    const { reviews, ...productWithoutReviews } = product;
+
+    return {
+      ...productWithoutReviews,
+      averageRating: Math.round(averageRating * 10) / 10,
       reviewCount,
     };
   }
 
   async create(data: ProductCreateInput) {
+    // Generate slug from title if not provided
+    let slug = data.title
+      .toLowerCase()
+      .replace(/[^a-z0-9\u0400-\u04FF-]/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-|-$/g, '');
+
+    // Add random suffix if slug exists
+    const existing = await prisma.product.findUnique({ where: { slug } });
+    if (existing) {
+      slug = `${slug}-${Math.random().toString(36).substring(2, 8)}`;
+    }
+
     const product = await prisma.product.create({
       data: {
-        title: data.title,
-        description: data.description,
-        price: data.price,
+        ...data,
+        slug,
         categoryId: data.categoryId ?? null,
         rating: data.rating ?? null,
         originalPrice: data.originalPrice ?? null,
@@ -175,8 +264,17 @@ export class ProductService {
       throw new AppError('Товар не знайдено', 404);
     }
 
-    const updateData: ProductUpdateInput = {};
-    if (data.title !== undefined) updateData.title = data.title;
+    const updateData: ProductUpdateInput & { slug?: string } = {};
+    if (data.title !== undefined) {
+      updateData.title = data.title;
+      // Update slug if title changed
+      const newSlug = data.title
+        .toLowerCase()
+        .replace(/[^a-z0-9\u0400-\u04FF-]/g, '-')
+        .replace(/-+/g, '-')
+        .replace(/^-|-$/g, '');
+      updateData.slug = newSlug;
+    }
     if (data.description !== undefined) updateData.description = data.description;
     if (data.price !== undefined) updateData.price = data.price;
     if (data.categoryId !== undefined) updateData.categoryId = data.categoryId;
@@ -231,6 +329,7 @@ export class ProductService {
         orderBy: { [sortBy]: sortOrder },
         select: {
           id: true,
+          slug: true,
           title: true,
           description: true,
           price: true,
@@ -262,10 +361,27 @@ export class ProductService {
     };
   }
 
-  async getReviews(productId: string) {
+  async getReviews(productId: string, options: ReviewSortOptions = {}) {
+    const { sortBy = 'newest' } = options;
+
+    let orderBy: Prisma.ReviewOrderByWithRelationInput;
+
+    switch (sortBy) {
+      case 'best':
+        orderBy = { rating: 'desc' };
+        break;
+      case 'worst':
+        orderBy = { rating: 'asc' };
+        break;
+      case 'newest':
+      default:
+        orderBy = { createdAt: 'desc' };
+        break;
+    }
+
     return prisma.review.findMany({
       where: { productId },
-      orderBy: { createdAt: 'desc' },
+      orderBy,
     });
   }
 

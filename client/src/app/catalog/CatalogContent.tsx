@@ -6,13 +6,17 @@ import { productsApi } from '@/lib/products-api';
 import { useCartStore } from '@/lib/store';
 import toast from 'react-hot-toast';
 import { ShoppingCart, Search, SlidersHorizontal, Star } from 'lucide-react';
-import ProductModal from '@/components/ProductModal';
 
 interface Product {
   id: string;
+  slug: string;
   title: string;
   description: string;
   price: number;
+  originalPrice: number | null;
+  discountPrice: number | null;
+  isFeatured: boolean;
+  isPopular: boolean;
   imageUrl: string | null;
   images: string[] | null;
   stock: number;
@@ -51,8 +55,6 @@ export default function CatalogContent() {
   );
   const [priceRange, setPriceRange] = useState<[number, number]>([0, 100000]);
   const [showFilters, setShowFilters] = useState(false);
-  const [selectedProduct, setSelectedProduct] = useState<SafeProduct | null>(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const addItem = useCartStore((state) => state.addItem);
@@ -135,13 +137,7 @@ export default function CatalogContent() {
   }, [search, sortBy, sortOrder, selectedCategory, priceRange]);
 
   const handleProductClick = (product: SafeProduct) => {
-    setSelectedProduct(product);
-    setIsModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setIsModalOpen(false);
-    setTimeout(() => setSelectedProduct(null), 300);
+    router.push(`/catalog/${product.slug}`);
   };
 
   const getProductImage = (prod: SafeProduct | null): string => {
@@ -343,6 +339,25 @@ export default function CatalogContent() {
                         }}
                       />
 
+                      {/* Badges */}
+                      <div className="absolute top-2 left-2 flex flex-col gap-1">
+                        {product.isFeatured && (
+                          <span className="px-2 py-1 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-bold rounded shadow-lg">
+                            🔥 Хіт
+                          </span>
+                        )}
+                        {product.isPopular && (
+                          <span className="px-2 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold rounded shadow-lg">
+                            ⭐ Популярний
+                          </span>
+                        )}
+                        {product.discountPrice && product.originalPrice && (
+                          <span className="px-2 py-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs font-bold rounded shadow-lg">
+                            -{Math.round((1 - product.discountPrice / product.originalPrice) * 100)}%
+                          </span>
+                        )}
+                      </div>
+
                       {/* Out of Stock Overlay */}
                       {product.stock === 0 && (
                         <div className="absolute inset-0 bg-[#0f0f12]/80 backdrop-blur-sm flex items-center justify-center">
@@ -381,10 +396,23 @@ export default function CatalogContent() {
                         </div>
                       )}
 
-                      <div className="flex items-center justify-between">
-                        <span className="text-lg font-light text-white">
+                      {/* Price with discount */}
+                      {product.discountPrice && product.originalPrice ? (
+                        <div className="flex items-baseline gap-2 mb-2">
+                          <span className="text-lg font-bold text-white">
+                            {Number(product.discountPrice).toLocaleString('uk-UA')} ₴
+                          </span>
+                          <span className="text-sm text-[#9ca3af] line-through">
+                            {Number(product.originalPrice).toLocaleString('uk-UA')} ₴
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="text-lg font-light text-white mb-2 block">
                           {Number(product.price).toLocaleString('uk-UA')} ₴
                         </span>
+                      )}
+
+                      <div className="flex items-center justify-between">
                         {product.stock > 0 ? (
                           <span className="text-xs text-green-400 flex items-center gap-1">
                             <span className="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
@@ -421,13 +449,6 @@ export default function CatalogContent() {
           )}
         </div>
       </main>
-      {selectedProduct && (
-        <ProductModal
-          product={selectedProduct}
-          isOpen={isModalOpen}
-          onClose={handleCloseModal}
-        />
-      )}
     </>
   );
 }

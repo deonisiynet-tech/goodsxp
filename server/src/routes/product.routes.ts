@@ -9,7 +9,8 @@ const controller = new ProductController();
 
 // Public routes
 router.get('/', controller.getAll);
-router.get('/:id', controller.getById);
+router.get('/id/:id', controller.getById);
+router.get('/:slug', controller.getBySlug);
 
 // Review routes
 router.get('/:id/reviews', controller.getReviews);

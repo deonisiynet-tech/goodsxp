@@ -3,6 +3,7 @@
 
 export interface Product {
   id: string
+  slug: string
   title: string
   description: string
   price: number
@@ -16,6 +17,17 @@ export interface Product {
   isActive: boolean
   createdAt: string
   updatedAt: string
+  averageRating?: number
+  reviewCount?: number
+}
+
+export interface Review {
+  id: string
+  productId: string
+  name: string
+  rating: number
+  comment: string | null
+  createdAt: string
 }
 
 // API client for Express server
@@ -108,7 +120,28 @@ export const productsApi = {
 
   // Get product by ID
   getById: async (id: string) => {
-    return fetchAPI(`/products/${id}`)
+    return fetchAPI(`/products/id/${id}`)
+  },
+
+  // Get product by slug
+  getBySlug: async (slug: string) => {
+    return fetchAPI(`/products/${slug}`)
+  },
+
+  // Get product reviews
+  getReviews: async (productId: string, sortBy?: 'newest' | 'best' | 'worst') => {
+    const params = new URLSearchParams()
+    if (sortBy) params.append('sortBy', sortBy)
+    return fetchAPI(`/products/${productId}/reviews?${params.toString()}`)
+  },
+
+  // Create review
+  createReview: async (productId: string, data: { name: string; rating: number; comment?: string }) => {
+    return fetchAPI(`/products/${productId}/reviews`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
   },
 
   // Create product

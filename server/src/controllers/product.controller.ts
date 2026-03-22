@@ -35,6 +35,15 @@ export class ProductController {
     }
   }
 
+  async getBySlug(req: Request, res: Response, next: NextFunction) {
+    try {
+      const product = await productService.getBySlug(req.params.slug);
+      res.json(product);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // Admin routes
   async getAllAdmin(req: AuthRequest, res: Response, next: NextFunction) {
     try {
@@ -208,7 +217,8 @@ export class ProductController {
   async getReviews(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const reviews = await productService.getReviews(id);
+      const { sortBy } = req.query as { sortBy?: 'newest' | 'best' | 'worst' };
+      const reviews = await productService.getReviews(id, { sortBy });
       res.json({ reviews });
     } catch (error) {
       next(error);
