@@ -61,8 +61,9 @@ export default function ProductPage() {
   const loadProduct = async (slug: string) => {
     try {
       const response = await productsApi.getBySlug(slug);
-      setProduct(response.data);
+      setProduct(response);
     } catch (error: any) {
+      console.error('Failed to load product:', error);
       toast.error('Товар не знайдено');
       router.push('/catalog');
     } finally {

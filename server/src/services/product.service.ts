@@ -142,16 +142,16 @@ export class ProductService {
 
   async getBySlug(slug: string) {
     // Use raw query since slug field may not exist in Prisma Client yet
-    const product = await prisma.$queryRawUnsafe<any[]>(
-      'SELECT * FROM "Product" WHERE slug = $1 LIMIT 1',
+    const products = await prisma.$queryRawUnsafe(
+      `SELECT * FROM "Product" WHERE slug = $1 LIMIT 1`,
       slug
-    );
+    ) as any[];
 
-    if (!product || product.length === 0) {
+    if (!products || products.length === 0) {
       throw new AppError('Товар не знайдено', 404);
     }
 
-    const productData = product[0];
+    const productData = products[0];
 
     // Get reviews
     const reviews = await prisma.review.findMany({
@@ -181,17 +181,21 @@ export class ProductService {
       .replace(/^-|-$/g, '');
 
     // Check if slug exists and add random suffix
-    const existing = await prisma.$queryRawUnsafe<any[]>(
-      'SELECT id FROM "Product" WHERE slug = $1 LIMIT 1',
+    const existing = await prisma.$queryRawUnsafe(
+      `SELECT id FROM "Product" WHERE slug = $1 LIMIT 1`,
       slug
-    );
+    ) as any[];
     
     if (existing && existing.length > 0) {
       slug = `${slug}-${Math.random().toString(36).substring(2, 8)}`;
     }
 
+    // Convert images array to PostgreSQL array format
+    const imagesArray = data.images ?? [];
+    const imagesPg = `{${imagesArray.map(img => `"${img.replace(/"/g, '\\"')}"`).join(',')}}`;
+
     // Create product using raw query to include slug
-    const result = await prisma.$queryRawUnsafe<any[]>(
+    const result = await prisma.$queryRawUnsafe(
       `INSERT INTO "Product" (id, title, slug, description, price, "categoryId", rating, "originalPrice", "discountPrice", "isFeatured", "isPopular", "imageUrl", images, stock, "isActive", "createdAt", "updatedAt")
        VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW(), NOW())
        RETURNING *`,
@@ -206,10 +210,10 @@ export class ProductService {
       data.isFeatured ?? false,
       data.isPopular ?? false,
       data.imageUrl ?? null,
-      JSON.stringify(data.images ?? []),
+      imagesPg,
       data.stock ?? 0,
       data.isActive ?? true
-    );
+    ) as any[];
 
     return result[0];
   }
@@ -272,7 +276,10 @@ export class ProductService {
     }
     if (data.images !== undefined) {
       updateFields.push(`images = $${paramIndex++}`);
-      values.push(JSON.stringify(data.images));
+      // Convert JS array to PostgreSQL array format
+      const imagesArray = Array.isArray(data.images) ? data.images : [];
+      const imagesPg = `{${imagesArray.map(img => `"${img.replace(/"/g, '\\"')}"`).join(',')}}`;
+      values.push(imagesPg);
     }
     if (data.stock !== undefined) {
       updateFields.push(`stock = $${paramIndex++}`);
@@ -286,10 +293,10 @@ export class ProductService {
     updateFields.push(`"updatedAt" = NOW()`);
     values.push(id);
 
-    const result = await prisma.$queryRawUnsafe<any[]>(
+    const result = await prisma.$queryRawUnsafe(
       `UPDATE "Product" SET ${updateFields.join(', ')} WHERE id = $${paramIndex} RETURNING *`,
       ...values
-    );
+    ) as any[];
 
     return result[0];
   }
