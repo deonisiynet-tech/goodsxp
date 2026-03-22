@@ -19,8 +19,8 @@ CREATE TABLE "User" (
     "email" TEXT NOT NULL,
     "password" TEXT NOT NULL,
     "role" "Role" NOT NULL DEFAULT 'USER',
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT now(),
+    "updatedAt" TIMESTAMPTZ NOT NULL,
 
     CONSTRAINT "User_pkey" PRIMARY KEY ("id")
 );
@@ -32,8 +32,8 @@ CREATE TABLE "Category" (
     "slug" TEXT NOT NULL,
     "description" TEXT,
     "parentId" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT now(),
+    "updatedAt" TIMESTAMPTZ NOT NULL,
 
     CONSTRAINT "Category_pkey" PRIMARY KEY ("id")
 );
@@ -54,8 +54,8 @@ CREATE TABLE "Product" (
     "images" TEXT[],
     "stock" INTEGER NOT NULL DEFAULT 0,
     "isActive" BOOLEAN NOT NULL DEFAULT true,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT now(),
+    "updatedAt" TIMESTAMPTZ NOT NULL,
 
     CONSTRAINT "Product_pkey" PRIMARY KEY ("id")
 );
@@ -67,7 +67,7 @@ CREATE TABLE "Review" (
     "name" TEXT NOT NULL,
     "rating" INTEGER NOT NULL,
     "comment" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT now(),
 
     CONSTRAINT "Review_pkey" PRIMARY KEY ("id")
 );
@@ -83,8 +83,8 @@ CREATE TABLE "Order" (
     "totalPrice" DECIMAL(10,2) NOT NULL,
     "status" "OrderStatus" NOT NULL DEFAULT 'NEW',
     "comment" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT now(),
+    "updatedAt" TIMESTAMPTZ NOT NULL,
 
     CONSTRAINT "Order_pkey" PRIMARY KEY ("id")
 );
@@ -110,7 +110,7 @@ CREATE TABLE "AdminLog" (
     "details" TEXT,
     "ipAddress" TEXT,
     "userAgent" TEXT,
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT now(),
 
     CONSTRAINT "AdminLog_pkey" PRIMARY KEY ("id")
 );
@@ -118,7 +118,7 @@ CREATE TABLE "AdminLog" (
 -- CreateTable
 CREATE TABLE "SystemLog" (
     "id" TEXT NOT NULL,
-    "timestamp" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "timestamp" TIMESTAMPTZ NOT NULL DEFAULT now(),
     "level" "LogLevel" NOT NULL DEFAULT 'INFO',
     "message" TEXT NOT NULL,
     "userId" TEXT,
@@ -136,106 +136,60 @@ CREATE TABLE "SiteSettings" (
     "value" TEXT NOT NULL,
     "description" TEXT,
     "type" TEXT NOT NULL DEFAULT 'text',
-    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" TIMESTAMP(3) NOT NULL,
+    "createdAt" TIMESTAMPTZ NOT NULL DEFAULT now(),
+    "updatedAt" TIMESTAMPTZ NOT NULL,
 
     CONSTRAINT "SiteSettings_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
 CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
-
--- CreateIndex
 CREATE INDEX "User_email_idx" ON "User"("email");
-
--- CreateIndex
 CREATE INDEX "User_role_idx" ON "User"("role");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "Category_slug_key" ON "Category"("slug");
-
--- CreateIndex
 CREATE INDEX "Category_slug_idx" ON "Category"("slug");
-
--- CreateIndex
 CREATE INDEX "Category_parentId_idx" ON "Category"("parentId");
 
 -- CreateIndex
 CREATE INDEX "Product_isActive_idx" ON "Product"("isActive");
-
--- CreateIndex
 CREATE INDEX "Product_createdAt_idx" ON "Product"("createdAt");
-
--- CreateIndex
 CREATE INDEX "Product_title_idx" ON "Product"("title");
-
--- CreateIndex
 CREATE INDEX "Product_isFeatured_idx" ON "Product"("isFeatured");
-
--- CreateIndex
 CREATE INDEX "Product_isPopular_idx" ON "Product"("isPopular");
-
--- CreateIndex
 CREATE INDEX "Product_categoryId_idx" ON "Product"("categoryId");
-
--- CreateIndex
 CREATE INDEX "Product_rating_idx" ON "Product"("rating");
 
 -- CreateIndex
 CREATE INDEX "Review_productId_idx" ON "Review"("productId");
-
--- CreateIndex
 CREATE INDEX "Review_createdAt_idx" ON "Review"("createdAt");
-
--- CreateIndex
 CREATE INDEX "Review_rating_idx" ON "Review"("rating");
 
 -- CreateIndex
 CREATE INDEX "Order_status_idx" ON "Order"("status");
-
--- CreateIndex
 CREATE INDEX "Order_createdAt_idx" ON "Order"("createdAt");
-
--- CreateIndex
 CREATE INDEX "Order_email_idx" ON "Order"("email");
-
--- CreateIndex
 CREATE INDEX "Order_userId_idx" ON "Order"("userId");
 
 -- CreateIndex
 CREATE INDEX "OrderItem_orderId_idx" ON "OrderItem"("orderId");
-
--- CreateIndex
 CREATE INDEX "OrderItem_productId_idx" ON "OrderItem"("productId");
 
 -- CreateIndex
 CREATE INDEX "AdminLog_adminId_idx" ON "AdminLog"("adminId");
-
--- CreateIndex
 CREATE INDEX "AdminLog_action_idx" ON "AdminLog"("action");
-
--- CreateIndex
 CREATE INDEX "AdminLog_createdAt_idx" ON "AdminLog"("createdAt");
-
--- CreateIndex
 CREATE INDEX "AdminLog_entity_idx" ON "AdminLog"("entity");
 
 -- CreateIndex
 CREATE INDEX "SystemLog_level_idx" ON "SystemLog"("level");
-
--- CreateIndex
 CREATE INDEX "SystemLog_timestamp_idx" ON "SystemLog"("timestamp");
-
--- CreateIndex
 CREATE INDEX "SystemLog_source_idx" ON "SystemLog"("source");
-
--- CreateIndex
 CREATE INDEX "SystemLog_userId_idx" ON "SystemLog"("userId");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "SiteSettings_key_key" ON "SiteSettings"("key");
-
--- CreateIndex
 CREATE INDEX "SiteSettings_key_idx" ON "SiteSettings"("key");
 
 -- AddForeignKey
@@ -254,7 +208,7 @@ ALTER TABLE "Order" ADD CONSTRAINT "Order_userId_fkey" FOREIGN KEY ("userId") RE
 ALTER TABLE "OrderItem" ADD CONSTRAINT "OrderItem_orderId_fkey" FOREIGN KEY ("orderId") REFERENCES "Order"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "OrderItem" ADD CONSTRAINT "OrderItem_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE RESTRICT ON UPDATE CASCADE;
+ALTER TABLE "OrderItem" ADD CONSTRAINT "OrderItem_productId_fkey" FOREIGN KEY ("productId") REFERENCES "Product"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "AdminLog" ADD CONSTRAINT "AdminLog_adminId_fkey" FOREIGN KEY ("adminId") REFERENCES "User"("id") ON DELETE CASCADE ON UPDATE CASCADE;

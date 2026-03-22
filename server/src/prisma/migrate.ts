@@ -72,15 +72,17 @@ export async function runMigrations() {
       const migrationFile = path.join(migrationsDir, dir, 'migration.sql')
       let sql = fs.readFileSync(migrationFile, 'utf-8')
 
-      // Remove CREATE TYPE statements if type already exists
-      // This prevents errors when enums already exist in the database
-      sql = sql.replace(/CREATE TYPE "(\w+)" AS ENUM ([^;]+);/g, (match, typeName, enumValues) => {
+      // Fix ENUM creation to handle duplicates gracefully
+      sql = sql.replace(/CREATE TYPE "(\w+)" AS ENUM \(([^)]+)\);/g, (match, typeName, enumValues) => {
         return `DO $$ BEGIN
   CREATE TYPE "${typeName}" AS ENUM (${enumValues});
 EXCEPTION
   WHEN duplicate_object THEN NULL;
 END $$;`
       })
+
+      // Fix TIMESTAMP(3) to TIMESTAMPTZ for better PostgreSQL compatibility
+      sql = sql.replace(/TIMESTAMP\(3\)/g, 'TIMESTAMPTZ')
 
       await client.query('BEGIN')
       try {
@@ -93,8 +95,11 @@ END $$;`
         console.log(`✓ Applied ${dir}`)
       } catch (err: any) {
         await client.query('ROLLBACK')
+        
         // Check if error is about existing objects (not critical)
         const isDuplicateError = err.code === '42710' || err.message.includes('already exists')
+        const isSyntaxError = err.code === '42601'
+        
         if (isDuplicateError) {
           console.warn(`⚠️ Warning for ${dir}: ${err.message}`)
           // Still mark as applied since objects exist
@@ -105,14 +110,21 @@ END $$;`
           `, [dir, '', dir])
           continue
         }
+        
+        if (isSyntaxError) {
+          console.error(`✗ Syntax error in ${dir}:`, err.message)
+          console.error('SQL:', sql.substring(0, 500))
+          throw new Error(`Syntax error in migration ${dir}: ${err.message}`)
+        }
+        
         console.error(`✗ Failed to apply ${dir}:`, err)
         throw err
       }
     }
 
     console.log('All migrations applied successfully!')
-  } catch (err) {
-    console.error('Migration error:', err)
+  } catch (err: any) {
+    console.error('Migration error:', err.message)
     throw err
   } finally {
     client.release()
