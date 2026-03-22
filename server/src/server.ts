@@ -8,7 +8,8 @@ import next from 'next';
 import { parse } from 'url';
 import cookieParser from 'cookie-parser';
 
-dotenv.config();
+// Завантажуємо .env з кореня проекту
+dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 // ==================================
 // Startup Logging for Railway

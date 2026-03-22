@@ -2,8 +2,10 @@ import { PrismaClient } from '@prisma/client'
 import { PrismaPg } from '@prisma/adapter-pg'
 import pg from 'pg'
 import dotenv from 'dotenv'
+import path from 'path'
 
-dotenv.config()
+// Завантажуємо .env з кореня проекту
+dotenv.config({ path: path.resolve(__dirname, '../../.env') })
 
 const { Pool } = pg
 

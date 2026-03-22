@@ -14,11 +14,11 @@
     "migrate:deploy": "prisma migrate deploy --schema ./prisma/schema.prisma",
     "migrate:dev": "prisma migrate dev",
     "check-db": "tsx src/prisma/check-db.ts",
-    "prisma:generate": "dotenv -e .env -- prisma generate --schema ./prisma/schema.prisma",
-    "prisma:migrate": "dotenv -e .env -- prisma migrate dev --schema ./prisma/schema.prisma",
+    "prisma:generate": "dotenv -e ../.env -- prisma generate --schema ./prisma/schema.prisma",
+    "prisma:migrate": "dotenv -e ../.env -- prisma migrate dev --schema ./prisma/schema.prisma",
     "prisma:migrate:prod": "prisma migrate deploy --schema ./prisma/schema.prisma",
-    "prisma:studio": "dotenv -e .env -- prisma studio --schema ./prisma/schema.prisma",
-    "seed": "dotenv -e .env -- tsx src/prisma/seed.ts"
+    "prisma:studio": "dotenv -e ../.env -- prisma studio --schema ./prisma/schema.prisma",
+    "seed": "dotenv -e ../.env -- tsx src/prisma/seed.ts"
   },
   "prisma": {
     "schema": "./prisma/schema.prisma",
