@@ -55,7 +55,6 @@ export default function ProductModal({ product, isOpen, onClose }: ProductModalP
       title: product.title,
       price: Number(product.price),
       imageUrl,
-      quantity
     })
     toast.success('Товар додано до кошика')
     onClose()

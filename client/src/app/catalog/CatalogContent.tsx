@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { productsApi } from '@/lib/api';
+import { productsApi } from '@/lib/products-api';
 import { useCartStore } from '@/lib/store';
 import toast from 'react-hot-toast';
 import { ShoppingCart, Search, SlidersHorizontal, Star } from 'lucide-react';
@@ -115,7 +115,7 @@ export default function CatalogContent() {
       }
       
       const response = await productsApi.getAll(params);
-      let filteredProducts = response.data.products;
+      let filteredProducts = response.products || [];
 
       // Additional client-side price filtering (backend already filters)
       filteredProducts = filteredProducts.filter(
@@ -179,7 +179,6 @@ export default function CatalogContent() {
       title: product.title,
       price: Number(product.price),
       imageUrl: imageUrl !== '/placeholder.jpg' ? imageUrl : undefined,
-      quantity: 1,
     });
     toast.success('Товар додано до кошика');
   };

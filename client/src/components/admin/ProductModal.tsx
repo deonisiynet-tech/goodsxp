@@ -11,6 +11,10 @@ interface Product {
   title: string
   description: string
   price: number
+  originalPrice: number | null
+  discountPrice: number | null
+  isFeatured: boolean
+  isPopular: boolean
   imageUrl: string | null
   images: string[]
   stock: number

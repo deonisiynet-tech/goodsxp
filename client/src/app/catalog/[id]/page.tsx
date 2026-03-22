@@ -153,7 +153,6 @@ export default function ProductPage() {
       title: product.title,
       price: Number(product.price),
       imageUrl,
-      quantity: 1,
     });
 
     toast.success('Товар додано до кошика');

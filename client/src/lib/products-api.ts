@@ -70,7 +70,7 @@ async function fetchAPI(endpoint: string, options: RequestInit = {}) {
 }
 
 export const productsApi = {
-  // Get all products
+  // Get all products (public)
   getAll: async (params?: {
     page?: number
     limit?: number
@@ -84,8 +84,26 @@ export const productsApi = {
     if (params?.search) queryParams.append('search', params.search)
     if (params?.sortBy) queryParams.append('sortBy', params.sortBy)
     if (params?.sortOrder) queryParams.append('sortOrder', params.sortOrder)
-    
+
     return fetchAPI(`/products?${queryParams.toString()}`)
+  },
+
+  // Get all products (admin)
+  getAllAdmin: async (params?: {
+    page?: number
+    limit?: number
+    search?: string
+    sortBy?: string
+    sortOrder?: 'asc' | 'desc'
+  }) => {
+    const queryParams = new URLSearchParams()
+    if (params?.page) queryParams.append('page', String(params.page))
+    if (params?.limit) queryParams.append('limit', String(params.limit))
+    if (params?.search) queryParams.append('search', params.search)
+    if (params?.sortBy) queryParams.append('sortBy', params.sortBy)
+    if (params?.sortOrder) queryParams.append('sortOrder', params.sortOrder)
+
+    return fetchAPI(`/products/admin/all?${queryParams.toString()}`)
   },
 
   // Get product by ID

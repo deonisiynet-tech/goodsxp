@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { productsApi } from '@/lib/api';
+import { productsApi } from '@/lib/products-api';
 import toast from 'react-hot-toast';
 import { Plus, Edit, Trash2, Search } from 'lucide-react';
 import ProductModal from './ProductModal';
@@ -9,10 +9,18 @@ import ProductModal from './ProductModal';
 interface Product {
   id: string;
   title: string;
+  description: string;
   price: number;
+  originalPrice: number | null;
+  discountPrice: number | null;
   stock: number;
   isActive: boolean;
   imageUrl: string | null;
+  images: string[];
+  isFeatured: boolean;
+  isPopular: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export default function AdminProductList() {
@@ -30,8 +38,9 @@ export default function AdminProductList() {
     try {
       setLoading(true);
       const response = await productsApi.getAllAdmin({ search });
-      setProducts(response.data.products);
+      setProducts(response.products || []);
     } catch (error) {
+      console.error('Failed to load products:', error);
       toast.error('Помилка завантаження товарів');
     } finally {
       setLoading(false);
@@ -112,14 +121,16 @@ export default function AdminProductList() {
               {products.map((product) => (
                 <tr key={product.id} className="hover:bg-surfaceLight">
                   <td className="px-6 py-4">
-                    <div className="w-12 h-12 overflow-hidden bg-surfaceLight">
+                    <div className="w-12 h-12 overflow-hidden bg-surfaceLight rounded-lg">
                       <img
                         src={
-                          product.imageUrl?.startsWith('/uploads/') 
-                            ? product.imageUrl 
-                            : product.imageUrl 
-                              ? `/uploads/${product.imageUrl}`
-                              : '/placeholder.jpg'
+                          product.imageUrl
+                            ? product.imageUrl.startsWith('http')
+                              ? product.imageUrl
+                              : product.imageUrl.startsWith('/')
+                                ? product.imageUrl
+                                : `/uploads/${product.imageUrl}`
+                            : '/placeholder.jpg'
                         }
                         alt={product.title}
                         className="w-full h-full object-cover"

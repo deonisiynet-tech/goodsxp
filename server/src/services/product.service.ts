@@ -275,6 +275,11 @@ export class ProductService {
       throw new Error('Товар не знайдено');
     }
 
+    // Validate rating
+    if (data.rating < 1 || data.rating > 5) {
+      throw new Error('Рейтинг має бути від 1 до 5');
+    }
+
     const review = await prisma.review.create({
       data: {
         productId,
@@ -291,10 +296,11 @@ export class ProductService {
       _count: { rating: true },
     });
 
-    // Update the product rating
+    // Update the product rating with proper null handling
+    const avgRating = stats._avg.rating ?? 0;
     await prisma.product.update({
       where: { id: productId },
-      data: { rating: stats._avg.rating ? Math.round(stats._avg.rating * 100) / 100 : 0 },
+      data: { rating: Math.round(avgRating * 100) / 100 },
     });
 
     return review;

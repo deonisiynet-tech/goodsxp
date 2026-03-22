@@ -16,6 +16,9 @@ interface Order {
   status: string;
   createdAt: string;
   items: any[];
+  userId?: string | null;
+  comment?: string | null;
+  updatedAt: string;
 }
 
 export default function OrderList() {

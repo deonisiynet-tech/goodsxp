@@ -54,7 +54,7 @@ export class ProductController {
 
   async create(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { title, description, price, originalPrice, discountPrice, stock, isActive, images, isFeatured, isPopular } = req.body;
+      const { title, description, price, originalPrice, discountPrice, stock, isActive, images, isFeatured, isPopular, categoryId } = req.body;
 
       let imageUrl: string | undefined = undefined;
       let imagesArray: string[] = [];
@@ -90,12 +90,13 @@ export class ProductController {
         title,
         description,
         price: Number(price),
+        categoryId: categoryId || null,
         originalPrice: originalPrice ? Number(originalPrice) : null,
         discountPrice: discountPrice ? Number(discountPrice) : null,
         imageUrl: imageUrl || undefined,
         images: imagesArray,
         stock: stock ? Number(stock) : 0,
-        isActive: isActive === 'true',
+        isActive: isActive !== 'false', // Default to true unless explicitly 'false'
         isFeatured: isFeatured === 'true' || isFeatured === true,
         isPopular: isPopular === 'true' || isPopular === true,
       });
@@ -112,6 +113,7 @@ export class ProductController {
 
       res.status(201).json(product);
     } catch (error) {
+      console.error('Create product error:', error);
       next(error);
     }
   }
@@ -119,14 +121,19 @@ export class ProductController {
   async update(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const { title, description, price, stock, isActive, images } = req.body;
+      const { title, description, price, stock, isActive, images, categoryId, isFeatured, isPopular, originalPrice, discountPrice } = req.body;
 
       const updateData: any = {};
       if (title) updateData.title = title;
       if (description) updateData.description = description;
       if (price) updateData.price = Number(price);
+      if (categoryId !== undefined) updateData.categoryId = categoryId;
       if (stock !== undefined) updateData.stock = Number(stock);
-      if (isActive !== undefined) updateData.isActive = isActive === 'true';
+      if (isActive !== undefined) updateData.isActive = isActive !== 'false';
+      if (isFeatured !== undefined) updateData.isFeatured = isFeatured === 'true' || isFeatured === true;
+      if (isPopular !== undefined) updateData.isPopular = isPopular === 'true' || isPopular === true;
+      if (originalPrice !== undefined) updateData.originalPrice = originalPrice ? Number(originalPrice) : null;
+      if (discountPrice !== undefined) updateData.discountPrice = discountPrice ? Number(discountPrice) : null;
 
       let imagesArray: string[] = [];
 
@@ -171,6 +178,7 @@ export class ProductController {
 
       res.json(product);
     } catch (error) {
+      console.error('Update product error:', error);
       next(error);
     }
   }
@@ -212,12 +220,22 @@ export class ProductController {
       const { id } = req.params;
       const { name, rating, comment } = req.body;
 
-      const review = await productService.createReview(id, { name, rating, comment });
+      // Validate rating
+      const ratingNum = Number(rating);
+      if (!ratingNum || ratingNum < 1 || ratingNum > 5) {
+        return res.status(400).json({ message: 'Рейтинг має бути від 1 до 5' });
+      }
+
+      const review = await productService.createReview(id, { name, rating: ratingNum, comment });
       res.status(201).json(review);
     } catch (error: any) {
-      if (error.message.includes('не знайдено')) {
+      if (error.message.includes('не знайдено') || error.message.includes('Товар')) {
         return res.status(404).json({ message: error.message });
       }
+      if (error.message.includes('Рейтинг')) {
+        return res.status(400).json({ message: error.message });
+      }
+      console.error('Create review error:', error);
       next(error);
     }
   }

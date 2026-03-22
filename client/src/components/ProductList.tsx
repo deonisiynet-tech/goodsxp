@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { productsApi } from '@/lib/api';
+import { productsApi } from '@/lib/products-api';
 import { useCartStore } from '@/lib/store';
 import toast from 'react-hot-toast';
 import { ShoppingCart, Star } from 'lucide-react';
@@ -41,8 +41,10 @@ export default function ProductList({ title = 'Каталог товарів', l
     try {
       setLoading(true);
       const response = await productsApi.getAll({ limit });
-      setProducts(response.data.products);
+      // productsApi.getAll already returns the parsed JSON directly
+      setProducts(response.products || []);
     } catch (error) {
+      console.error('Failed to load products:', error);
       toast.error('Помилка завантаження товарів');
     } finally {
       setLoading(false);
@@ -51,13 +53,12 @@ export default function ProductList({ title = 'Каталог товарів', l
 
   const handleAddToCart = (e: React.MouseEvent, product: Product) => {
     e.preventDefault();
-    
+
     addItem({
       productId: product.id,
       title: product.title,
       price: Number(product.price),
       imageUrl: product.imageUrl,
-      quantity: 1,
     });
 
     toast.success('Товар додано до кошика');

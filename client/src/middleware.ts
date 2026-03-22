@@ -3,10 +3,4 @@
 // See: client/src/app/admin/login/page.tsx for implementation
 
 // This file is intentionally empty to disable Edge runtime
-export function middleware() {
-  return Response.next()
-}
-
-export const config = {
-  matcher: [], // No routes - middleware disabled
-}
+// Middleware is disabled - no routes are being intercepted
