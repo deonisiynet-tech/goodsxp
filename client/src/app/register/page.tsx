@@ -29,8 +29,11 @@ export default function RegisterPage() {
       setLoading(true);
       const response = await authApi.register(data.email, data.password);
 
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('user', JSON.stringify(response.data.user));
+      // Тільки на клієнті зберігаємо токен
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('token', response.data.token);
+        localStorage.setItem('user', JSON.stringify(response.data.user));
+      }
 
       toast.success('Реєстрація успішна!');
       router.push('/');

@@ -9,9 +9,12 @@ export default function CookieBanner() {
   const [isAnimating, setIsAnimating] = useState(false);
 
   useEffect(() => {
+    // Перевірка на SSR
+    if (typeof window === 'undefined') return;
+
     // Check if user already made a choice
     const consent = localStorage.getItem('cookie-consent');
-    
+
     if (!consent) {
       // Show banner with delay for smooth entrance
       setTimeout(() => {
@@ -22,11 +25,13 @@ export default function CookieBanner() {
   }, []);
 
   const handleAccept = () => {
+    if (typeof window === 'undefined') return;
     localStorage.setItem('cookie-consent', 'accepted');
     hideBanner();
   };
 
   const handleReject = () => {
+    if (typeof window === 'undefined') return;
     localStorage.setItem('cookie-consent', 'rejected');
     hideBanner();
   };
@@ -39,7 +44,7 @@ export default function CookieBanner() {
   if (!isVisible) return null;
 
   return (
-    <div 
+    <div
       className={`fixed bottom-0 left-0 right-0 z-50 p-4 md:p-6 transition-all duration-300 ${
         isAnimating ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-full'
       }`}
@@ -48,7 +53,7 @@ export default function CookieBanner() {
         <div className="relative rounded-2xl bg-surface/80 backdrop-blur-xl border border-border/50 shadow-2xl overflow-hidden">
           {/* Gradient Border Effect */}
           <div className="absolute inset-0 bg-gradient-to-r from-primary/10 via-purple-500/10 to-primary/10 opacity-50" />
-          
+
           {/* Content */}
           <div className="relative z-10 p-6 md:p-8">
             <div className="flex flex-col md:flex-row md:items-center gap-6">
@@ -60,10 +65,10 @@ export default function CookieBanner() {
                   </div>
                   <div className="flex-1">
                     <p className="text-muted leading-relaxed">
-                      Ми використовуємо cookie для забезпечення коректної роботи сайту, аналітики та покращення сервісу. 
+                      Ми використовуємо cookie для забезпечення коректної роботи сайту, аналітики та покращення сервісу.
                       Детальніше у нашій{' '}
-                      <Link 
-                        href="/privacy" 
+                      <Link
+                        href="/privacy"
                         className="text-primary hover:text-secondary underline underline-offset-2 transition-colors"
                       >
                         Політиці конфіденційності
