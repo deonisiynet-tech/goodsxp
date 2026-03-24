@@ -117,8 +117,8 @@ export default function PaymentPage() {
         'Оплата здійснюється банківським переказом',
         'Після підтвердження оплати товар відправляється',
       ],
-      badge: 'Безпечно',
-      badgeColor: 'bg-green-500/20 text-green-400 border border-green-500/30',
+      badge: 'Без передоплати',
+      badgeColor: 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
       delay: '',
     },
     {
@@ -131,8 +131,8 @@ export default function PaymentPage() {
         'Комісія перевізника стягується окремо',
         'Ніякої передоплати не потрібно',
       ],
-      badge: 'Без передоплати',
-      badgeColor: 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
+      badge: 'Безпечно',
+      badgeColor: 'bg-green-500/20 text-green-400 border border-green-500/30',
       delay: 'md:delay-200',
     },
   ];
