@@ -249,4 +249,46 @@ export class ProductController {
       next(error);
     }
   }
+
+  // Review methods by slug
+  async getReviewsBySlug(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { slug } = req.params;
+      const { sortBy } = req.query as { sortBy?: 'newest' | 'best' | 'worst' };
+      
+      // Get product by slug first
+      const product = await productService.getBySlug(slug);
+      const reviews = await productService.getReviews(product.id, { sortBy });
+      res.json({ reviews });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async createReviewBySlug(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { slug } = req.params;
+      const { name, rating, comment } = req.body;
+
+      // Validate rating
+      const ratingNum = Number(rating);
+      if (!ratingNum || ratingNum < 1 || ratingNum > 5) {
+        return res.status(400).json({ message: 'Рейтинг має бути від 1 до 5' });
+      }
+
+      // Get product by slug first
+      const product = await productService.getBySlug(slug);
+      const review = await productService.createReview(product.id, { name, rating: ratingNum, comment });
+      res.status(201).json(review);
+    } catch (error: any) {
+      if (error.message.includes('не знайдено') || error.message.includes('Товар')) {
+        return res.status(404).json({ message: error.message });
+      }
+      if (error.message.includes('Рейтинг')) {
+        return res.status(400).json({ message: error.message });
+      }
+      console.error('Create review by slug error:', error);
+      next(error);
+    }
+  }
 }

@@ -128,16 +128,32 @@ export const productsApi = {
     return fetchAPI(`/products/${slug}`)
   },
 
-  // Get product reviews
+  // Get product reviews (by product ID)
   getReviews: async (productId: string, sortBy?: 'newest' | 'best' | 'worst') => {
     const params = new URLSearchParams()
     if (sortBy) params.append('sortBy', sortBy)
     return fetchAPI(`/products/${productId}/reviews?${params.toString()}`)
   },
 
-  // Create review
+  // Get product reviews by slug
+  getReviewsBySlug: async (slug: string, sortBy?: 'newest' | 'best' | 'worst') => {
+    const params = new URLSearchParams()
+    if (sortBy) params.append('sortBy', sortBy)
+    return fetchAPI(`/products/slug/${slug}/reviews?${params.toString()}`)
+  },
+
+  // Create review (by product ID)
   createReview: async (productId: string, data: { name: string; rating: number; comment?: string }) => {
     return fetchAPI(`/products/${productId}/reviews`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    })
+  },
+
+  // Create review by slug
+  createReviewBySlug: async (slug: string, data: { name: string; rating: number; comment?: string }) => {
+    return fetchAPI(`/products/slug/${slug}/reviews`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(data),

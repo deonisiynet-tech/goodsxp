@@ -12,9 +12,13 @@ router.get('/', controller.getAll);
 router.get('/id/:id', controller.getById);
 router.get('/:slug', controller.getBySlug);
 
-// Review routes
+// Review routes (by product ID)
 router.get('/:id/reviews', controller.getReviews);
 router.post('/:id/reviews', controller.createReview);
+
+// Review routes (by product slug) - for frontend convenience
+router.get('/slug/:slug/reviews', controller.getReviewsBySlug);
+router.post('/slug/:slug/reviews', controller.createReviewBySlug);
 
 // Admin routes
 router.use(authenticate, authorize(Role.ADMIN));

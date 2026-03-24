@@ -54,7 +54,7 @@ export default function ProductPage() {
 
   useEffect(() => {
     if (product) {
-      loadReviews(product.id);
+      loadReviews(product.slug);
     }
   }, [product, sortBy]);
 
@@ -71,9 +71,9 @@ export default function ProductPage() {
     }
   };
 
-  const loadReviews = async (productId: string) => {
+  const loadReviews = async (slug: string) => {
     try {
-      const response = await productsApi.getReviews(productId, sortBy);
+      const response = await productsApi.getReviewsBySlug(slug, sortBy);
       setReviews(response.reviews || []);
     } catch (error) {
       console.error('Failed to load reviews:', error);
@@ -86,7 +86,7 @@ export default function ProductPage() {
 
     setSubmittingReview(true);
     try {
-      const newReview = await productsApi.createReview(product.id, {
+      const newReview = await productsApi.createReviewBySlug(product.slug, {
         name: newName,
         rating: newRating,
         comment: newComment,
