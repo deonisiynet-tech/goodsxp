@@ -50,6 +50,12 @@ const nextConfig = {
     // Fix for styled-jsx hydration issues
     optimizePackageImports: ['lucide-react', 'react-hot-toast'],
   },
+
+  // Fix for styled-jsx useContext error
+  // Disable styled-jsx if not used (we use Tailwind)
+  compiler: {
+    styledComponents: false,
+  },
 }
 
 export default nextConfig
