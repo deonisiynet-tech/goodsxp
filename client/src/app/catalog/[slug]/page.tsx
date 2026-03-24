@@ -321,16 +321,24 @@ export default function ProductPage() {
 
               {/* Rating */}
               <div className="flex items-center gap-3 mb-6">
-                {renderStars(Math.round(product.averageRating || 0), 18)}
-                <span className="text-[#9ca3af] text-sm">
-                  {product.averageRating?.toFixed(1) || '0.0'} з 5
-                </span>
-                <button
-                  onClick={scrollToReviews}
-                  className="text-sm text-[#6366f1] hover:text-[#818cf8] transition-colors"
-                >
-                  ({product.reviewCount || 0} відгуків)
-                </button>
+                {product.reviewCount && product.reviewCount > 0 ? (
+                  <>
+                    {renderStars(Math.round(product.averageRating || 0), 18)}
+                    <span className="text-[#9ca3af] text-sm">
+                      {product.averageRating?.toFixed(1) || '0.0'} з 5
+                    </span>
+                    <button
+                      onClick={scrollToReviews}
+                      className="text-sm text-[#6366f1] hover:text-[#818cf8] transition-colors"
+                    >
+                      ({product.reviewCount} відгуків)
+                    </button>
+                  </>
+                ) : (
+                  <span className="text-[#9ca3af] text-sm">
+                    ⭐ Немає відгуків
+                  </span>
+                )}
               </div>
 
               {/* Price with discount */}
