@@ -51,10 +51,19 @@ const nextConfig = {
     optimizePackageImports: ['lucide-react', 'react-hot-toast'],
   },
 
-  // Fix for styled-jsx useContext error
-  // Disable styled-jsx if not used (we use Tailwind)
-  compiler: {
-    styledComponents: false,
+  // Fix for styled-jsx - transpile packages
+  transpilePackages: ['styled-jsx'],
+
+  // Webpack configuration to fix styled-jsx issues
+  webpack: (config, { isServer, dev }) => {
+    // Fix React/styled-jsx conflicts on production builds
+    if (!isServer && !dev) {
+      config.resolve.alias = {
+        ...config.resolve.alias,
+        'styled-jsx': require.resolve('styled-jsx'),
+      }
+    }
+    return config
   },
 }
 
