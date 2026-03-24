@@ -18,15 +18,15 @@
     "prisma:migrate": "dotenv -e ../.env -- prisma migrate dev --schema ./prisma/schema.prisma",
     "prisma:migrate:prod": "prisma migrate deploy --schema ./prisma/schema.prisma",
     "prisma:studio": "dotenv -e ../.env -- prisma studio --schema ./prisma/schema.prisma",
-    "seed": "dotenv -e ../.env -- tsx src/prisma/seed.ts"
+    "seed": "tsx src/prisma/seed.ts"
   },
   "prisma": {
     "schema": "./prisma/schema.prisma",
     "seed": "tsx src/prisma/seed.ts"
   },
   "dependencies": {
-    "@prisma/adapter-pg": "^7.0.0",
-    "@prisma/client": "^7.5.0",
+    "@prisma/adapter-pg": "^6.19.2",
+    "@prisma/client": "^6.19.2",
     "bcryptjs": "^2.4.3",
     "cloudinary": "^2.0.1",
     "cookie-parser": "^1.4.7",
@@ -37,7 +37,7 @@
     "express-rate-limit": "^7.1.5",
     "helmet": "^7.1.0",
     "jsonwebtoken": "^9.0.2",
-    "pg": "^8.13.0",
+    "pg": "^8.20.0",
     "redis": "^4.6.12",
     "uuid": "^9.0.1",
     "zod": "^3.22.4"
@@ -55,7 +55,7 @@
     "@types/uuid": "^9.0.7",
     "dotenv-cli": "^11.0.0",
     "next": "^14.1.0",
-    "prisma": "^7.0.0",
+    "prisma": "^6.19.2",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3"
   }

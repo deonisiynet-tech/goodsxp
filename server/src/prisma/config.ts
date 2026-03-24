@@ -5,7 +5,8 @@ import dotenv from 'dotenv'
 import path from 'path'
 
 // Завантажуємо .env з кореня проекту
-dotenv.config({ path: path.resolve(__dirname, '../../.env') })
+const envPath = path.join(__dirname, '../../../.env')
+dotenv.config({ path: envPath })
 
 const { Pool } = pg
 
@@ -13,10 +14,12 @@ const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
 }
 
+// Створюємо пул з'єднань з DATABASE_URL
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-}) as any
+})
 
+// Створюємо adapter
 const adapter = new PrismaPg(pool)
 
 export const prisma =

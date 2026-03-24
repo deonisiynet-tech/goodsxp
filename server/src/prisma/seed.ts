@@ -1,34 +1,47 @@
-import { PrismaClient, Role } from '@prisma/client';
+import { Role } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import dotenv from 'dotenv';
+import path from 'path';
+import pg, { Pool } from 'pg';
 
-const prisma = new PrismaClient();
+// Завантажуємо .env з кореня проекту
+const envPath = path.join(__dirname, '../../../.env')
+dotenv.config({ path: envPath })
+
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
+
+function generateSlug(title: string): string {
+  const baseSlug = title
+    .toLowerCase()
+    .replace(/[^a-z0-9а-яіїєґ-]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+  
+  const randomSuffix = Math.random().toString(36).substring(2, 8);
+  return `${baseSlug}-${randomSuffix}`;
+}
 
 async function main() {
-  console.log('🌱 Запуск seed...');
+  console.log('🌱 Запуск seed (SQL)...');
 
-  // Create admin user
   const adminEmail = process.env.ADMIN_EMAIL || 'goodsxp.net@gmail.com';
-  const adminPassword = process.env.ADMIN_PASSWORD || 'uR4!xZ9@pL2#vQ7$tM8^kW3&cN1*eH5%';
+  const adminPassword = process.env.ADMIN_PASSWORD || 'Admin123';
 
-  const existingAdmin = await prisma.user.findUnique({
-    where: { email: adminEmail },
-  });
-
-  if (!existingAdmin) {
+  // Check if admin exists
+  const adminResult = await pool.query('SELECT id FROM "User" WHERE email = $1', [adminEmail]);
+  
+  if (adminResult.rows.length === 0) {
     const hashedPassword = await bcrypt.hash(adminPassword, 12);
-    await prisma.user.create({
-      data: {
-        email: adminEmail,
-        password: hashedPassword,
-        role: Role.ADMIN,
-      },
-    });
+    await pool.query(
+      'INSERT INTO "User" (id, email, password, role, "createdAt", "updatedAt") VALUES (gen_random_uuid(), $1, $2, $3, NOW(), NOW())',
+      [adminEmail, hashedPassword, 'ADMIN']
+    );
     console.log('✅ Адміністратора створено:', adminEmail);
   } else {
     console.log('ℹ️  Адміністратор вже існує');
   }
 
-  // Create sample products
   const sampleProducts = [
     {
       title: 'Смартфон Premium X1',
@@ -165,26 +178,29 @@ async function main() {
   ];
 
   for (const product of sampleProducts) {
-    const existing = await prisma.product.findFirst({
-      where: { title: product.title },
-    });
-
-    if (!existing) {
-      await prisma.product.create({
-        data: product,
-      });
+    const existing = await pool.query('SELECT id FROM "Product" WHERE title = $1', [product.title]);
+    
+    if (existing.rows.length === 0) {
+      const slug = generateSlug(product.title);
+      const imagesPg = `{${product.images.map(img => `"${img.replace(/"/g, '\\"')}"`).join(',')}}`;
+      
+      await pool.query(
+        `INSERT INTO "Product" (id, title, slug, description, price, "imageUrl", images, stock, "isActive", "createdAt", "updatedAt")
+         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, true, NOW(), NOW())`,
+        [product.title, slug, product.description, product.price, product.imageUrl, imagesPg, product.stock]
+      );
       console.log(`✅ Товар створено: ${product.title}`);
+    } else {
+      console.log(`ℹ️  Товар вже існує: ${product.title}`);
     }
   }
 
   console.log('🎉 Seed завершено успішно!');
+  await pool.end();
 }
 
 main()
   .catch((e) => {
     console.error('❌ Помилка seed:', e);
     process.exit(1);
-  })
-  .finally(async () => {
-    await prisma.$disconnect();
   });
