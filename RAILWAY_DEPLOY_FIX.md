@@ -1,109 +1,146 @@
-# 🚀 Исправление ошибок миграции на Railway
+# Railway Deployment Guide
 
-## ❌ Проблема
+## Виправлені проблеми
 
+### 1. **SSR Errors (styled-jsx / useContext)**
+- ✅ Виправлено неправильне використання `useRouter()` в `DashboardView.tsx`
+- ✅ Додано `'use client'` директиви де потрібно
+- ✅ Всі hook React тепер викликаються тільки в клієнтських компонентах
+
+### 2. **window / location Reference Errors**
+- ✅ Всі звернення до `window`, `localStorage`, `location` тепер захищені перевіркою `typeof window !== 'undefined'`
+- ✅ Виправлено `api.ts`, `products-api.ts`, `Header.tsx`, `store.ts`
+- ✅ Zustand persist middleware тепер SSR-safe
+
+### 3. **React Version Mismatch**
+- ✅ Перевірено: всі пакети використовують React 18.3.1
+- ✅ styled-jsx сумісний з React 18
+
+### 4. **Next.js Config**
+- ✅ Додано `experimental.optimizePackageImports` для кращої SSR підтримки
+- ✅ Збережено `output: 'standalone'` для Docker деплою
+
+## Деплой на Railway
+
+### 1. Структура проекту
 ```
-✗ Failed to apply 20260313000000_init: error: syntax error at or near "("
-code: 42601 (PostgreSQL syntax error)
-
-PrismaClientKnownRequestError: 
-The column `(not available)` does not exist in the current database.
+shop-mvp/
+├── client/          # Next.js фронтенд
+├── server/          # Express + Prisma бекенд
+└── .env             # DATABASE_URL та інші змінні
 ```
 
-**Причина:** Стандартные миграции Prisma содержали синтаксические ошибки для PostgreSQL.
+### 2. Змінні оточення (Railway)
 
----
+Встановіть наступні змінні оточення в Railway:
 
-## ✅ Решение применено
+```bash
+# Database
+DATABASE_URL=postgresql://user:password@host:port/database
 
-### 1. Удалены проблемные миграции Prisma
-- ❌ `migrations/20260313000000_init`
-- ❌ `migrations/20260317_add_product_badges_and_discounts`
-- ❌ `migrations/20260318185511_add_reviews`
-- ❌ `migrations/20260319000000_add_category_rating`
+# Server
+PORT=5000
+JWT_SECRET=your-super-secret-jwt-key
+JWT_EXPIRES_IN=7d
+CLIENT_URL=https://your-app.railway.app
+ADMIN_EMAIL=goodsxp.net@gmail.com
+ADMIN_PASSWORD=Admin123
 
-### 2. Создана новая чистая миграция
-- ✅ `migrations/20260319000000_init/migration.sql` — на основе `railway-production-migration.sql`
+# Client (якщо потрібно)
+NEXT_PUBLIC_API_URL=/api
+```
 
-### 3. Обновлён Dockerfile
-Теперь применяется SQL миграция перед запуском сервера:
+### 3. Build Commands
+
+Railway автоматично визначить монорепозиторій. Налаштуйте:
+
+**Root Command:**
+```bash
+npm install && npm run build
+```
+
+**Start Command:**
+```bash
+npm run start
+```
+
+Або створіть окремий service для client і server:
+
+#### Server Service:
+- Root directory: `server`
+- Build command: `npm install && npm run build`
+- Start command: `npm run start`
+
+#### Client Service:
+- Root directory: `client`
+- Build command: `npm install && npm run build`
+- Start command: `npm run start`
+
+### 4. Docker (альтернативний варіант)
+
+Якщо використовуєте Docker, створіть `Dockerfile` в корені:
+
 ```dockerfile
-CMD ["sh", "-c", "psql \"$DATABASE_URL\" -f ./prisma/railway-production-migration.sql || true && node dist/server.js"]
+# Build stage
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Install dependencies
+COPY package*.json ./
+COPY server/package*.json ./server/
+COPY client/package*.json ./client/
+RUN npm install
+RUN cd server && npm install
+RUN cd client && npm install
+
+# Build
+COPY . .
+RUN npm run build
+
+# Production stage
+FROM node:20-alpine AS runner
+
+WORKDIR /app
+
+# Copy built files
+COPY --from=builder /app/server/dist ./server/dist
+COPY --from=builder /app/server/node_modules ./server/node_modules
+COPY --from=builder /app/server/package.json ./server/
+COPY --from=builder /app/client/.next ./client/.next
+COPY --from=builder /app/client/public ./client/public
+COPY --from=builder /app/client/node_modules ./client/node_modules
+COPY --from=builder /app/client/package.json ./client/
+
+EXPOSE 5000 3000
+
+CMD ["npm", "run", "start"]
 ```
 
----
+### 5. Перевірка після деплою
 
-## 🚀 Как применить
+1. Відкрийте `/api/products` - має повернути список товарів
+2. Відкрийте `/catalog` - каталог товарів має завантажитись
+3. Відкрийте `/catalog/[slug]` - сторінка товару має працювати
+4. Перевірте адмінку `/admin` - має працювати без SSR помилок
 
-### 1. Закоммитьте изменения
-```bash
-git add .
-git commit -m "fix: удалить проблемные миграции и использовать SQL миграцию"
-git push
-```
+## Відомі проблеми та рішення
 
-### 2. Railway автоматически задеплоит
+### Помилка: "Cannot read properties of null (reading 'useContext')"
+**Причина:** React hook викликається поза компонентом
+**Рішення:** Перевірте що всі hook викликаються тільки в `'use client'` компонентах
 
-Ожидайте успешную сборку:
-```
-✅ Migration applied successfully
-✅ Server started on port 5000
-```
+### Помилка: "location is not defined"
+**Причина:** Використання `window.location` на сервері
+**Рішення:** Обгорніть в `typeof window !== 'undefined'` або використовуйте `useRouter()`
 
----
+### Помилка: "localStorage is not defined"
+**Причина:** Виклик localStorage під час SSR
+**Рішення:** Використовуйте localStorage тільки в `useEffect` або з перевіркою `typeof window`
 
-## ✅ Проверка
+## Контакти
 
-### API возвращает товары
-```bash
-curl https://your-app.railway.app/api/products
-# ✅ {"products": [...], "pagination": {...}}
-```
-
-### Товары с новыми полями
-```bash
-curl https://your-app.railway.app/api/products/PRODUCT_ID
-# ✅ {"title": "...", "categoryId": "...", "rating": 4.5, ...}
-```
-
-### Отзывы работают
-```bash
-curl https://your-app.railway.app/api/products/PRODUCT_ID/reviews
-# ✅ {"reviews": [...]}
-```
-
----
-
-## 📁 Изменённые файлы
-
-| Файл | Изменения |
-|------|-----------|
-| `Dockerfile` | Применение SQL миграции перед запуском |
-| `server/prisma/migrations/` | Удалены старые, создана новая |
-| `server/prisma/railway-production-migration.sql` | Основная миграция |
-
----
-
-## 🐛 Если товары не отображаются
-
-### Проверьте базу данных
-```sql
--- В Railway Console
-SELECT COUNT(*) FROM "Product";
--- Должно быть > 0
-```
-
-### Если таблица пустая — добавьте тестовые данные
-```sql
-INSERT INTO "Product" (id, title, description, price, "isActive", "createdAt", "updatedAt")
-VALUES (gen_random_uuid(), 'Тестовый товар', 'Описание', 100, true, NOW(), NOW());
-```
-
-### Проверьте логи Railway
-1. Railway Dashboard → Проект → Deployments → Logs
-2. Найдите ошибки подключения к базе
-3. Проверьте что DATABASE_URL правильный
-
----
-
-**После этих изменений сайт должен отображать товары без ошибок.**
+Якщо виникли проблеми, перевірте:
+1. Логи збірки в Railway
+2. Консоль браузера на предмет помилок гідратації
+3. Server logs на предмет помилок Prisma

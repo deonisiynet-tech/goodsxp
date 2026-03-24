@@ -13,6 +13,7 @@ export const api = axios.create({
 
 // Request interceptor for adding auth token
 api.interceptors.request.use((config) => {
+  // Тільки на клієнті додаємо токен
   if (typeof window !== 'undefined') {
     const token = localStorage.getItem('token');
     if (token) {
@@ -26,12 +27,11 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        window.location.href = '/login';
-      }
+    // Тільки на клієнті робимо редірект
+    if (error.response?.status === 401 && typeof window !== 'undefined') {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
     }
     return Promise.reject(error);
   }
@@ -100,7 +100,7 @@ export const adminApi = {
   // Dashboard Stats
   getDashboardStats: (days?: number) =>
     api.get('/admin/stats', { params: { days } }),
-  
+
   // Users
   getUsers: (params?: { page?: number; limit?: number; role?: string; search?: string }) =>
     api.get('/admin/users', { params }),
@@ -110,11 +110,11 @@ export const adminApi = {
   resetUserPassword: (id: string, password: string) =>
     api.post(`/admin/users/${id}/reset-password`, { password }),
   deleteUser: (id: string) => api.delete(`/admin/users/${id}`),
-  
+
   // Logs
   getLogs: (params?: { page?: number; limit?: number; adminId?: string; action?: string }) =>
     api.get('/admin/logs', { params }),
-  
+
   // Settings
   getSettings: () => api.get('/admin/settings'),
   getSetting: (key: string) => api.get(`/admin/settings/${key}`),

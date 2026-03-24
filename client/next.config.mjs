@@ -44,6 +44,12 @@ const nextConfig = {
     ],
     unoptimized: false,
   },
+
+  // Experimental features for better SSR support
+  experimental: {
+    // Fix for styled-jsx hydration issues
+    optimizePackageImports: ['lucide-react', 'react-hot-toast'],
+  },
 }
 
 export default nextConfig

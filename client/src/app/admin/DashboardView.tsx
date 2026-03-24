@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { ShoppingCart, Users, Package, DollarSign, CheckCircle, Clock, Tag } from 'lucide-react'
 import AdminLayout from '@/components/admin/AdminLayout'
 import ProductModal from '@/components/admin/ProductModal'
@@ -82,6 +83,7 @@ function StatCard({ title, value, icon: Icon, color }: StatCardProps) {
 }
 
 export default function DashboardView() {
+  const router = useRouter()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [salesData, setSalesData] = useState<{ date: string; revenue: number }[]>([])
   const [latestOrders, setLatestOrders] = useState<any[]>([])
@@ -94,7 +96,6 @@ export default function DashboardView() {
   const [chartLoading, setChartLoading] = useState(true)
   const [ordersLoading, setOrdersLoading] = useState(true)
   const [productsLoading, setProductsLoading] = useState(true)
-  const router = typeof window !== 'undefined' ? (require('next/navigation').useRouter() as ReturnType<typeof import('next/navigation').useRouter>) : null
 
   // Fetch all dashboard data
   useEffect(() => {
@@ -116,7 +117,7 @@ export default function DashboardView() {
         if (authRes.status === 401) {
           console.log('⚠️ Dashboard: Not authenticated, redirecting to login')
           setAuthenticated(false)
-          if (router) router.push('/admin/login?from=/admin')
+          router.push('/admin/login?from=/admin')
           return
         }
 
@@ -126,7 +127,7 @@ export default function DashboardView() {
         if (!authData.authenticated) {
           console.log('⚠️ Dashboard: Not authenticated (no user data)')
           setAuthenticated(false)
-          if (router) router.push('/admin/login?from=/admin')
+          router.push('/admin/login?from=/admin')
           return
         }
 
@@ -227,7 +228,7 @@ export default function DashboardView() {
     }
 
     loadDashboardData()
-  }, [])
+  }, [router])
 
   // Poll for updates every 30 seconds
   useEffect(() => {
@@ -277,7 +278,7 @@ export default function DashboardView() {
             <h2 className="text-2xl font-bold text-white mb-4">Помилка завантаження</h2>
             <p className="text-muted mb-4">{error || 'Не вдалося завантажити дані'}</p>
             <button
-              onClick={() => window.location.reload()}
+              onClick={() => typeof window !== 'undefined' && window.location.reload()}
               className="btn-primary"
             >
               Спробувати знову
