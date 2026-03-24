@@ -11,11 +11,12 @@ model User {
   email      String      @unique
   password   String
   role       Role        @default(USER)
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  createdAt  DateTime    @default(now()) @db.Timestamptz(6)
+  updatedAt  DateTime    @updatedAt @db.Timestamptz(6)
   logs       AdminLog[]
   orders     Order[]
   systemLogs SystemLog[]
+
   @@index([email])
   @@index([role])
 }
@@ -26,35 +27,37 @@ model Category {
   slug        String     @unique
   description String?
   parentId    String?
+  createdAt   DateTime   @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime   @updatedAt @db.Timestamptz(6)
   parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children    Category[] @relation("CategoryHierarchy")
   products    Product[]
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
+
   @@index([slug])
   @@index([parentId])
 }
 
 model Product {
-  id            String      @id @default(uuid())
+  id            String    @id @default(uuid())
   title         String
   description   String
-  price         Decimal     @db.Decimal(10, 2)
+  price         Decimal   @db.Decimal(10, 2)
   categoryId    String?
-  category      Category?   @relation(fields: [categoryId], references: [id])
-  rating        Decimal?    @db.Decimal(3, 2)
-  originalPrice Decimal?    @db.Decimal(10, 2)
-  discountPrice Decimal?    @db.Decimal(10, 2)
-  isFeatured    Boolean     @default(false)
-  isPopular     Boolean     @default(false)
+  rating        Decimal?  @db.Decimal(3, 2)
+  originalPrice Decimal?  @db.Decimal(10, 2)
+  discountPrice Decimal?  @db.Decimal(10, 2)
+  isFeatured    Boolean   @default(false)
+  isPopular     Boolean   @default(false)
   imageUrl      String?
   images        String[]
-  stock         Int         @default(0)
-  isActive      Boolean     @default(true)
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  orderItems    OrderItem[]
+  stock         Int       @default(0)
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime  @updatedAt @db.Timestamptz(6)
+  slug          String    @unique
+  category      Category? @relation(fields: [categoryId], references: [id])
   reviews       Review[]
+
   @@index([isActive])
   @@index([createdAt])
   @@index([title])
@@ -67,14 +70,17 @@ model Product {
 model Review {
   id        String   @id @default(uuid())
   productId String
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
   name      String
   rating    Int
   comment   String?
-  createdAt DateTime @default(now())
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  userId    String?
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
   @@index([productId])
   @@index([createdAt])
   @@index([rating])
+  @@index([userId])
 }
 
 model Order {
@@ -87,10 +93,11 @@ model Order {
   totalPrice Decimal     @db.Decimal(10, 2)
   status     OrderStatus @default(NEW)
   comment    String?
-  createdAt  DateTime    @default(now())
-  updatedAt  DateTime    @updatedAt
+  createdAt  DateTime    @default(now()) @db.Timestamptz(6)
+  updatedAt  DateTime    @updatedAt @db.Timestamptz(6)
   user       User?       @relation(fields: [userId], references: [id])
   items      OrderItem[]
+
   @@index([status])
   @@index([createdAt])
   @@index([email])
@@ -104,7 +111,7 @@ model OrderItem {
   quantity  Int
   price     Decimal @db.Decimal(10, 2)
   order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product   Product @relation(fields: [productId], references: [id])
+
   @@index([orderId])
   @@index([productId])
 }
@@ -118,8 +125,9 @@ model AdminLog {
   details   String?
   ipAddress String?
   userAgent String?
-  createdAt DateTime   @default(now())
+  createdAt DateTime   @default(now()) @db.Timestamptz(6)
   admin     User       @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
   @@index([adminId])
   @@index([action])
   @@index([createdAt])
@@ -128,14 +136,15 @@ model AdminLog {
 
 model SystemLog {
   id        String    @id @default(uuid())
-  timestamp DateTime  @default(now())
+  timestamp DateTime  @default(now()) @db.Timestamptz(6)
   level     LogLevel  @default(INFO)
   message   String
   userId    String?
-  user      User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
   ipAddress String?
   source    LogSource @default(SYSTEM)
   metadata  String?
+  user      User?     @relation(fields: [userId], references: [id])
+
   @@index([level])
   @@index([timestamp])
   @@index([source])
@@ -148,8 +157,9 @@ model SiteSettings {
   value       String
   description String?
   type        String   @default("text")
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime @updatedAt @db.Timestamptz(6)
+
   @@index([key])
 }
 
