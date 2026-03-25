@@ -12,6 +12,7 @@ interface Warehouse {
   Number: string;
   Latitude?: string;
   Longitude?: string;
+  Schedule?: string;
 }
 
 interface WarehouseMapProps {
@@ -120,14 +121,18 @@ export default function WarehouseMap({ warehouses, selectedWarehouse, onWarehous
               autoClose={false}
               closeOnClick={false}
             >
-              <div className="text-gray-800">
-                <div className="font-semibold mb-1">Відділення №{warehouse.Number}</div>
+              <div className="text-gray-800 max-w-[250px]">
+                <div className="font-semibold mb-1 text-base">Відділення №{warehouse.Number}</div>
                 <div className="text-sm text-gray-600 mb-2">{warehouse.ShortAddress}</div>
+                <div className="text-xs text-gray-500 mb-3 flex items-center gap-1">
+                  <span>🕐</span>
+                  <span>{warehouse.Schedule || 'Пн-Пт: 9:00-20:00, Сб: 9:00-18:00'}</span>
+                </div>
                 <button
                   onClick={() => handleMarkerClick(warehouse)}
                   className="w-full bg-gradient-to-r from-purple-600 via-pink-500 to-purple-700 text-white text-sm font-medium py-2 px-4 rounded-lg hover:shadow-lg transition-all duration-300"
                 >
-                  {selectedWarehouse?.Ref === warehouse.Ref ? 'Обрано' : 'Обрати відділення'}
+                  {selectedWarehouse?.Ref === warehouse.Ref ? '✓ Обрано' : 'Обрати відділення'}
                 </button>
               </div>
             </Popup>

@@ -3,7 +3,10 @@
 import { useEffect, useState } from 'react';
 
 interface CheckoutData {
-  name: string;
+  surname?: string;
+  firstName?: string;
+  middleName?: string;
+  name?: string;
   phone: string;
   email: string;
   city?: string | null;

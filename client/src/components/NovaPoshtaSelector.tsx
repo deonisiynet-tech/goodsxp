@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback, Suspense } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import dynamic from 'next/dynamic';
 
 interface City {
@@ -17,6 +17,7 @@ interface Warehouse {
   Number: string;
   Latitude?: string;
   Longitude?: string;
+  Schedule?: string;
 }
 
 interface NovaPoshtaSelectorProps {
@@ -64,18 +65,19 @@ export default function NovaPoshtaSelector({
 
   // Відновлення збереженого міста
   useEffect(() => {
-    if (savedCityName && !selectedCity) {
+    if (savedCityName && !selectedCity && typeof window !== 'undefined') {
       setCitySearch(savedCityName);
     }
   }, [savedCityName, selectedCity]);
 
-  // Debounce для пошуку міст
+  // Debounce для пошуку міст (300ms)
   useEffect(() => {
     const timer = setTimeout(() => {
       if (citySearch.trim().length >= 2) {
         searchCities(citySearch);
       } else {
         setCities([]);
+        setShowCityDropdown(false);
       }
     }, 300);
 
@@ -107,12 +109,15 @@ export default function NovaPoshtaSelector({
       });
 
       const result = await response.json();
-      if (result.success) {
+      if (result.success && result.data) {
         setCities(result.data);
         setShowCityDropdown(true);
+      } else {
+        setCities([]);
       }
     } catch (error) {
       console.error('Error searching cities:', error);
+      setCities([]);
     } finally {
       setIsLoadingCities(false);
     }
@@ -137,11 +142,14 @@ export default function NovaPoshtaSelector({
       });
 
       const result = await response.json();
-      if (result.success) {
+      if (result.success && result.data) {
         setWarehouses(result.data);
+      } else {
+        setWarehouses([]);
       }
     } catch (error) {
       console.error('Error loading warehouses:', error);
+      setWarehouses([]);
     } finally {
       setIsLoadingWarehouses(false);
     }
@@ -150,7 +158,12 @@ export default function NovaPoshtaSelector({
   const handleWarehouseSelect = (warehouse: Warehouse) => {
     onWarehouseChange(warehouse);
     setShowWarehouseDropdown(false);
-    setShowMap(false);
+  };
+
+  const getSchedule = (warehouse: Warehouse): string => {
+    // Графік роботи за замовчуванням (якщо не повертається з API)
+    const defaultSchedule = 'Пн-Пт: 9:00-20:00, Сб: 9:00-18:00, Нд: 10:00-18:00';
+    return warehouse.Schedule || defaultSchedule;
   };
 
   return (
@@ -187,6 +200,13 @@ export default function NovaPoshtaSelector({
               <div className="w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
             </div>
           )}
+          {!isLoadingCities && citySearch.length >= 2 && (
+            <div className="absolute right-3 top-1/2 -translate-y-1/2">
+              <svg className="w-5 h-5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </div>
+          )}
         </div>
 
         {showCityDropdown && cities.length > 0 && (
@@ -198,7 +218,7 @@ export default function NovaPoshtaSelector({
                 onClick={() => handleCitySelect(city)}
                 className="w-full px-4 py-3 text-left hover:bg-purple-500/10 transition-colors duration-150 border-b border-purple-500/10 last:border-b-0"
               >
-                <div className="font-medium">{city.Description}</div>
+                <div className="font-medium text-white">{city.Description}</div>
                 {(city.RegionDescription || city.AreaDescription) && (
                   <div className="text-sm text-muted mt-0.5">
                     {city.RegionDescription}
@@ -278,7 +298,7 @@ export default function NovaPoshtaSelector({
               </div>
 
               {showWarehouseDropdown && warehouses.length > 0 && (
-                <div className="absolute z-50 w-full mt-1 bg-[#18181c] border border-purple-500/30 rounded-xl shadow-2xl shadow-purple-500/20 max-h-64 overflow-y-auto">
+                <div className="absolute z-50 w-full mt-1 bg-[#18181c] border border-purple-500/30 rounded-xl shadow-2xl shadow-purple-500/20 max-h-80 overflow-y-auto">
                   {warehouses.map((warehouse) => (
                     <button
                       key={warehouse.Ref}
@@ -290,11 +310,23 @@ export default function NovaPoshtaSelector({
                           : 'hover:bg-purple-500/10'
                       }`}
                     >
-                      <div className="font-medium">
-                        Відділення №{warehouse.Number}
-                      </div>
-                      <div className="text-sm text-muted mt-1">
-                        {warehouse.ShortAddress}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1">
+                          <div className="font-medium text-white">
+                            Відділення №{warehouse.Number}
+                          </div>
+                          <div className="text-sm text-muted mt-0.5">
+                            {warehouse.ShortAddress}
+                          </div>
+                          <div className="text-xs text-purple-400/80 mt-1">
+                            🕐 {getSchedule(warehouse)}
+                          </div>
+                        </div>
+                        {selectedWarehouse?.Ref === warehouse.Ref && (
+                          <svg className="w-5 h-5 text-purple-400 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
                       </div>
                     </button>
                   ))}
@@ -315,17 +347,16 @@ export default function NovaPoshtaSelector({
                   <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
                 </div>
               ) : warehouses.length > 0 ? (
-                <Suspense fallback={
-                  <div className="h-[400px] bg-[#18181c] border border-purple-500/20 rounded-xl flex items-center justify-center">
-                    <div className="w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full animate-spin"></div>
-                  </div>
-                }>
+                <div className="relative">
                   <WarehouseMap
                     warehouses={warehouses}
                     selectedWarehouse={selectedWarehouse}
                     onWarehouseSelect={handleWarehouseSelect}
                   />
-                </Suspense>
+                  <div className="absolute top-4 left-4 bg-[#18181c]/95 backdrop-blur-sm border border-purple-500/30 rounded-lg px-3 py-2 text-sm">
+                    <span className="text-purple-400">ℹ️</span> Натисніть на маркер для вибору
+                  </div>
+                </div>
               ) : (
                 <div className="h-[400px] bg-[#18181c] border border-purple-500/20 rounded-xl flex items-center justify-center">
                   <p className="text-muted">Відділення не знайдено</p>
@@ -338,6 +369,18 @@ export default function NovaPoshtaSelector({
             <div className="flex items-center gap-2 text-sm text-muted">
               <div className="w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
               Завантаження відділень...
+            </div>
+          )}
+
+          {warehouses.length > 0 && !selectedWarehouse && (
+            <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 text-sm text-yellow-400">
+              ⚠️ Оберіть відділення для продовження
+            </div>
+          )}
+
+          {selectedWarehouse && (
+            <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 text-sm text-green-400">
+              ✅ Обрано: Відділення №{selectedWarehouse.Number}, {selectedWarehouse.ShortAddress}
             </div>
           )}
         </div>
