@@ -86,19 +86,22 @@ model Review {
 }
 
 model Order {
-  id         String      @id @default(uuid())
-  userId     String?
-  name       String
-  phone      String
-  email      String
-  address    String
-  totalPrice Decimal     @db.Decimal(10, 2)
-  status     OrderStatus @default(NEW)
-  comment    String?
-  createdAt  DateTime    @default(now()) @db.Timestamptz(6)
-  updatedAt  DateTime    @updatedAt @db.Timestamptz(6)
-  user       User?       @relation(fields: [userId], references: [id])
-  items      OrderItem[]
+  id              String      @id @default(uuid())
+  userId          String?
+  name            String
+  phone           String
+  email           String
+  address         String?
+  city            String?
+  warehouse       String?
+  warehouseAddress String?
+  totalPrice      Decimal     @db.Decimal(10, 2)
+  status          OrderStatus @default(NEW)
+  comment         String?
+  createdAt       DateTime    @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime    @updatedAt @db.Timestamptz(6)
+  user            User?       @relation(fields: [userId], references: [id])
+  items           OrderItem[]
 
   @@index([status])
   @@index([createdAt])

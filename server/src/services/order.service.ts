@@ -14,7 +14,10 @@ export class OrderService {
     name: string;
     phone: string;
     email: string;
-    address: string;
+    address?: string;
+    city?: string;
+    warehouse?: string;
+    warehouseAddress?: string;
     comment?: string;
     items: { productId: string; quantity: number }[];
   }) {
@@ -56,6 +59,9 @@ export class OrderService {
           phone: validated.phone,
           email: validated.email,
           address: validated.address,
+          city: validated.city,
+          warehouse: validated.warehouse,
+          warehouseAddress: validated.warehouseAddress,
           comment: validated.comment,
           totalPrice,
           items: {

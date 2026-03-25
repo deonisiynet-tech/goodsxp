@@ -67,6 +67,16 @@ export default function OrderList() {
     loadOrders();
   };
 
+  const handleStatusChange = async (orderId: string, status: string) => {
+    try {
+      await ordersApi.updateStatus(orderId, status);
+      toast.success('Статус замовлення оновлено');
+      loadOrders();
+    } catch (error) {
+      toast.error('Помилка оновлення статусу');
+    }
+  };
+
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
       NEW: 'bg-yellow-500/10 text-yellow-500',
@@ -194,7 +204,7 @@ export default function OrderList() {
       )}
 
       {modalOpen && selectedOrder && (
-        <OrderModal order={selectedOrder} onClose={handleModalClose} />
+        <OrderModal order={selectedOrder} onClose={handleModalClose} onStatusChange={handleStatusChange} />
       )}
     </div>
   );

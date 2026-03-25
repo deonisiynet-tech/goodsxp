@@ -1,20 +1,37 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { ordersApi } from '@/lib/api';
 import { useCartStore } from '@/lib/store';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import NovaPoshtaSelector from '@/components/NovaPoshtaSelector';
+import { useCheckoutStorage } from '@/hooks/useCheckoutStorage';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
+
+interface City {
+  Ref: string;
+  Description: string;
+  RegionDescription: string;
+  AreaDescription?: string;
+}
+
+interface Warehouse {
+  Ref: string;
+  Description: string;
+  ShortAddress: string;
+  Number: string;
+  Latitude?: string;
+  Longitude?: string;
+}
 
 interface CheckoutForm {
   name: string;
   phone: string;
   email: string;
-  address: string;
   comment?: string;
 }
 
@@ -22,18 +39,68 @@ export default function CheckoutPage() {
   const router = useRouter();
   const { items, getTotal, clearCart } = useCartStore();
   const [loading, setLoading] = useState(false);
+  const [selectedCity, setSelectedCity] = useState<City | null>(null);
+  const [selectedWarehouse, setSelectedWarehouse] = useState<Warehouse | null>(null);
 
   const {
     register,
     handleSubmit,
     formState: { errors },
+    watch,
+    setValue,
   } = useForm<CheckoutForm>();
 
+  const formData = watch();
+  const { savedData, isLoaded, saveData } = useCheckoutStorage();
+
+  // Завантаження збережених даних при монтажі
+  useEffect(() => {
+    if (isLoaded && savedData) {
+      if (savedData.name) setValue('name', savedData.name);
+      if (savedData.phone) setValue('phone', savedData.phone);
+      if (savedData.email) setValue('email', savedData.email);
+    }
+  }, [isLoaded, savedData, setValue]);
+
+  // Збереження даних при зміні форми
+  useEffect(() => {
+    if (isLoaded && formData) {
+      saveData({
+        name: formData.name || '',
+        phone: formData.phone || '',
+        email: formData.email || '',
+        city: selectedCity?.Description || null,
+        warehouse: selectedWarehouse?.Number || null,
+        warehouseAddress: selectedWarehouse?.ShortAddress || null,
+      });
+    }
+  }, [formData, selectedCity, selectedWarehouse, isLoaded]);
+
+  // Відновлення даних міста та відділення
+  useEffect(() => {
+    if (isLoaded && savedData?.city) {
+      // Місто буде відновлено через NovaPoshtaSelector
+      // Відділення буде відновлено після завантаження списку відділень
+    }
+  }, [isLoaded, savedData]);
+
   const onSubmit = async (data: CheckoutForm) => {
+    if (!selectedCity) {
+      toast.error('Оберіть місто');
+      return;
+    }
+    if (!selectedWarehouse) {
+      toast.error('Оберіть відділення');
+      return;
+    }
+
     try {
       setLoading(true);
       const orderData = {
         ...data,
+        city: selectedCity.Description,
+        warehouse: `Відділення №${selectedWarehouse.Number}`,
+        warehouseAddress: selectedWarehouse.ShortAddress,
         items: items.map((item) => ({
           productId: item.productId,
           quantity: item.quantity,
@@ -41,6 +108,7 @@ export default function CheckoutPage() {
       };
       await ordersApi.create(orderData);
       clearCart();
+      saveData({ name: '', phone: '', email: '', city: null, warehouse: null, warehouseAddress: null });
       toast.success('Замовлення успішно оформлено!');
       router.push('/orders/success');
     } catch (error: any) {
@@ -90,11 +158,18 @@ export default function CheckoutPage() {
                 <input {...register('email', { required: 'Email обов&apos;язковий', pattern: { value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i, message: 'Некоректний email' } })} className="input-field" placeholder="example@mail.com" />
                 {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-1">Адреса доставки *</label>
-                <textarea {...register('address', { required: 'Адреса обов&apos;язкова' })} className="input-field" rows={3} placeholder="Місто, вулиця, будинок, квартира" />
-                {errors.address && <p className="text-red-500 text-sm mt-1">{errors.address.message}</p>}
+
+              <div className="border-t border-purple-500/20 pt-4">
+                <NovaPoshtaSelector
+                  onCityChange={setSelectedCity}
+                  onWarehouseChange={setSelectedWarehouse}
+                  selectedCity={selectedCity}
+                  selectedWarehouse={selectedWarehouse}
+                  savedCityName={savedData?.city}
+                  savedWarehouseNumber={savedData?.warehouse}
+                />
               </div>
+
               <div>
                 <label className="block text-sm font-medium mb-1">Коментар до замовлення</label>
                 <textarea {...register('comment')} className="input-field" rows={2} placeholder="Додаткова інформація" />

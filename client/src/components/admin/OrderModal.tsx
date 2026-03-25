@@ -17,14 +17,17 @@ interface OrderItem {
 
 interface Order {
   id: string
-  userId: string | null
+  userId?: string | null
   name: string
   phone: string
   email: string
-  address: string
+  address?: string | null
+  city?: string | null
+  warehouse?: string | null
+  warehouseAddress?: string | null
   totalPrice: number
   status: string
-  comment: string | null
+  comment?: string | null
   createdAt: string
   updatedAt: string
   items: OrderItem[]
@@ -110,7 +113,23 @@ export default function OrderModal({ order, onClose, onStatusChange }: OrderModa
 
           <div>
             <h3 className="font-medium mb-2">Адреса доставки</h3>
-            <p className="text-muted">{order.address}</p>
+            {order.city && order.warehouse ? (
+              <div className="space-y-1 text-muted">
+                <p>
+                  <span className="text-secondary">Місто:</span> {order.city}
+                </p>
+                <p>
+                  <span className="text-secondary">Відділення:</span> {order.warehouse}
+                </p>
+                {order.warehouseAddress && (
+                  <p>
+                    <span className="text-secondary">Адреса:</span> {order.warehouseAddress}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <p className="text-muted">{order.address}</p>
+            )}
             {order.comment && (
               <div className="mt-2">
                 <p className="text-sm text-secondary">Коментар:</p>

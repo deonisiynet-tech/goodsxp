@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { Product } from '@/actions/products'
 import { useCartStore } from '@/lib/store'
 import toast from 'react-hot-toast'
-import { X, ShoppingCart, ChevronLeft, ChevronRight, Check, Truck, Shield, RotateCcw } from 'lucide-react'
+import { X, ShoppingCart, ChevronLeft, ChevronRight, Check, ShieldCheck, Truck, RotateCcw } from 'lucide-react'
 
 interface ProductModalProps {
   product: Product
@@ -209,18 +209,24 @@ export default function ProductModal({ product, isOpen, onClose }: ProductModalP
               </div>
 
               {/* Features */}
-              <div className="grid grid-cols-3 gap-4 mb-8">
-                <div className="flex flex-col items-center text-center p-3 bg-[#1f1f23] rounded-xl">
-                  <Truck size={20} className="text-[#6366f1] mb-2" />
-                  <span className="text-xs text-[#9ca3af]">Швидка доставка</span>
+              <div className="space-y-3 mb-8">
+                <div className="flex items-center gap-3 p-3 bg-[#1f1f23] rounded-xl">
+                  <div className="p-2 bg-purple-500/10 rounded-lg">
+                    <ShieldCheck size={18} className="text-purple-400" />
+                  </div>
+                  <span className="text-sm text-[#9ca3af]">Безпечна оплата</span>
                 </div>
-                <div className="flex flex-col items-center text-center p-3 bg-[#1f1f23] rounded-xl">
-                  <Shield size={20} className="text-[#6366f1] mb-2" />
-                  <span className="text-xs text-[#9ca3af]">Гарантія 12 міс</span>
+                <div className="flex items-center gap-3 p-3 bg-[#1f1f23] rounded-xl">
+                  <div className="p-2 bg-pink-500/10 rounded-lg">
+                    <Truck size={18} className="text-pink-400" />
+                  </div>
+                  <span className="text-sm text-[#9ca3af]">Доставка 1-3 дні по Україні</span>
                 </div>
-                <div className="flex flex-col items-center text-center p-3 bg-[#1f1f23] rounded-xl">
-                  <RotateCcw size={20} className="text-[#6366f1] mb-2" />
-                  <span className="text-xs text-[#9ca3af]">Повернення 14 днів</span>
+                <div className="flex items-center gap-3 p-3 bg-[#1f1f23] rounded-xl">
+                  <div className="p-2 bg-blue-500/10 rounded-lg">
+                    <RotateCcw size={18} className="text-blue-400" />
+                  </div>
+                  <span className="text-sm text-[#9ca3af]">Повернення та обмін 14 днів</span>
                 </div>
               </div>
 
