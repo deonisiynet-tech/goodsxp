@@ -115,6 +115,7 @@ export default function NovaPoshtaSelector({
   const searchCities = async (query: string) => {
     setIsLoadingCities(true);
     try {
+      console.log('[NP Selector] Searching cities:', query);
       const response = await fetch('/api/novaposhta/cities', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -122,14 +123,18 @@ export default function NovaPoshtaSelector({
       });
 
       const result = await response.json();
-      if (result.success && result.data) {
+      console.log('[NP Selector] Cities response:', result);
+
+      if (result.success && result.data && result.data.length > 0) {
         setCities(result.data);
         setShowCityDropdown(true);
+        console.log('[NP Selector] Found', result.data.length, 'cities');
       } else {
         setCities([]);
+        console.log('[NP Selector] No cities found');
       }
     } catch (error) {
-      console.error('Error searching cities:', error);
+      console.error('[NP Selector] Error searching cities:', error);
       setCities([]);
     } finally {
       setIsLoadingCities(false);
@@ -148,6 +153,7 @@ export default function NovaPoshtaSelector({
   const loadWarehouses = async (cityRef: string, type: DeliveryType = 'warehouse') => {
     setIsLoadingWarehouses(true);
     try {
+      console.log('[NP Selector] Loading warehouses for cityRef:', cityRef, 'type:', type);
       const response = await fetch('/api/novaposhta/warehouses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -155,13 +161,17 @@ export default function NovaPoshtaSelector({
       });
 
       const result = await response.json();
-      if (result.success && result.data) {
+      console.log('[NP Selector] Warehouses response:', result);
+
+      if (result.success && result.data && result.data.length > 0) {
         setWarehouses(result.data);
+        console.log('[NP Selector] Found', result.data.length, 'warehouses');
       } else {
         setWarehouses([]);
+        console.log('[NP Selector] No warehouses found');
       }
     } catch (error) {
-      console.error('Error loading warehouses:', error);
+      console.error('[NP Selector] Error loading warehouses:', error);
       setWarehouses([]);
     } finally {
       setIsLoadingWarehouses(false);

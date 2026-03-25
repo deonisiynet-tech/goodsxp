@@ -1,7 +1,10 @@
 import axios from 'axios';
 
-const NOVA_POSHTA_API_KEY = process.env.NOVA_POSHTA_API_KEY || 'e4f31f08818aa6c445cb9a73f1e787cd';
+const NOVA_POSHTA_API_KEY = process.env.NOVA_POSHTA_API_KEY || 'fd61dad0d97e5d3479d7f3164b54b03f';
 const NOVA_POSHTA_API_URL = 'https://api.novaposhta.ua/v2.0/json/';
+
+console.log('[NovaPoshta] API Key configured:', NOVA_POSHTA_API_KEY ? 'YES' : 'NO');
+console.log('[NovaPoshta] API URL:', NOVA_POSHTA_API_URL);
 
 interface NovaPoshtaRequest {
   apiKey: string;
@@ -56,48 +59,74 @@ export class NovaPoshtaService {
 
   async searchCities(searchQuery: string): Promise<City[]> {
     if (!searchQuery || searchQuery.trim().length < 2) {
+      console.log('[NovaPoshta] searchCities: empty query, returning []');
       return [];
     }
 
-    const data = await this.makeRequest<any>(
-      'Address',
-      'searchSettlements',
-      {
-        searchString: searchQuery.trim(),
-      }
-    );
+    console.log('[NovaPoshta] searchCities: searching for', searchQuery);
 
-    return data.settlements?.map((settlement: any) => ({
-      Ref: settlement.Ref,
-      Description: settlement.Description,
-      RegionDescription: settlement.RegionDescription,
-      AreaDescription: settlement.AreaDescription,
-    })) || [];
+    try {
+      const data = await this.makeRequest<any>(
+        'Address',
+        'searchSettlements',
+        {
+          searchString: searchQuery.trim(),
+        }
+      );
+
+      console.log('[NovaPoshta] searchCities: raw response', JSON.stringify(data, null, 2));
+
+      const cities = data.settlements?.map((settlement: any) => ({
+        Ref: settlement.Ref,
+        Description: settlement.Description,
+        RegionDescription: settlement.RegionDescription,
+        AreaDescription: settlement.AreaDescription,
+      })) || [];
+
+      console.log('[NovaPoshta] searchCities: found', cities.length, 'cities');
+      return cities;
+    } catch (error: any) {
+      console.error('[NovaPoshta] searchCities error:', error.message);
+      return [];
+    }
   }
 
   async getWarehouses(cityRef: string): Promise<Warehouse[]> {
     if (!cityRef) {
+      console.log('[NovaPoshta] getWarehouses: empty cityRef, returning []');
       return [];
     }
 
-    const data = await this.makeRequest<Warehouse[]>(
-      'Address',
-      'getWarehouses',
-      {
-        CityRef: cityRef,
-      }
-    );
+    console.log('[NovaPoshta] getWarehouses: loading for cityRef', cityRef);
 
-    return data.map((warehouse: any) => ({
-      Ref: warehouse.Ref,
-      Description: warehouse.Description,
-      ShortAddress: warehouse.ShortAddress,
-      Number: warehouse.Number,
-      Latitude: warehouse.Latitude,
-      Longitude: warehouse.Longitude,
-      Type: warehouse.Type || 'Відділення',
-      Schedule: warehouse.Schedule || 'Пн-Пт: 9:00-20:00, Сб: 9:00-18:00',
-    }));
+    try {
+      const data = await this.makeRequest<Warehouse[]>(
+        'Address',
+        'getWarehouses',
+        {
+          CityRef: cityRef,
+        }
+      );
+
+      console.log('[NovaPoshta] getWarehouses: raw response', JSON.stringify(data, null, 2));
+
+      const warehouses = data.map((warehouse: any) => ({
+        Ref: warehouse.Ref,
+        Description: warehouse.Description,
+        ShortAddress: warehouse.ShortAddress,
+        Number: warehouse.Number,
+        Latitude: warehouse.Latitude,
+        Longitude: warehouse.Longitude,
+        Type: warehouse.Type || 'Відділення',
+        Schedule: warehouse.Schedule || 'Пн-Пт: 9:00-20:00, Сб: 9:00-18:00',
+      }));
+
+      console.log('[NovaPoshta] getWarehouses: found', warehouses.length, 'warehouses');
+      return warehouses;
+    } catch (error: any) {
+      console.error('[NovaPoshta] getWarehouses error:', error.message);
+      return [];
+    }
   }
 
   async getPostomats(cityRef: string): Promise<Warehouse[]> {

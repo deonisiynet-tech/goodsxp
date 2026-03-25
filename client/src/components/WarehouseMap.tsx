@@ -88,7 +88,11 @@ export default function WarehouseMap({ warehouses, selectedWarehouse, onWarehous
     (w) => w.Latitude && w.Longitude && !isNaN(parseFloat(w.Latitude)) && !isNaN(parseFloat(w.Longitude))
   );
 
+  console.log('[WarehouseMap] Total warehouses:', warehouses.length);
+  console.log('[WarehouseMap] Warehouses with coords:', warehousesWithCoords.length);
+
   if (warehousesWithCoords.length === 0) {
+    console.log('[WarehouseMap] No warehouses with coordinates, showing message');
     return (
       <div className="h-[400px] bg-[#18181c] border border-purple-500/20 rounded-xl flex items-center justify-center">
         <p className="text-muted">Карта тимчасово недоступна</p>
