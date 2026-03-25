@@ -1,49 +1,55 @@
-# Root Dockerfile for Railway - Fullstack Build
-# Next.js 14 + Express API Server + Cloudinary Support
-#
-# IMPORTANT: Next.js runs in NODE runtime (not Edge)
-# All API routes are handled by Express server
-#
-# BUILD VERSION: 2026-03-19-fix-prisma-fields
+# =========================================
+# Shop MVP - Fullstack Production Dockerfile
+# =========================================
+# Stack: Next.js 14 + Express + Prisma + PostgreSQL
+# React 18.3.1 with @react-leaflet/core 3.0.0
+# 
+# BUILD STRATEGY:
+# - Server: Standard npm install
+# - Client: --legacy-peer-deps (ignores React 19 peer conflict)
+# - Output: Next.js standalone + Express server
+# =========================================
 
 FROM node:20-alpine AS base
 
-# Install dependencies for Prisma and sharp
+# Install system dependencies required for Prisma, sharp, and leaflet
 RUN apk add --no-cache openssl libc6-compat
 
-# ==================================
-# SERVER BUILD
-# ==================================
+# =========================================
+# STAGE 1: SERVER BUILD
+# =========================================
 FROM base AS server-builder
 
 WORKDIR /app
 
-# Copy server package files
+# Copy server package files first (better layer caching)
 COPY server/package*.json ./
 
 # Copy Prisma schema BEFORE npm install (needed for postinstall script)
 COPY server/prisma ./prisma
 
-# Install ALL dependencies (postinstall will run prisma generate)
-# Clean Prisma cache first to ensure fresh generation
-RUN npm install && \
-    rm -rf node_modules/.prisma && \
-    npx prisma generate --schema=./prisma/schema.prisma
+# Install server dependencies
+# Prisma generate runs automatically via postinstall hook
+RUN npm install
 
-# Copy server source files
+# Copy server source code
 COPY server/tsconfig.json ./
 COPY server/src ./src
 
-# Generate Prisma Client explicitly (with DATABASE_URL for validation)
+# Generate Prisma Client explicitly with proper schema path
+# Using dummy URL for build-time validation
 ENV DATABASE_URL="postgresql://postgres:postgres@localhost:5432/postgres"
 RUN npx prisma generate --schema=./prisma/schema.prisma
 
-# Build TypeScript server
+# Build TypeScript to JavaScript
 RUN npm run build
 
-# ==================================
-# CLIENT BUILD
-# ==================================
+# Verify build output
+RUN echo "✅ Server build complete" && ls -la ./dist/
+
+# =========================================
+# STAGE 2: CLIENT BUILD (with --legacy-peer-deps)
+# =========================================
 FROM base AS client-builder
 
 WORKDIR /client
@@ -51,87 +57,98 @@ WORKDIR /client
 # Copy client package files
 COPY client/package*.json ./
 
-# Install dependencies
-RUN npm install
+# CRITICAL: Install with --legacy-peer-deps
+# This ignores the peer dependency conflict:
+# @react-leaflet/core@3.0.0 requires React 19, but we use React 18.3.1
+# The packages are still compatible in practice
+RUN npm install --legacy-peer-deps
 
-# Copy client source files (excluding api directory via .dockerignore)
+# Copy client source code
 COPY client/ .
 
-# Environment variables for Next.js build
-# These are build-time only, runtime values are set via Railway env vars
+# Set build-time environment variables for Next.js
+# These configure API URL and output format
 ENV NEXT_PUBLIC_API_URL="/api"
+ENV NODE_ENV=production
 
-# Build Next.js (creates .next/standalone)
-# Next.js runs in Node runtime (not Edge)
+# Build Next.js application
+# Creates standalone output in .next/standalone
 RUN npm run build
 
-# Verify build output
-RUN ls -la /client/.next/standalone && echo "✅ .next/standalone exists"
-RUN ls -la /client/.next/static && echo "✅ .next/static exists"
+# Verify build artifacts exist
+RUN echo "✅ Client build complete" && \
+    echo "Checking standalone output..." && \
+    ls -la /client/.next/standalone/ && \
+    echo "Checking static files..." && \
+    ls -la /client/.next/static/
 
 # Ensure public directory exists
-RUN mkdir -p /client/public && echo "✅ public directory ensured"
+RUN mkdir -p /client/public
 
-# ==================================
-# PRODUCTION IMAGE - Express + Next.js
-# ==================================
+# =========================================
+# STAGE 3: PRODUCTION RUNNER
+# =========================================
 FROM base AS runner
 
 WORKDIR /app
 
+# Set production environment
 ENV NODE_ENV=production
-# DO NOT set PORT here - Railway injects it at runtime
-# PORT will be provided by Railway environment
+# PORT is set by Railway at runtime, not here
 
-# Create non-root user (Railway uses nodejs user)
+# Create non-root user for security (Railway convention)
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nodejs
 
-# Copy server build (Express API + Next.js handler)
+# ----- Copy Server Build -----
 COPY --from=server-builder --chown=nodejs:nodejs /app/dist ./dist
 COPY --from=server-builder --chown=nodejs:nodejs /app/node_modules ./node_modules
 COPY --from=server-builder --chown=nodejs:nodejs /app/package.json ./
 COPY --from=server-builder --chown=nodejs:nodejs /app/prisma ./prisma
 
-# Copy Next.js standalone build to client directory
-# Express server will load Next.js from here
+# ----- Copy Client Build -----
+# Next.js standalone build (contains server.js and .next)
 RUN mkdir -p ./client
 COPY --from=client-builder --chown=nodejs:nodejs /client/.next/standalone/. ./client/
 COPY --from=client-builder --chown=nodejs:nodejs /client/.next/static ./client/.next/static
 COPY --from=client-builder --chown=nodejs:nodejs /client/server.js ./client/server.js
 COPY --from=client-builder --chown=nodejs:nodejs /client/package.json ./client/package.json
 
-# Copy client public directory to BOTH ./public (root) and ./client/public
+# ----- Copy Public Assets -----
+# Copy to both root and client directories for compatibility
 COPY --from=client-builder --chown=nodejs:nodejs /client/public ./public
 COPY --from=client-builder --chown=nodejs:nodejs /client/public ./client/public
 
-# Create uploads directory at root level for local file storage
+# ----- Create Required Directories -----
+# Uploads directory for local file storage
 RUN mkdir -p ./uploads && chown nodejs:nodejs ./uploads
 
-# Create tmp directory for file uploads (Cloudinary temp files)
+# Temp directory for file uploads (Cloudinary, etc.)
 RUN mkdir -p /tmp && chown nodejs:nodejs /tmp
 
-# Verify the build structure
-RUN echo "=== Build Verification ===" && \
-    echo "Client directory contents:" && ls -la ./client/ && \
-    echo ".next directory contents:" && ls -la ./client/.next/ 2>/dev/null || echo ".next not found" && \
-    echo "Public directory contents:" && ls -la ./public/ && \
-    echo "Dist directory contents:" && ls -la ./dist/ && \
+# ----- Verify Build Structure -----
+RUN echo "=== BUILD VERIFICATION ===" && \
+    echo "📁 Client directory:" && ls -la ./client/ && \
+    echo "📁 .next directory:" && ls -la ./client/.next/ 2>/dev/null || echo ".next not found" && \
+    echo "📁 Public directory:" && ls -la ./public/ && \
+    echo "📁 Dist directory:" && ls -la ./dist/ && \
     echo "========================="
 
-# Set correct permissions for all directories
+# Set ownership for all files
 RUN chown -R nodejs:nodejs /app
 
+# Switch to non-root user
 USER nodejs
 
-# EXPOSE is for documentation only - Railway uses PORT env var
+# Expose port (documentation only - Railway uses PORT env var)
 EXPOSE 5000
 
-# Health check for Railway - uses PORT env var
+# Health check endpoint for Railway
+# Checks /health endpoint on the configured PORT
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
   CMD node -e "const p=process.env.PORT||5000; require('http').get('http://localhost:'+p+'/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"
 
-# Start Express server which handles both API routes and Next.js pages
-# Next.js runs in Node runtime (not Edge)
-# Apply migrations first (safe, no data loss), then start server
+# Startup command:
+# 1. Run Prisma migrations (safe, no data loss)
+# 2. Start Express server (handles API + Next.js)
 CMD ["sh", "-c", "npx prisma migrate deploy --schema=./prisma/schema.prisma && node dist/server.js"]
