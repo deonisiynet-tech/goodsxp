@@ -24,6 +24,8 @@ interface Warehouse {
   Number: string;
   Latitude?: string;
   Longitude?: string;
+  Type?: string;
+  Schedule?: string;
 }
 
 export class NovaPoshtaService {
@@ -43,6 +45,10 @@ export class NovaPoshtaService {
 
     if (response.data.errors && response.data.errors.length > 0) {
       throw new Error(response.data.errors.join(', '));
+    }
+
+    if (response.data.success && response.data.data) {
+      return response.data.data as T;
     }
 
     return response.data.data[0] as T;
@@ -89,6 +95,34 @@ export class NovaPoshtaService {
       Number: warehouse.Number,
       Latitude: warehouse.Latitude,
       Longitude: warehouse.Longitude,
+      Type: warehouse.Type || 'Відділення',
+      Schedule: warehouse.Schedule || 'Пн-Пт: 9:00-20:00, Сб: 9:00-18:00',
+    }));
+  }
+
+  async getPostomats(cityRef: string): Promise<Warehouse[]> {
+    if (!cityRef) {
+      return [];
+    }
+
+    const data = await this.makeRequest<Warehouse[]>(
+      'Address',
+      'getWarehouses',
+      {
+        CityRef: cityRef,
+        TypeOfWarehouseRef: 'd904c7aa-4c45-4275-a111-99643895928b', // Почтомат
+      }
+    );
+
+    return data.map((warehouse: any) => ({
+      Ref: warehouse.Ref,
+      Description: warehouse.Description,
+      ShortAddress: warehouse.ShortAddress,
+      Number: warehouse.Number,
+      Latitude: warehouse.Latitude,
+      Longitude: warehouse.Longitude,
+      Type: 'Почтомат',
+      Schedule: '24/7',
     }));
   }
 }

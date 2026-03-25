@@ -8,7 +8,7 @@ const service = new NovaPoshtaService();
 router.post('/cities', async (req, res, next) => {
   try {
     const { searchQuery } = req.body;
-    
+
     if (!searchQuery) {
       return res.status(400).json({ error: 'searchQuery is required' });
     }
@@ -17,8 +17,8 @@ router.post('/cities', async (req, res, next) => {
     res.json({ success: true, data: cities });
   } catch (error: any) {
     console.error('Nova Poshta cities error:', error.message);
-    res.status(500).json({ 
-      error: error.message || 'Failed to search cities' 
+    res.status(500).json({
+      error: error.message || 'Failed to search cities'
     });
   }
 });
@@ -26,18 +26,24 @@ router.post('/cities', async (req, res, next) => {
 // Get warehouses by city
 router.post('/warehouses', async (req, res, next) => {
   try {
-    const { cityRef } = req.body;
-    
+    const { cityRef, type } = req.body;
+
     if (!cityRef) {
       return res.status(400).json({ error: 'cityRef is required' });
     }
 
-    const warehouses = await service.getWarehouses(cityRef);
+    let warehouses;
+    if (type === 'postomat') {
+      warehouses = await service.getPostomats(cityRef);
+    } else {
+      warehouses = await service.getWarehouses(cityRef);
+    }
+
     res.json({ success: true, data: warehouses });
   } catch (error: any) {
     console.error('Nova Poshta warehouses error:', error.message);
-    res.status(500).json({ 
-      error: error.message || 'Failed to get warehouses' 
+    res.status(500).json({
+      error: error.message || 'Failed to get warehouses'
     });
   }
 });

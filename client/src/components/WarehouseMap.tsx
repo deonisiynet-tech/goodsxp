@@ -13,16 +13,19 @@ interface Warehouse {
   Latitude?: string;
   Longitude?: string;
   Schedule?: string;
+  Type?: string;
 }
 
 interface WarehouseMapProps {
   warehouses: Warehouse[];
   selectedWarehouse: Warehouse | null;
   onWarehouseSelect: (warehouse: Warehouse) => void;
+  deliveryType?: 'warehouse' | 'postomat' | 'courier';
 }
 
 // Fix for default marker icon in Next.js
-const createCustomIcon = (isSelected: boolean) => {
+const createCustomIcon = (isSelected: boolean, type?: string) => {
+  const color = type === 'postomat' ? '#10b981' : isSelected ? 'linear-gradient(135deg, #a855f7, #ec4899)' : '#6b7280';
   return L.divIcon({
     className: 'custom-marker',
     html: `
@@ -30,7 +33,7 @@ const createCustomIcon = (isSelected: boolean) => {
         width: ${isSelected ? '40' : '32'}px;
         height: ${isSelected ? '40' : '32'}px;
         border-radius: 50%;
-        background: ${isSelected ? 'linear-gradient(135deg, #a855f7, #ec4899)' : '#6b7280'};
+        background: ${color};
         border: 3px solid white;
         box-shadow: 0 2px 8px rgba(0,0,0,0.3);
         display: flex;
@@ -111,7 +114,7 @@ export default function WarehouseMap({ warehouses, selectedWarehouse, onWarehous
           <Marker
             key={warehouse.Ref}
             position={[parseFloat(warehouse.Latitude!), parseFloat(warehouse.Longitude!)]}
-            icon={createCustomIcon(selectedWarehouse?.Ref === warehouse.Ref)}
+            icon={createCustomIcon(selectedWarehouse?.Ref === warehouse.Ref, warehouse.Type)}
             eventHandlers={{
               click: () => handleMarkerClick(warehouse),
             }}
@@ -122,7 +125,12 @@ export default function WarehouseMap({ warehouses, selectedWarehouse, onWarehous
               closeOnClick={false}
             >
               <div className="text-gray-800 max-w-[250px]">
-                <div className="font-semibold mb-1 text-base">Відділення №{warehouse.Number}</div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-base">{warehouse.Type === 'Почтомат' ? '📦' : '🏢'}</span>
+                  <span className="font-semibold text-base">
+                    {warehouse.Type === 'Почтомат' ? 'Почтомат' : 'Відділення'} №{warehouse.Number}
+                  </span>
+                </div>
                 <div className="text-sm text-gray-600 mb-2">{warehouse.ShortAddress}</div>
                 <div className="text-xs text-gray-500 mb-3 flex items-center gap-1">
                   <span>🕐</span>
@@ -132,7 +140,7 @@ export default function WarehouseMap({ warehouses, selectedWarehouse, onWarehous
                   onClick={() => handleMarkerClick(warehouse)}
                   className="w-full bg-gradient-to-r from-purple-600 via-pink-500 to-purple-700 text-white text-sm font-medium py-2 px-4 rounded-lg hover:shadow-lg transition-all duration-300"
                 >
-                  {selectedWarehouse?.Ref === warehouse.Ref ? '✓ Обрано' : 'Обрати відділення'}
+                  {selectedWarehouse?.Ref === warehouse.Ref ? '✓ Обрано' : 'Обрати'}
                 </button>
               </div>
             </Popup>
