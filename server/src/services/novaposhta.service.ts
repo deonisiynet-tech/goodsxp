@@ -66,25 +66,46 @@ export class NovaPoshtaService {
     console.log('[NovaPoshta] searchCities: searching for', searchQuery);
 
     try {
-      // Використовуємо метод getCities з фільтром по назві
-      const data = await this.makeRequest<any>(
-        'Address',
-        'getCities',
+      // Використовуємо searchSettlements з правильним параметром
+      const response = await axios.post(
+        NOVA_POSHTA_API_URL,
         {
-          FindByString: searchQuery.trim(),
-          Limit: 10,
+          apiKey: NOVA_POSHTA_API_KEY,
+          modelName: 'Address',
+          calledMethod: 'searchSettlements',
+          methodProperties: {
+            searchString: searchQuery.trim(),
+          },
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+          },
         }
       );
 
-      console.log('[NovaPoshta] searchCities: raw response', JSON.stringify(data, null, 2));
+      console.log('[NovaPoshta] searchCities: raw API response', JSON.stringify(response.data, null, 2));
 
-      // getCities повертає масив міст напряму
-      const cities = Array.isArray(data) ? data.map((city: any) => ({
-        Ref: city.Ref,
-        Description: city.Description,
-        RegionDescription: city.RegionDescription,
-        AreaDescription: city.AreaDescription,
-      })) : [];
+      // Перевіряємо наявність помилок
+      if (response.data.errors && response.data.errors.length > 0) {
+        console.error('[NovaPoshta] API errors:', response.data.errors);
+        return [];
+      }
+
+      // searchSettlements повертає { settlements: [...] }
+      const settlementsData = response.data.data?.[0];
+      
+      if (!settlementsData || !settlementsData.settlements) {
+        console.log('[NovaPoshta] searchCities: no settlements found');
+        return [];
+      }
+
+      const cities = settlementsData.settlements.map((settlement: any) => ({
+        Ref: settlement.Ref,
+        Description: settlement.Description,
+        RegionDescription: settlement.RegionDescription,
+        AreaDescription: settlement.AreaDescription,
+      }));
 
       console.log('[NovaPoshta] searchCities: found', cities.length, 'cities');
       return cities;
