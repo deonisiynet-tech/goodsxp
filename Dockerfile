@@ -61,7 +61,10 @@ COPY client/package*.json ./
 # This ignores the peer dependency conflict:
 # @react-leaflet/core@3.0.0 requires React 19, but we use React 18.3.1
 # The packages are still compatible in practice
-RUN npm install --legacy-peer-deps
+# 
+# Also install react-is explicitly (required by recharts)
+RUN npm install --legacy-peer-deps && \
+    npm install react-is --legacy-peer-deps
 
 # Copy client source code
 COPY client/ .
