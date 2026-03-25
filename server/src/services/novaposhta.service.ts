@@ -64,19 +64,24 @@ export class NovaPoshtaService {
     }
 
     console.log('[NovaPoshta] searchCities: searching for', searchQuery);
+    console.log('[NovaPoshta] API Key:', NOVA_POSHTA_API_KEY.substring(0, 8) + '...');
 
     try {
       // Використовуємо searchSettlements з правильним параметром
+      const requestBody = {
+        apiKey: NOVA_POSHTA_API_KEY,
+        modelName: 'Address',
+        calledMethod: 'searchSettlements',
+        methodProperties: {
+          searchString: searchQuery.trim(),
+        },
+      };
+
+      console.log('[NovaPoshta] Request body:', JSON.stringify(requestBody, null, 2));
+
       const response = await axios.post(
         NOVA_POSHTA_API_URL,
-        {
-          apiKey: NOVA_POSHTA_API_KEY,
-          modelName: 'Address',
-          calledMethod: 'searchSettlements',
-          methodProperties: {
-            searchString: searchQuery.trim(),
-          },
-        },
+        requestBody,
         {
           headers: {
             'Content-Type': 'application/json',
@@ -84,7 +89,7 @@ export class NovaPoshtaService {
         }
       );
 
-      console.log('[NovaPoshta] searchCities: raw API response', JSON.stringify(response.data, null, 2));
+      console.log('[NovaPoshta] Full API response:', JSON.stringify(response.data, null, 2));
 
       // Перевіряємо наявність помилок
       if (response.data.errors && response.data.errors.length > 0) {
@@ -92,11 +97,19 @@ export class NovaPoshtaService {
         return [];
       }
 
-      // searchSettlements повертає { settlements: [...] }
+      // Перевіряємо success
+      if (!response.data.success) {
+        console.error('[NovaPoshta] API returned success: false');
+        return [];
+      }
+
+      // searchSettlements повертає { settlements: [...] } в data[0]
       const settlementsData = response.data.data?.[0];
+      console.log('[NovaPoshta] settlementsData:', JSON.stringify(settlementsData, null, 2));
       
       if (!settlementsData || !settlementsData.settlements) {
-        console.log('[NovaPoshta] searchCities: no settlements found');
+        console.log('[NovaPoshta] searchCities: no settlements found in response');
+        console.log('[NovaPoshta] Available keys:', Object.keys(response.data.data?.[0] || {}));
         return [];
       }
 
@@ -108,9 +121,13 @@ export class NovaPoshtaService {
       }));
 
       console.log('[NovaPoshta] searchCities: found', cities.length, 'cities');
+      console.log('[NovaPoshta] First city:', cities[0]);
       return cities;
     } catch (error: any) {
       console.error('[NovaPoshta] searchCities error:', error.message);
+      if (error.response) {
+        console.error('[NovaPoshta] Error response:', error.response.data);
+      }
       return [];
     }
   }
