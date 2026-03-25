@@ -66,22 +66,25 @@ export class NovaPoshtaService {
     console.log('[NovaPoshta] searchCities: searching for', searchQuery);
 
     try {
+      // Використовуємо метод getCities з фільтром по назві
       const data = await this.makeRequest<any>(
         'Address',
-        'searchSettlements',
+        'getCities',
         {
-          searchString: searchQuery.trim(),
+          FindByString: searchQuery.trim(),
+          Limit: 10,
         }
       );
 
       console.log('[NovaPoshta] searchCities: raw response', JSON.stringify(data, null, 2));
 
-      const cities = data.settlements?.map((settlement: any) => ({
-        Ref: settlement.Ref,
-        Description: settlement.Description,
-        RegionDescription: settlement.RegionDescription,
-        AreaDescription: settlement.AreaDescription,
-      })) || [];
+      // getCities повертає масив міст напряму
+      const cities = Array.isArray(data) ? data.map((city: any) => ({
+        Ref: city.Ref,
+        Description: city.Description,
+        RegionDescription: city.RegionDescription,
+        AreaDescription: city.AreaDescription,
+      })) : [];
 
       console.log('[NovaPoshta] searchCities: found', cities.length, 'cities');
       return cities;
