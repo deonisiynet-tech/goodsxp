@@ -10,7 +10,6 @@ import Footer from '@/components/Footer';
 import NovaPoshtaSelector from '@/components/NovaPoshtaSelector';
 import { useCheckoutStorage } from '@/hooks/useCheckoutStorage';
 import toast from 'react-hot-toast';
-import Link from 'next/link';
 import { ArrowLeft, ShoppingCart } from 'lucide-react';
 
 interface City {
@@ -133,10 +132,10 @@ export default function CheckoutPage() {
           <div className="text-center py-20">
             <h1 className="text-3xl font-light mb-4">Кошик порожній</h1>
             <p className="text-muted mb-8">Додай товари перед оформленням замовлення</p>
-            <Link href="/catalog" className="btn-primary inline-flex items-center gap-2">
+            <button onClick={() => router.push('/catalog')} className="btn-primary inline-flex items-center gap-2">
               <ShoppingCart size={20} />
               Перейти до каталогу
-            </Link>
+            </button>
           </div>
         </main>
         <Footer />
@@ -150,13 +149,13 @@ export default function CheckoutPage() {
       <main className="flex-1 container mx-auto px-4 py-8 mt-20">
         {/* Кнопка повернення та заголовок */}
         <div className="mb-8">
-          <Link 
-            href="/cart" 
-            className="inline-flex items-center gap-2 text-muted hover:text-purple-400 transition-colors duration-200 mb-4"
+          <button
+            onClick={() => router.push('/cart')}
+            className="inline-flex items-center gap-2 text-muted hover:text-purple-400 transition-colors duration-200 mb-4 cursor-pointer"
           >
             <ArrowLeft size={18} />
             <span className="text-sm font-light">Повернутися до кошика</span>
-          </Link>
+          </button>
           <h1 className="text-3xl font-light">Оформлення замовлення</h1>
         </div>
 
