@@ -11,6 +11,7 @@ interface City {
   Description: string;
   RegionDescription: string;
   AreaDescription?: string;
+  DeliveryCity?: boolean;
 }
 
 interface Warehouse {
@@ -25,6 +26,12 @@ interface Warehouse {
 }
 
 export class NovaPoshtaService {
+  /**
+   * ✅ 1️⃣ ПОШУК МІСТА
+   * - Логіювання всього відповіді API
+   * - Вибір першого результату
+   * - Витяг Ref для getWarehouses
+   */
   async searchCities(cityName: string): Promise<City[]> {
     if (!cityName || cityName.trim().length < 2) {
       console.log('[NovaPoshta] searchCities: empty query, returning []');
@@ -32,21 +39,18 @@ export class NovaPoshtaService {
     }
 
     console.log('[NovaPoshta] searchCities: searching for', cityName);
-    console.log('[NovaPoshta] API Key:', NOVA_POSHTA_API_KEY.substring(0, 8) + '...');
 
     try {
-      // ✅ 1️⃣ ПОШУК МІСТА З SettlementName
+      // ✅ ЗАПИТ З SettlementName
       const requestBody = {
         apiKey: NOVA_POSHTA_API_KEY,
         modelName: 'Address',
         calledMethod: 'searchSettlements',
         methodProperties: {
-          SettlementName: cityName.trim(),  // ✅ SettlementName для пошуку
+          SettlementName: cityName.trim(),  // ✅ ПРАВИЛЬНЕ ПОЛЕ
           Limit: 10,
         },
       };
-
-      console.log('[NovaPoshta] searchCities request:', JSON.stringify(requestBody, null, 2));
 
       const response = await axios.post(
         NOVA_POSHTA_API_URL,
@@ -58,16 +62,15 @@ export class NovaPoshtaService {
         }
       );
 
-      // ✅ ЛОГУВАННЯ ПОВНОЇ ВІДПОВІДІ API
-      console.log('[NovaPoshta] searchCities FULL RESPONSE:', JSON.stringify(response.data, null, 2));
+      // ✅ ЛОГУВАННЯ ВСЬОГО ВІДПОВІДІ API
+      console.log('[NovaPoshta] Cities FULL RESPONSE:', JSON.stringify(response.data, null, 2));
 
-      // Перевіряємо наявність помилок
+      // Перевірка помилок
       if (response.data.errors && response.data.errors.length > 0) {
         console.error('[NovaPoshta] searchCities API errors:', response.data.errors);
         return [];
       }
 
-      // Перевіряємо success
       if (!response.data.success) {
         console.error('[NovaPoshta] searchCities API returned success: false');
         return [];
@@ -92,21 +95,14 @@ export class NovaPoshtaService {
         console.log('[NovaPoshta] searchCities: found data array:', citiesData.length);
       }
 
-      console.log('[NovaPoshta] searchCities citiesData:', JSON.stringify(citiesData, null, 2));
-
       if (citiesData.length === 0) {
         console.warn('[NovaPoshta] searchCities: Місто не знайдено');
         return [];
       }
 
-      // ✅ ФІЛЬТРУЄМО: спочатку DeliveryCity, потім всі інші
-      const deliveryCity = citiesData.find((city: any) => city.DeliveryCity);
-      const city = deliveryCity || citiesData[0];
-
-      console.log('[NovaPoshta] searchCities: selected city:', city);
-
+      // ✅ БЕРЕМО ПЕРШИЙ РЕЗУЛЬТАТ - витягуємо Ref
       const cities = citiesData.map((settlement: any) => ({
-        Ref: settlement.Ref,
+        Ref: settlement.Ref,  // ✅ САМЕ ЦЕ ПОЛЕ ПОТРІБНЕ ДЛЯ getWarehouses
         Description: settlement.Present || settlement.Description,
         RegionDescription: settlement.RegionDescription || '',
         AreaDescription: settlement.AreaDescription || '',
@@ -114,9 +110,9 @@ export class NovaPoshtaService {
       }));
 
       console.log('[NovaPoshta] searchCities: found', cities.length, 'cities');
-      if (cities.length > 0) {
-        console.log('[NovaPoshta] searchCities: first city:', cities[0]);
-      }
+      console.log('[NovaPoshta] searchCities: FIRST CITY Ref:', cities[0].Ref);
+      console.log('[NovaPoshta] searchCities: FIRST CITY Description:', cities[0].Description);
+      
       return cities;
     } catch (error: any) {
       console.error('[NovaPoshta] searchCities error:', error.message);
@@ -127,27 +123,46 @@ export class NovaPoshtaService {
     }
   }
 
-  async getWarehouses(cityRef: string, cityName?: string): Promise<Warehouse[]> {
+  /**
+   * ✅ 2️⃣ ОТРИМАННЯ ВІДДІЛЕНЬ
+   * - Передаємо КОРЕКТНИЙ Ref (не довгу назву!)
+   * - Fallback: якщо "City not found", шукаємо місто заново
+   */
+  async getWarehouses(cityRef: string, cityName: string): Promise<Warehouse[]> {
+    // ✅ ПЕРЕВІРКА: Ref не повинен бути пустим або довгою назвою
     if (!cityRef) {
       console.log('[NovaPoshta] getWarehouses: empty cityRef, returning []');
       return [];
     }
 
+    // ✅ ПЕРЕВІРКА: якщо cityRef містить коми - це довга назва, а не Ref!
+    if (cityRef.includes(',') || cityRef.length > 50) {
+      console.warn('[NovaPoshta] getWarehouses: cityRef looks like a long name, not Ref:', cityRef.substring(0, 50) + '...');
+      console.warn('[NovaPoshta] getWarehouses: trying to search city by name:', cityName);
+      
+      // Шукаємо місто за назвою
+      const refreshedCity = await this.searchCities(cityName);
+      if (refreshedCity.length > 0) {
+        cityRef = refreshedCity[0].Ref;  // ✅ БЕРЕМУ ПРАВИЛЬНИЙ Ref
+        console.log('[NovaPoshta] getWarehouses: got correct cityRef:', cityRef);
+      } else {
+        console.error('[NovaPoshta] getWarehouses: cannot find city by name:', cityName);
+        return [];
+      }
+    }
+
     console.log('[NovaPoshta] getWarehouses: loading for cityRef', cityRef, 'cityName:', cityName);
 
     try {
-      // ✅ 2️⃣ ОТРИМАННЯ ВІДДІЛЕНЬ З FALLBACK
       const requestBody = {
         apiKey: NOVA_POSHTA_API_KEY,
-        modelName: 'AddressGeneral',
+        modelName: 'Address',  // ✅ Address, не AddressGeneral
         calledMethod: 'getWarehouses',
         methodProperties: {
-          CityRef: cityRef,
+          CityRef: cityRef,  // ✅ КОРЕКТНИЙ Ref
           Limit: 100,
         },
       };
-
-      console.log('[NovaPoshta] getWarehouses request:', JSON.stringify(requestBody, null, 2));
 
       const response = await axios.post(
         NOVA_POSHTA_API_URL,
@@ -159,70 +174,44 @@ export class NovaPoshtaService {
         }
       );
 
-      // ✅ ЛОГУВАННЯ ПОВНОЇ ВІДПОВІДІ API
-      console.log('[NovaPoshta] getWarehouses FULL RESPONSE:', JSON.stringify(response.data, null, 2));
+      // ✅ ЛОГУВАННЯ ВСЬОГО ВІДПОВІДІ API
+      console.log('[NovaPoshta] Warehouses FULL RESPONSE:', JSON.stringify(response.data, null, 2));
 
-      // Перевіряємо наявність помилок
+      // Перевірка помилок
       if (response.data.errors && response.data.errors.length > 0) {
         console.error('[NovaPoshta] getWarehouses API errors:', response.data.errors);
         
-        // ✅ FALLBACK: Якщо "City not found", пробуємо знайти місто заново
-        if (response.data.errors.includes('City not found') && cityName) {
+        // ✅ FALLBACK: Якщо "City not found", шукаємо місто заново
+        if (response.data.errors.includes('City not found')) {
           console.warn('[NovaPoshta] getWarehouses: City not found, trying fallback...');
           const refreshedCity = await this.searchCities(cityName);
           if (refreshedCity.length > 0) {
-            const newCityRef = refreshedCity[0].Ref;
+            const newCityRef = refreshedCity[0].Ref;  // ✅ БЕРЕМУ НОВИЙ Ref
             console.log('[NovaPoshta] getWarehouses: got new cityRef:', newCityRef);
-            return this.getWarehouses(newCityRef);  // Рекурсивний виклик з новим CityRef
+            return this.getWarehouses(newCityRef, cityName);  // ✅ РЕКУРСІЯ
           }
         }
         
         return [];
       }
 
-      // Перевіряємо success
       if (!response.data.success) {
         console.error('[NovaPoshta] getWarehouses API returned success: false');
         return [];
       }
 
-      // ✅ ОТРИМУЄМО ВІДДІЛЕННЯ - ПЕРЕВІРЯЄМО РІЗНІ ФОРМАТИ
-      let data = [];
+      // ✅ ОТРИМУЄМО ВІДДІЛЕННЯ
+      let data = response.data.data || [];
       
-      // Варіант 1: data - масив відділень
-      if (Array.isArray(response.data.data)) {
-        data = response.data.data;
-        console.log('[NovaPoshta] getWarehouses: data is array with', data.length, 'items');
-      }
-      // Варіант 2: data[0].warehouses
-      else if (response.data.data?.[0]?.warehouses) {
-        data = response.data.data[0].warehouses;
-        console.log('[NovaPoshta] getWarehouses: data[0].warehouses with', data.length, 'items');
-      }
-      // Варіант 3: порожня відповідь
-      else {
-        console.warn('[NovaPoshta] getWarehouses: невідомий формат відповіді');
-        console.warn('[NovaPoshta] getWarehouses response.data keys:', Object.keys(response.data.data || {}));
-        
-        // ✅ FALLBACK: Якщо місто не знайдено, пробуємо знайти його заново
-        if (cityName) {
-          console.warn('[NovaPoshta] getWarehouses: trying fallback search for city:', cityName);
-          const refreshedCity = await this.searchCities(cityName);
-          if (refreshedCity.length > 0) {
-            const newCityRef = refreshedCity[0].Ref;
-            console.log('[NovaPoshta] getWarehouses: got new cityRef:', newCityRef);
-            return this.getWarehouses(newCityRef);
-          }
-        }
-        
+      if (!Array.isArray(data)) {
+        console.warn('[NovaPoshta] getWarehouses: data is not an array');
         return [];
       }
 
-      console.log('[NovaPoshta] getWarehouses raw data count:', data.length);
+      console.log('[NovaPoshta] getWarehouses: found', data.length, 'warehouses');
 
       if (data.length === 0) {
-        console.warn('[NovaPoshta] getWarehouses: API повернув пустий масив відділень для cityRef:', cityRef);
-        console.warn('[NovaPoshta] getWarehouses FALLBACK: Відділення не знайдено. Спробуйте інший населений пункт');
+        console.warn('[NovaPoshta] getWarehouses: API повернув пустий масив для cityRef:', cityRef);
         return [];
       }
 
@@ -238,15 +227,11 @@ export class NovaPoshtaService {
       }));
 
       console.log('[NovaPoshta] getWarehouses: знайдено', warehouses.length, 'відділень');
-      
-      // ✅ ЛОГУВАННЯ ПЕРШИХ 3 ВІДДІЛЕНЬ
-      if (warehouses.length > 0) {
-        console.log('[NovaPoshta] getWarehouses перші 3 відділення:', warehouses.slice(0, 3));
-      }
+      console.log('[NovaPoshta] getWarehouses: перші 3 відділення:', warehouses.slice(0, 3));
       
       return warehouses;
     } catch (error: any) {
-      console.error('[NovaPoshta] getWarehouses error:', error.message);
+      console.error('[NovaPoshta] getWarehouses ERROR:', error);
       if (error.response) {
         console.error('[NovaPoshta] getWarehouses Error response:', error.response.data);
       }
@@ -254,10 +239,27 @@ export class NovaPoshtaService {
     }
   }
 
-  async getPostomats(cityRef: string, cityName?: string): Promise<Warehouse[]> {
+  /**
+   * ✅ 3️⃣ ОТРИМАННЯ ПОШТОМАТІВ
+   * - Аналогічна логіка до getWarehouses
+   */
+  async getPostomats(cityRef: string, cityName: string): Promise<Warehouse[]> {
+    // ✅ ПЕРЕВІРКА: Ref не повинен бути пустим або довгою назвою
     if (!cityRef) {
       console.log('[NovaPoshta] getPostomats: empty cityRef, returning []');
       return [];
+    }
+
+    // ✅ ПЕРЕВІРКА: якщо cityRef містить коми - це довга назва
+    if (cityRef.includes(',') || cityRef.length > 50) {
+      console.warn('[NovaPoshta] getPostomats: cityRef looks like a long name, not Ref');
+      const refreshedCity = await this.searchCities(cityName);
+      if (refreshedCity.length > 0) {
+        cityRef = refreshedCity[0].Ref;
+        console.log('[NovaPoshta] getPostomats: got correct cityRef:', cityRef);
+      } else {
+        return [];
+      }
     }
 
     console.log('[NovaPoshta] getPostomats: loading for cityRef', cityRef, 'cityName:', cityName);
@@ -265,7 +267,7 @@ export class NovaPoshtaService {
     try {
       const requestBody = {
         apiKey: NOVA_POSHTA_API_KEY,
-        modelName: 'AddressGeneral',
+        modelName: 'Address',
         calledMethod: 'getWarehouses',
         methodProperties: {
           CityRef: cityRef,
@@ -273,8 +275,6 @@ export class NovaPoshtaService {
           Limit: 100,
         },
       };
-
-      console.log('[NovaPoshta] getPostomats request:', JSON.stringify(requestBody, null, 2));
 
       const response = await axios.post(
         NOVA_POSHTA_API_URL,
@@ -286,66 +286,44 @@ export class NovaPoshtaService {
         }
       );
 
-      // ✅ ЛОГУВАННЯ ПОВНОЇ ВІДПОВІДІ API
-      console.log('[NovaPoshta] getPostomats FULL RESPONSE:', JSON.stringify(response.data, null, 2));
+      // ✅ ЛОГУВАННЯ ВСЬОГО ВІДПОВІДІ API
+      console.log('[NovaPoshta] Postomats FULL RESPONSE:', JSON.stringify(response.data, null, 2));
 
-      // Перевіряємо наявність помилок
+      // Перевірка помилок
       if (response.data.errors && response.data.errors.length > 0) {
         console.error('[NovaPoshta] getPostomats API errors:', response.data.errors);
         
-        // ✅ FALLBACK: Якщо "City not found", пробуємо знайти місто заново
-        if (response.data.errors.includes('City not found') && cityName) {
+        // ✅ FALLBACK
+        if (response.data.errors.includes('City not found')) {
           console.warn('[NovaPoshta] getPostomats: City not found, trying fallback...');
           const refreshedCity = await this.searchCities(cityName);
           if (refreshedCity.length > 0) {
             const newCityRef = refreshedCity[0].Ref;
             console.log('[NovaPoshta] getPostomats: got new cityRef:', newCityRef);
-            return this.getPostomats(newCityRef);
+            return this.getPostomats(newCityRef, cityName);
           }
         }
         
         return [];
       }
 
-      // Перевіряємо success
       if (!response.data.success) {
         console.error('[NovaPoshta] getPostomats API returned success: false');
         return [];
       }
 
       // ✅ ОТРИМУЄМО ПОШТОМАТИ
-      let data = [];
+      let data = response.data.data || [];
       
-      if (Array.isArray(response.data.data)) {
-        data = response.data.data;
-        console.log('[NovaPoshta] getPostomats: data is array with', data.length, 'items');
-      }
-      else if (response.data.data?.[0]?.warehouses) {
-        data = response.data.data[0].warehouses;
-        console.log('[NovaPoshta] getPostomats: data[0].warehouses with', data.length, 'items');
-      }
-      else {
-        console.warn('[NovaPoshta] getPostomats: невідомий формат відповіді');
-        
-        // ✅ FALLBACK
-        if (cityName) {
-          console.warn('[NovaPoshta] getPostomats: trying fallback search for city:', cityName);
-          const refreshedCity = await this.searchCities(cityName);
-          if (refreshedCity.length > 0) {
-            const newCityRef = refreshedCity[0].Ref;
-            console.log('[NovaPoshta] getPostomats: got new cityRef:', newCityRef);
-            return this.getPostomats(newCityRef);
-          }
-        }
-        
+      if (!Array.isArray(data)) {
+        console.warn('[NovaPoshta] getPostomats: data is not an array');
         return [];
       }
 
-      console.log('[NovaPoshta] getPostomats raw data count:', data.length);
+      console.log('[NovaPoshta] getPostomats: found', data.length, 'postomats');
 
       if (data.length === 0) {
-        console.warn('[NovaPoshta] getPostomats: API повернув пустий масив почтоматів для cityRef:', cityRef);
-        console.warn('[NovaPoshta] getPostomats FALLBACK: Спробуйте використати відділення замість почтоматів');
+        console.warn('[NovaPoshta] getPostomats: API повернув пустий масив');
         return [];
       }
 
@@ -362,17 +340,32 @@ export class NovaPoshtaService {
 
       console.log('[NovaPoshta] getPostomats: знайдено', warehouses.length, 'почтоматів');
       
-      if (warehouses.length > 0) {
-        console.log('[NovaPoshta] getPostomats перші 3 почтомати:', warehouses.slice(0, 3));
-      }
-      
       return warehouses;
     } catch (error: any) {
-      console.error('[NovaPoshta] getPostomats error:', error.message);
+      console.error('[NovaPoshta] getPostomats ERROR:', error);
       if (error.response) {
         console.error('[NovaPoshta] getPostomats Error response:', error.response.data);
       }
       return [];
     }
+  }
+
+  /**
+   * ✅ 4️⃣ ОТРИМАННЯ ВСІХ ТИПІВ ДОСТАВКИ
+   * - Warehouse + Postomat одночасно
+   * - Для відображення на сайті
+   */
+  async getAllDeliveryOptions(cityRef: string, cityName: string): Promise<{warehouses: Warehouse[], postomats: Warehouse[]}> {
+    console.log('[NovaPoshta] getAllDeliveryOptions: loading for cityRef', cityRef, 'cityName:', cityName);
+
+    // ✅ Перевіряємо всі типи відділень одночасно
+    const [warehouses, postomats] = await Promise.all([
+      this.getWarehouses(cityRef, cityName),
+      this.getPostomats(cityRef, cityName),
+    ]);
+
+    console.log('[NovaPoshta] getAllDeliveryOptions: total warehouses:', warehouses.length, 'postomats:', postomats.length);
+
+    return { warehouses, postomats };
   }
 }

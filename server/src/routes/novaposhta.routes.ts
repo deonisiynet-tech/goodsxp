@@ -29,8 +29,8 @@ router.post('/cities', async (req, res, next) => {
 // Get warehouses by city
 router.post('/warehouses', async (req, res, next) => {
   try {
-    const { cityRef, type } = req.body;
-    console.log('[NovaPoshta API] /warehouses request:', { cityRef, type });
+    const { cityRef, type, cityName } = req.body;  // ✅ ДОДАВЛЕНО cityName
+    console.log('[NovaPoshta API] /warehouses request:', { cityRef, type, cityName });
 
     if (!cityRef) {
       return res.status(400).json({ error: 'cityRef is required' });
@@ -38,9 +38,11 @@ router.post('/warehouses', async (req, res, next) => {
 
     let warehouses;
     if (type === 'postomat') {
-      warehouses = await service.getPostomats(cityRef);
+      // ✅ ПЕРЕДАЄМО cityName ДЛЯ FALLBACK
+      warehouses = await service.getPostomats(cityRef, cityName || '');
     } else {
-      warehouses = await service.getWarehouses(cityRef);
+      // ✅ ПЕРЕДАЄМО cityName ДЛЯ FALLBACK
+      warehouses = await service.getWarehouses(cityRef, cityName || '');
     }
 
     console.log('[NovaPoshta API] /warehouses response:', { count: warehouses.length });
