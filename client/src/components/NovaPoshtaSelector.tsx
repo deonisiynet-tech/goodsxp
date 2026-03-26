@@ -154,10 +154,18 @@ export default function NovaPoshtaSelector({
     setIsLoadingWarehouses(true);
     try {
       console.log('[NP Selector] Loading warehouses for cityRef:', cityRef, 'type:', type);
+      
+      // ✅ ОТРИМУЄМО НАЗВУ МІСТА З ОБРАНОГО МІСТА АБО З ПОШУКУ
+      const cityName = selectedCity?.Description || citySearch;
+      
       const response = await fetch('/api/novaposhta/warehouses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ cityRef, type }),
+        body: JSON.stringify({ 
+          cityRef, 
+          type,
+          cityName  // ✅ ПЕРЕДАЄМО cityName ДЛЯ FALLBACK
+        }),
       });
 
       const result = await response.json();

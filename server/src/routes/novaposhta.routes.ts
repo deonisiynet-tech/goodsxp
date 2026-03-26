@@ -29,20 +29,33 @@ router.post('/cities', async (req, res, next) => {
 // Get warehouses by city
 router.post('/warehouses', async (req, res, next) => {
   try {
-    const { cityRef, type, cityName } = req.body;  // ✅ ДОДАВЛЕНО cityName
+    const { cityRef, type, cityName } = req.body;
     console.log('[NovaPoshta API] /warehouses request:', { cityRef, type, cityName });
 
     if (!cityRef) {
       return res.status(400).json({ error: 'cityRef is required' });
     }
 
+    // ✅ ОТРИМУЄМО НАЗВУ МІСТА З КОРЕКТНОГО ЗАПИТУ АБО З CITYREF (ЯКЩО ЦЕ ОПИС)
+    let resolvedCityName = cityName;
+    
+    // Якщо cityName не передано, але cityRef виглядає як опис (містить кому),
+    // намагаємося витягти назву міста з нього
+    if (!resolvedCityName && cityRef && (cityRef.includes(',') || cityRef.length > 50)) {
+      resolvedCityName = cityRef.split(',')[0].trim();
+      console.log('[NovaPoshta API] /warehouses: extracted cityName from cityRef:', resolvedCityName);
+    }
+
     let warehouses;
     if (type === 'postomat') {
       // ✅ ПЕРЕДАЄМО cityName ДЛЯ FALLBACK
-      warehouses = await service.getPostomats(cityRef, cityName || '');
+      warehouses = await service.getPostomats(cityRef, resolvedCityName || '');
+    } else if (type === 'courier') {
+      // Для кур'єрської доставки відділення не потрібне
+      warehouses = [];
     } else {
       // ✅ ПЕРЕДАЄМО cityName ДЛЯ FALLBACK
-      warehouses = await service.getWarehouses(cityRef, cityName || '');
+      warehouses = await service.getWarehouses(cityRef, resolvedCityName || '');
     }
 
     console.log('[NovaPoshta API] /warehouses response:', { count: warehouses.length });
@@ -52,6 +65,31 @@ router.post('/warehouses', async (req, res, next) => {
     console.error('[NovaPoshta API] /warehouses error:', error.message);
     res.status(500).json({
       error: error.message || 'Failed to get warehouses'
+    });
+  }
+});
+
+// ✅ ОТРИМАННЯ ВСІХ ТИПІВ ДОСТАВКИ ОДНОЧАСНО
+router.post('/all-delivery-options', async (req, res, next) => {
+  try {
+    const { cityRef, cityName } = req.body;
+    console.log('[NovaPoshta API] /all-delivery-options request:', { cityRef, cityName });
+
+    if (!cityRef || !cityName) {
+      return res.status(400).json({ error: 'cityRef and cityName are required' });
+    }
+
+    const deliveryOptions = await service.getAllDeliveryOptions(cityRef, cityName);
+    console.log('[NovaPoshta API] /all-delivery-options response:', {
+      warehousesCount: deliveryOptions.warehouses.length,
+      postomatsCount: deliveryOptions.postomats.length
+    });
+
+    res.json({ success: true, data: deliveryOptions });
+  } catch (error: any) {
+    console.error('[NovaPoshta API] /all-delivery-options error:', error.message);
+    res.status(500).json({
+      error: error.message || 'Failed to get delivery options'
     });
   }
 });

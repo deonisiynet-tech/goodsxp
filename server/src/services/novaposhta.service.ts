@@ -65,9 +65,10 @@ export class NovaPoshtaService {
       // ✅ ЛОГУВАННЯ ВСЬОГО ВІДПОВІДІ API
       console.log('[NovaPoshta] Cities FULL RESPONSE:', JSON.stringify(response.data, null, 2));
 
-      // Перевірка помилок
+      // ✅ ЛОГУВАННЯ ПОМИЛОК API
       if (response.data.errors && response.data.errors.length > 0) {
         console.error('[NovaPoshta] searchCities API errors:', response.data.errors);
+        console.error('[NovaPoshta] searchCities FULL ERROR RESPONSE:', JSON.stringify(response.data, null, 2));
         return [];
       }
 
@@ -177,10 +178,11 @@ export class NovaPoshtaService {
       // ✅ ЛОГУВАННЯ ВСЬОГО ВІДПОВІДІ API
       console.log('[NovaPoshta] Warehouses FULL RESPONSE:', JSON.stringify(response.data, null, 2));
 
-      // Перевірка помилок
+      // ✅ ЛОГУВАННЯ ПОМИЛОК API
       if (response.data.errors && response.data.errors.length > 0) {
         console.error('[NovaPoshta] getWarehouses API errors:', response.data.errors);
-        
+        console.error('[NovaPoshta] getWarehouses FULL ERROR RESPONSE:', JSON.stringify(response.data, null, 2));
+
         // ✅ FALLBACK: Якщо "City not found", шукаємо місто заново
         if (response.data.errors.includes('City not found')) {
           console.warn('[NovaPoshta] getWarehouses: City not found, trying fallback...');
@@ -191,7 +193,7 @@ export class NovaPoshtaService {
             return this.getWarehouses(newCityRef, cityName);  // ✅ РЕКУРСІЯ
           }
         }
-        
+
         return [];
       }
 
@@ -241,7 +243,8 @@ export class NovaPoshtaService {
 
   /**
    * ✅ 3️⃣ ОТРИМАННЯ ПОШТОМАТІВ
-   * - Аналогічна логіка до getWarehouses
+   * - Використовуємо метод getPosts для почтоматів
+   * - Аналогічна логіка до getWarehouses з fallback
    */
   async getPostomats(cityRef: string, cityName: string): Promise<Warehouse[]> {
     // ✅ ПЕРЕВІРКА: Ref не повинен бути пустим або довгою назвою
@@ -265,13 +268,13 @@ export class NovaPoshtaService {
     console.log('[NovaPoshta] getPostomats: loading for cityRef', cityRef, 'cityName:', cityName);
 
     try {
+      // ✅ ВИКОРИСТОВУЄМО getPosts - окремий метод для почтоматів
       const requestBody = {
         apiKey: NOVA_POSHTA_API_KEY,
         modelName: 'Address',
-        calledMethod: 'getWarehouses',
+        calledMethod: 'getPosts',  // ✅ ОКРЕМИЙ МЕТОД ДЛЯ ПОШТОМАТІВ
         methodProperties: {
           CityRef: cityRef,
-          TypeOfWarehouseRef: 'd904c7aa-4c45-4275-a111-99643895928b', // Почтомат
           Limit: 100,
         },
       };
@@ -289,10 +292,11 @@ export class NovaPoshtaService {
       // ✅ ЛОГУВАННЯ ВСЬОГО ВІДПОВІДІ API
       console.log('[NovaPoshta] Postomats FULL RESPONSE:', JSON.stringify(response.data, null, 2));
 
-      // Перевірка помилок
+      // ✅ ЛОГУВАННЯ ПОМИЛОК API
       if (response.data.errors && response.data.errors.length > 0) {
         console.error('[NovaPoshta] getPostomats API errors:', response.data.errors);
-        
+        console.error('[NovaPoshta] getPostomats FULL ERROR RESPONSE:', JSON.stringify(response.data, null, 2));
+
         // ✅ FALLBACK
         if (response.data.errors.includes('City not found')) {
           console.warn('[NovaPoshta] getPostomats: City not found, trying fallback...');
@@ -303,7 +307,7 @@ export class NovaPoshtaService {
             return this.getPostomats(newCityRef, cityName);
           }
         }
-        
+
         return [];
       }
 
@@ -314,7 +318,7 @@ export class NovaPoshtaService {
 
       // ✅ ОТРИМУЄМО ПОШТОМАТИ
       let data = response.data.data || [];
-      
+
       if (!Array.isArray(data)) {
         console.warn('[NovaPoshta] getPostomats: data is not an array');
         return [];
@@ -330,7 +334,7 @@ export class NovaPoshtaService {
       const warehouses = data.map((warehouse: any) => ({
         Ref: warehouse.Ref,
         Description: warehouse.Description,
-        ShortAddress: warehouse.ShortAddress,
+        ShortAddress: warehouse.ShortAddress || warehouse.Address,
         Number: warehouse.Number,
         Latitude: warehouse.Latitude,
         Longitude: warehouse.Longitude,
@@ -339,7 +343,7 @@ export class NovaPoshtaService {
       }));
 
       console.log('[NovaPoshta] getPostomats: знайдено', warehouses.length, 'почтоматів');
-      
+
       return warehouses;
     } catch (error: any) {
       console.error('[NovaPoshta] getPostomats ERROR:', error);
