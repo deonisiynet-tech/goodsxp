@@ -31,6 +31,7 @@ export class NovaPoshtaService {
    * - Логіювання всього відповіді API
    * - Вибір першого результату
    * - Витяг Ref для getWarehouses
+   * - ПІДТРИМКА РОСІЙСЬКОЇ ТА УКРАЇНСЬКОЇ МОВИ
    */
   async searchCities(cityName: string): Promise<City[]> {
     if (!cityName || cityName.trim().length < 2) {
@@ -38,16 +39,17 @@ export class NovaPoshtaService {
       return [];
     }
 
-    console.log('[NovaPoshta] searchCities: searching for', cityName);
+    const trimmedCityName = cityName.trim();
+    console.log('[NovaPoshta] searchCities: searching for', trimmedCityName);
 
     try {
-      // ✅ ЗАПИТ З SettlementName
+      // ✅ СПОЧАТКУ ПРОБУЄМО searchSettlements (універсальний пошук)
       const requestBody = {
         apiKey: NOVA_POSHTA_API_KEY,
         modelName: 'Address',
         calledMethod: 'searchSettlements',
         methodProperties: {
-          SettlementName: cityName.trim(),  // ✅ ПРАВИЛЬНЕ ПОЛЕ
+          SettlementName: trimmedCityName,
           Limit: 10,
         },
       };
@@ -66,7 +68,6 @@ export class NovaPoshtaService {
       console.log('[NovaPoshta] Cities FULL RESPONSE:', JSON.stringify(response.data, null, 2));
       console.log('[NovaPoshta] Cities response.data type:', typeof response.data.data);
       console.log('[NovaPoshta] Cities response.data isArray:', Array.isArray(response.data.data));
-      console.log('[NovaPoshta] Cities response.data keys:', Object.keys(response.data.data || {}));
 
       // ✅ ЛОГУВАННЯ ПОМИЛОК API
       if (response.data.errors && response.data.errors.length > 0) {
@@ -82,10 +83,6 @@ export class NovaPoshtaService {
 
       // ✅ ОТРИМУЄМО МІСТА - ПЕРЕВІРЯЄМО ВСІ МОЖЛИВІ ФОРМАТИ
       let citiesData: any[] = [];
-
-      console.log('[NovaPoshta] Cities checking data structure...');
-      console.log('[NovaPoshta] Cities data[0]:', response.data.data?.[0]);
-      console.log('[NovaPoshta] Cities data[0] keys:', Object.keys(response.data.data?.[0] || {}));
 
       // Варіант 1: data[0].settlements
       if (response.data.data?.[0]?.settlements) {
@@ -112,24 +109,51 @@ export class NovaPoshtaService {
         citiesData = response.data.data[0].Settlements;
         console.log('[NovaPoshta] searchCities: found Settlements (capital S):', citiesData.length);
       }
-      // ✅ НОВИЙ ВАРИАНТ: перевірка всіх ключів у data[0]
-      else if (response.data.data?.[0]) {
-        const firstItem = response.data.data[0];
-        const keys = Object.keys(firstItem);
-        console.log('[NovaPoshta] searchCities: checking all keys in data[0]:', keys);
+
+      // ✅ ЯКЩО ПЕРШИЙ ЗАПИТ НЕ ВДАВСЯ - ПРОБУЄМО getSettlementsData
+      if (citiesData.length === 0) {
+        console.log('[NovaPoshta] searchCities: first attempt failed, trying getSettlementsData...');
         
-        // Шукаємо ключ, який містить масив
-        for (const key of keys) {
-          if (Array.isArray(firstItem[key]) && firstItem[key].length > 0) {
-            citiesData = firstItem[key];
-            console.log('[NovaPoshta] searchCities: found array in key:', key, 'length:', citiesData.length);
-            break;
+        const fallbackRequestBody = {
+          apiKey: NOVA_POSHTA_API_KEY,
+          modelName: 'Address',
+          calledMethod: 'getSettlementsData',
+          methodProperties: {
+            Limit: 50,
+          },
+        };
+
+        const fallbackResponse = await axios.post(
+          NOVA_POSHTA_API_URL,
+          fallbackRequestBody,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+            },
           }
+        );
+
+        console.log('[NovaPoshta] getSettlementsData FULL RESPONSE:', JSON.stringify(fallbackResponse.data, null, 2));
+
+        if (fallbackResponse.data.success && Array.isArray(fallbackResponse.data.data)) {
+          const allSettlements = fallbackResponse.data.data;
+          console.log('[NovaPoshta] getSettlementsData: got', allSettlements.length, 'settlements');
+          
+          // Фільтруємо за назвою міста (українська або російська)
+          const lowerSearch = trimmedCityName.toLowerCase();
+          citiesData = allSettlements.filter((s: any) => {
+            const description = (s.Description || '').toLowerCase();
+            const present = (s.Present || '').toLowerCase();
+            return description.includes(lowerSearch) || present.includes(lowerSearch);
+          });
+          
+          console.log('[NovaPoshta] getSettlementsData: filtered to', citiesData.length, 'matching settlements');
         }
       }
 
       if (citiesData.length === 0) {
         console.warn('[NovaPoshta] searchCities: Місто не знайдено');
+        console.warn('[NovaPoshta] searchCities: Try searching in Ukrainian language');
         console.warn('[NovaPoshta] searchCities: Full data structure:', JSON.stringify(response.data.data, null, 2));
         return [];
       }
