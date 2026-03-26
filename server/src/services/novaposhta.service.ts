@@ -41,9 +41,8 @@ export class NovaPoshtaService {
         modelName: 'Address',
         calledMethod: 'searchSettlements',
         methodProperties: {
-          CityName: cityName.trim(),  // ✅ ПРАВИЛЬНА НАЗВА ПАРАМЕТРА
+          SettlementName: cityName.trim(),  // ✅ ПРАВИЛЬНА НАЗВА ПАРАМЕТРА
           Limit: 10,
-          Language: 'UA',
         },
       };
 
@@ -59,7 +58,8 @@ export class NovaPoshtaService {
         }
       );
 
-      console.log('[NovaPoshta] Full API response:', JSON.stringify(response.data, null, 2));
+      // ✅ ЛОГУВАННЯ ПОВНОЇ ВІДПОВІДІ API
+      console.log('NP FULL RESPONSE:', JSON.stringify(response.data, null, 2));
 
       // Перевіряємо наявність помилок
       if (response.data.errors && response.data.errors.length > 0) {
