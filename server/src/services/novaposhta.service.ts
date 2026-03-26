@@ -110,16 +110,16 @@ export class NovaPoshtaService {
         console.log('[NovaPoshta] searchCities: found Settlements (capital S):', citiesData.length);
       }
 
-      // ✅ ЯКЩО ПЕРШИЙ ЗАПИТ НЕ ВДАВСЯ - ПРОБУЄМО getSettlementsData
+      // ✅ ЯКЩО ПЕРШИЙ ЗАПИТ НЕ ВДАВСЯ - ПРОБУЄМО getSettlements
       if (citiesData.length === 0) {
-        console.log('[NovaPoshta] searchCities: first attempt failed, trying getSettlementsData...');
+        console.log('[NovaPoshta] searchCities: first attempt failed, trying getSettlements...');
         
         const fallbackRequestBody = {
           apiKey: NOVA_POSHTA_API_KEY,
           modelName: 'Address',
-          calledMethod: 'getSettlementsData',
+          calledMethod: 'getSettlements',
           methodProperties: {
-            Limit: 50,
+            Limit: 100,
           },
         };
 
@@ -133,21 +133,23 @@ export class NovaPoshtaService {
           }
         );
 
-        console.log('[NovaPoshta] getSettlementsData FULL RESPONSE:', JSON.stringify(fallbackResponse.data, null, 2));
+        console.log('[NovaPoshta] getSettlements FULL RESPONSE:', JSON.stringify(fallbackResponse.data, null, 2));
 
         if (fallbackResponse.data.success && Array.isArray(fallbackResponse.data.data)) {
           const allSettlements = fallbackResponse.data.data;
-          console.log('[NovaPoshta] getSettlementsData: got', allSettlements.length, 'settlements');
+          console.log('[NovaPoshta] getSettlements: got', allSettlements.length, 'settlements');
           
           // Фільтруємо за назвою міста (українська або російська)
           const lowerSearch = trimmedCityName.toLowerCase();
           citiesData = allSettlements.filter((s: any) => {
             const description = (s.Description || '').toLowerCase();
             const present = (s.Present || '').toLowerCase();
-            return description.includes(lowerSearch) || present.includes(lowerSearch);
+            // Також перевіряємо російську назву
+            const settlementNameRu = (s.SettlementNameRu || '').toLowerCase();
+            return description.includes(lowerSearch) || present.includes(lowerSearch) || settlementNameRu.includes(lowerSearch);
           });
           
-          console.log('[NovaPoshta] getSettlementsData: filtered to', citiesData.length, 'matching settlements');
+          console.log('[NovaPoshta] getSettlements: filtered to', citiesData.length, 'matching settlements');
         }
       }
 
