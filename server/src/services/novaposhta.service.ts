@@ -64,6 +64,9 @@ export class NovaPoshtaService {
 
       // ✅ ЛОГУВАННЯ ВСЬОГО ВІДПОВІДІ API
       console.log('[NovaPoshta] Cities FULL RESPONSE:', JSON.stringify(response.data, null, 2));
+      console.log('[NovaPoshta] Cities response.data type:', typeof response.data.data);
+      console.log('[NovaPoshta] Cities response.data isArray:', Array.isArray(response.data.data));
+      console.log('[NovaPoshta] Cities response.data keys:', Object.keys(response.data.data || {}));
 
       // ✅ ЛОГУВАННЯ ПОМИЛОК API
       if (response.data.errors && response.data.errors.length > 0) {
@@ -77,9 +80,13 @@ export class NovaPoshtaService {
         return [];
       }
 
-      // ✅ ОТРИМУЄМО МІСТА - ПЕРЕВІРЯЄМО РІЗНІ ФОРМАТИ
-      let citiesData = [];
-      
+      // ✅ ОТРИМУЄМО МІСТА - ПЕРЕВІРЯЄМО ВСІ МОЖЛИВІ ФОРМАТИ
+      let citiesData: any[] = [];
+
+      console.log('[NovaPoshta] Cities checking data structure...');
+      console.log('[NovaPoshta] Cities data[0]:', response.data.data?.[0]);
+      console.log('[NovaPoshta] Cities data[0] keys:', Object.keys(response.data.data?.[0] || {}));
+
       // Варіант 1: data[0].settlements
       if (response.data.data?.[0]?.settlements) {
         citiesData = response.data.data[0].settlements;
@@ -90,14 +97,40 @@ export class NovaPoshtaService {
         citiesData = response.data.data[0].Addresses;
         console.log('[NovaPoshta] searchCities: found Addresses:', citiesData.length);
       }
-      // Варіант 3: data - масив
+      // Варіант 3: data[0] - масив з об'єктами міст (без вкладеності)
+      else if (Array.isArray(response.data.data) && response.data.data.length > 0 && response.data.data[0].Ref) {
+        citiesData = response.data.data;
+        console.log('[NovaPoshta] searchCities: found direct data array:', citiesData.length);
+      }
+      // Варіант 4: data - масив
       else if (Array.isArray(response.data.data)) {
         citiesData = response.data.data;
         console.log('[NovaPoshta] searchCities: found data array:', citiesData.length);
       }
+      // ✅ НОВИЙ ВАРИАНТ: data[0] - об'єкт з полем Settlements (велика літера)
+      else if (response.data.data?.[0]?.Settlements) {
+        citiesData = response.data.data[0].Settlements;
+        console.log('[NovaPoshta] searchCities: found Settlements (capital S):', citiesData.length);
+      }
+      // ✅ НОВИЙ ВАРИАНТ: перевірка всіх ключів у data[0]
+      else if (response.data.data?.[0]) {
+        const firstItem = response.data.data[0];
+        const keys = Object.keys(firstItem);
+        console.log('[NovaPoshta] searchCities: checking all keys in data[0]:', keys);
+        
+        // Шукаємо ключ, який містить масив
+        for (const key of keys) {
+          if (Array.isArray(firstItem[key]) && firstItem[key].length > 0) {
+            citiesData = firstItem[key];
+            console.log('[NovaPoshta] searchCities: found array in key:', key, 'length:', citiesData.length);
+            break;
+          }
+        }
+      }
 
       if (citiesData.length === 0) {
         console.warn('[NovaPoshta] searchCities: Місто не знайдено');
+        console.warn('[NovaPoshta] searchCities: Full data structure:', JSON.stringify(response.data.data, null, 2));
         return [];
       }
 
