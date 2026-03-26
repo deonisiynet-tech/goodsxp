@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 
 interface City {
@@ -30,13 +30,12 @@ interface NovaPoshtaSelectorProps {
   selectedCity?: City | null;
   selectedWarehouse?: Warehouse | null;
   savedCityName?: string | null;
-  savedWarehouseNumber?: string | null;
 }
 
 // Dynamic import для карти з SSR вимкненням
 const WarehouseMap = dynamic(
   () => import('./WarehouseMap'),
-  { 
+  {
     ssr: false,
     loading: () => (
       <div className="h-[400px] bg-[#18181c] border border-purple-500/20 rounded-xl flex items-center justify-center">
@@ -46,6 +45,23 @@ const WarehouseMap = dynamic(
   }
 );
 
+// ✅ DEBOUNCE утилита для плавного ввода
+function useDebounce<T>(value: T, delay: number = 300): T {
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
+}
+
 export default function NovaPoshtaSelector({
   onCityChange,
   onWarehouseChange,
@@ -53,44 +69,47 @@ export default function NovaPoshtaSelector({
   selectedCity,
   selectedWarehouse,
   savedCityName,
-  savedWarehouseNumber,
 }: NovaPoshtaSelectorProps) {
-  const [citySearch, setCitySearch] = useState('');
+  // ✅ СТАН ДЛЯ МІСТА - без debounce для миттєвого відображення введення
+  const [cityInput, setCityInput] = useState('');
   const [cities, setCities] = useState<City[]>([]);
   const [isLoadingCities, setIsLoadingCities] = useState(false);
   const [showCityDropdown, setShowCityDropdown] = useState(false);
 
+  // ✅ СТАН ДЛЯ ВІДДІЛЕНЬ
   const [warehouses, setWarehouses] = useState<Warehouse[]>([]);
   const [isLoadingWarehouses, setIsLoadingWarehouses] = useState(false);
   const [showWarehouseDropdown, setShowWarehouseDropdown] = useState(false);
   const [showMap, setShowMap] = useState(false);
   const [deliveryType, setDeliveryType] = useState<DeliveryType>('warehouse');
 
+  // ✅ DEBOUNCED значення для пошуку міст
+  const debouncedCitySearch = useDebounce(cityInput, 300);
+
   const cityDropdownRef = useRef<HTMLDivElement>(null);
   const warehouseDropdownRef = useRef<HTMLDivElement>(null);
 
-  // Відновлення збереженого міста
+  // ✅ Відновлення збереженого міста при монтажі
   useEffect(() => {
     if (savedCityName && !selectedCity && typeof window !== 'undefined') {
-      setCitySearch(savedCityName);
+      setCityInput(savedCityName);
     }
   }, [savedCityName, selectedCity]);
 
-  // Debounce для пошуку міст (300ms)
+  // ✅ Пошук міст при зміні debounced значення
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (citySearch.trim().length >= 2) {
-        searchCities(citySearch);
+    const search = async () => {
+      if (debouncedCitySearch.trim().length >= 2) {
+        await searchCities(debouncedCitySearch);
       } else {
         setCities([]);
         setShowCityDropdown(false);
       }
-    }, 300);
+    };
+    search();
+  }, [debouncedCitySearch]);
 
-    return () => clearTimeout(timer);
-  }, [citySearch]);
-
-  // Закриття dropdown при кліку поза ними
+  // ✅ Закриття dropdown при кліку поза ними
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (cityDropdownRef.current && !cityDropdownRef.current.contains(event.target as Node)) {
@@ -105,14 +124,15 @@ export default function NovaPoshtaSelector({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Сповіщення про зміну типу доставки
+  // ✅ Сповіщення про зміну типу доставки
   useEffect(() => {
     if (onDeliveryTypeChange) {
       onDeliveryTypeChange(deliveryType);
     }
   }, [deliveryType, onDeliveryTypeChange]);
 
-  const searchCities = async (query: string) => {
+  // ✅ Функція пошуку міст - викликається тільки з debounced значенням
+  const searchCities = useCallback(async (query: string) => {
     setIsLoadingCities(true);
     try {
       console.log('[NP Selector] Searching cities:', query);
@@ -139,32 +159,32 @@ export default function NovaPoshtaSelector({
     } finally {
       setIsLoadingCities(false);
     }
-  };
+  }, []);
 
   const handleCitySelect = (city: City) => {
+    console.log('[NP Selector] City selected:', city);
     onCityChange(city);
-    setCitySearch(city.Description);
+    setCityInput(city.Description);
     setShowCityDropdown(false);
     setWarehouses([]);
     onWarehouseChange(null);
-    loadWarehouses(city.Ref, deliveryType);
+    loadWarehouses(city.Ref, deliveryType, city.Description);
   };
 
-  const loadWarehouses = async (cityRef: string, type: DeliveryType = 'warehouse') => {
+  const loadWarehouses = async (cityRef: string, type: DeliveryType = 'warehouse', cityName?: string) => {
     setIsLoadingWarehouses(true);
     try {
       console.log('[NP Selector] Loading warehouses for cityRef:', cityRef, 'type:', type);
-      
-      // ✅ ОТРИМУЄМО НАЗВУ МІСТА З ОБРАНОГО МІСТА АБО З ПОШУКУ
-      const cityName = selectedCity?.Description || citySearch;
-      
+
+      const resolvedCityName = cityName || selectedCity?.Description || cityInput;
+
       const response = await fetch('/api/novaposhta/warehouses', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          cityRef, 
+        body: JSON.stringify({
+          cityRef,
           type,
-          cityName  // ✅ ПЕРЕДАЄМО cityName ДЛЯ FALLBACK
+          cityName: resolvedCityName
         }),
       });
 
@@ -187,20 +207,37 @@ export default function NovaPoshtaSelector({
   };
 
   const handleDeliveryTypeChange = (type: DeliveryType) => {
+    console.log('[NP Selector] Delivery type changed:', type);
     setDeliveryType(type);
     if (selectedCity) {
-      loadWarehouses(selectedCity.Ref, type);
+      loadWarehouses(selectedCity.Ref, type, selectedCity.Description);
     }
     onWarehouseChange(null);
   };
 
   const handleWarehouseSelect = (warehouse: Warehouse) => {
+    console.log('[NP Selector] Warehouse selected:', warehouse);
     onWarehouseChange(warehouse);
     setShowWarehouseDropdown(false);
   };
 
   const getSchedule = (warehouse: Warehouse): string => {
     return warehouse.Schedule || 'Пн-Пт: 9:00-20:00, Сб: 9:00-18:00';
+  };
+
+  // ✅ Обробка введення міста - миттєве оновлення без затримки
+  const handleCityInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    console.log('[NP Selector] City input changed:', value);
+    setCityInput(value);
+    if (!value) {
+      onCityChange(null);
+      onWarehouseChange(null);
+      setWarehouses([]);
+      setShowCityDropdown(false);
+    } else {
+      setShowCityDropdown(true);
+    }
   };
 
   return (
@@ -257,14 +294,9 @@ export default function NovaPoshtaSelector({
         <div className="relative">
           <input
             type="text"
-            value={citySearch}
-            onChange={(e) => {
-              setCitySearch(e.target.value);
-              onCityChange(null);
-              onWarehouseChange(null);
-              setWarehouses([]);
-            }}
-            onFocus={() => citySearch.trim().length >= 2 && setShowCityDropdown(true)}
+            value={cityInput}
+            onChange={handleCityInputChange}
+            onFocus={() => cityInput.trim().length >= 2 && setShowCityDropdown(true)}
             className="input-field pr-10"
             placeholder="Почніть вводити назву міста..."
             autoComplete="off"
@@ -274,7 +306,7 @@ export default function NovaPoshtaSelector({
               <div className="w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
             </div>
           )}
-          {!isLoadingCities && citySearch.length >= 2 && (
+          {!isLoadingCities && cityInput.length >= 2 && (
             <div className="absolute right-3 top-1/2 -translate-y-1/2">
               <svg className="w-5 h-5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -304,7 +336,7 @@ export default function NovaPoshtaSelector({
           </div>
         )}
 
-        {showCityDropdown && citySearch.trim().length >= 2 && cities.length === 0 && !isLoadingCities && (
+        {showCityDropdown && cityInput.trim().length >= 2 && cities.length === 0 && !isLoadingCities && (
           <div className="absolute z-50 w-full mt-1 bg-[#18181c] border border-purple-500/30 rounded-xl shadow-2xl shadow-purple-500/20 p-4 text-center text-muted">
             Міста не знайдено
           </div>

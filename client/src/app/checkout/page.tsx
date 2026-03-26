@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { ordersApi } from '@/lib/api';
@@ -37,6 +37,17 @@ interface CheckoutForm {
   comment?: string;
 }
 
+interface CheckoutData {
+  surname?: string;
+  firstName?: string;
+  middleName?: string;
+  phone: string;
+  email: string;
+  city?: string | null;
+  warehouse?: string | null;
+  warehouseAddress?: string | null;
+}
+
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, getTotal, clearCart } = useCartStore();
@@ -55,6 +66,9 @@ export default function CheckoutPage() {
   const formData = watch();
   const { savedData, isLoaded, saveData } = useCheckoutStorage();
 
+  // ✅ Debounce для збереження даних - щоб уникнути моргання
+  const [debouncedFormData, setDebouncedFormData] = useState<CheckoutData | null>(null);
+
   // Завантаження збережених даних при монтажі
   useEffect(() => {
     if (isLoaded && savedData) {
@@ -66,21 +80,33 @@ export default function CheckoutPage() {
     }
   }, [isLoaded, savedData, setValue]);
 
-  // Збереження даних при зміні форми
+  // ✅ Debounce для форми - зберігаємо тільки через 500ms після змін
   useEffect(() => {
-    if (isLoaded && formData) {
-      saveData({
-        surname: formData.surname || '',
-        firstName: formData.firstName || '',
-        middleName: formData.middleName || '',
-        phone: formData.phone || '',
-        email: formData.email || '',
-        city: selectedCity?.Description || null,
-        warehouse: selectedWarehouse?.Number || null,
-        warehouseAddress: selectedWarehouse?.ShortAddress || null,
-      });
-    }
+    const timer = setTimeout(() => {
+      if (isLoaded && formData) {
+        const dataToSave: CheckoutData = {
+          surname: formData.surname || '',
+          firstName: formData.firstName || '',
+          middleName: formData.middleName || '',
+          phone: formData.phone || '',
+          email: formData.email || '',
+          city: selectedCity?.Description || null,
+          warehouse: selectedWarehouse?.Number || null,
+          warehouseAddress: selectedWarehouse?.ShortAddress || null,
+        };
+        setDebouncedFormData(dataToSave);
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
   }, [formData, selectedCity, selectedWarehouse, isLoaded]);
+
+  // ✅ Збереження даних тільки після debounce
+  useEffect(() => {
+    if (debouncedFormData) {
+      saveData(debouncedFormData);
+    }
+  }, [debouncedFormData]);
 
   const onSubmit = async (data: CheckoutForm) => {
     if (!selectedCity) {
@@ -110,10 +136,10 @@ export default function CheckoutPage() {
       };
       await ordersApi.create(orderData);
       clearCart();
-      saveData({ 
-        surname: '', firstName: '', middleName: '', 
-        phone: '', email: '', 
-        city: null, warehouse: null, warehouseAddress: null 
+      saveData({
+        surname: '', firstName: '', middleName: '',
+        phone: '', email: '',
+        city: null, warehouse: null, warehouseAddress: null
       });
       toast.success('Замовлення успішно оформлено!');
       router.push('/orders/success');
@@ -123,6 +149,16 @@ export default function CheckoutPage() {
       setLoading(false);
     }
   };
+
+  // ✅ Обробка зміни міста - без зайвих ререндерів
+  const handleCityChange = useCallback((city: City | null) => {
+    setSelectedCity(city);
+  }, []);
+
+  // ✅ Обробка зміни відділення - без зайвих ререндерів
+  const handleWarehouseChange = useCallback((warehouse: Warehouse | null) => {
+    setSelectedWarehouse(warehouse);
+  }, []);
 
   if (items.length === 0) {
     return (
@@ -166,10 +202,10 @@ export default function CheckoutPage() {
               {/* Прізвище */}
               <div>
                 <label className="block text-sm font-medium mb-1">Прізвище *</label>
-                <input 
-                  {...register('surname', { required: 'Прізвище обов&apos;язкове' })} 
-                  className="input-field" 
-                  placeholder="Іванов" 
+                <input
+                  {...register('surname', { required: 'Прізвище обов&apos;язкове' })}
+                  className="input-field"
+                  placeholder="Іванов"
                 />
                 {errors.surname && <p className="text-red-500 text-sm mt-1">{errors.surname.message}</p>}
               </div>
@@ -177,10 +213,10 @@ export default function CheckoutPage() {
               {/* Ім'я */}
               <div>
                 <label className="block text-sm font-medium mb-1">Ім&apos;я *</label>
-                <input 
-                  {...register('firstName', { required: 'Ім&apos;я обов&apos;язкове' })} 
-                  className="input-field" 
-                  placeholder="Іван" 
+                <input
+                  {...register('firstName', { required: 'Ім&apos;я обов&apos;язкове' })}
+                  className="input-field"
+                  placeholder="Іван"
                 />
                 {errors.firstName && <p className="text-red-500 text-sm mt-1">{errors.firstName.message}</p>}
               </div>
@@ -188,26 +224,26 @@ export default function CheckoutPage() {
               {/* По-батькові */}
               <div>
                 <label className="block text-sm font-medium mb-1">По-батькові</label>
-                <input 
-                  {...register('middleName')} 
-                  className="input-field" 
-                  placeholder="Іванович" 
+                <input
+                  {...register('middleName')}
+                  className="input-field"
+                  placeholder="Іванович"
                 />
               </div>
 
               {/* Телефон */}
               <div>
                 <label className="block text-sm font-medium mb-1">Телефон *</label>
-                <input 
-                  {...register('phone', { 
-                    required: 'Телефон обов&apos;язковий', 
-                    pattern: { 
-                      value: /^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/, 
-                      message: 'Некоректний номер телефону' 
-                    } 
-                  })} 
-                  className="input-field" 
-                  placeholder="+38 (0XX) XXX-XX-XX" 
+                <input
+                  {...register('phone', {
+                    required: 'Телефон обов&apos;язковий',
+                    pattern: {
+                      value: /^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/,
+                      message: 'Некоректний номер телефону'
+                    }
+                  })}
+                  className="input-field"
+                  placeholder="+38 (0XX) XXX-XX-XX"
                 />
                 {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone.message}</p>}
               </div>
@@ -215,16 +251,16 @@ export default function CheckoutPage() {
               {/* Email */}
               <div>
                 <label className="block text-sm font-medium mb-1">Email *</label>
-                <input 
-                  {...register('email', { 
-                    required: 'Email обов&apos;язковий', 
-                    pattern: { 
-                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i, 
-                      message: 'Некоректний email' 
-                    } 
-                  })} 
-                  className="input-field" 
-                  placeholder="example@mail.com" 
+                <input
+                  {...register('email', {
+                    required: 'Email обов&apos;язковий',
+                    pattern: {
+                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                      message: 'Некоректний email'
+                    }
+                  })}
+                  className="input-field"
+                  placeholder="example@mail.com"
                 />
                 {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
               </div>
@@ -232,23 +268,22 @@ export default function CheckoutPage() {
               {/* Nova Poshta Selector */}
               <div className="border-t border-purple-500/20 pt-4">
                 <NovaPoshtaSelector
-                  onCityChange={setSelectedCity}
-                  onWarehouseChange={setSelectedWarehouse}
+                  onCityChange={handleCityChange}
+                  onWarehouseChange={handleWarehouseChange}
                   selectedCity={selectedCity}
                   selectedWarehouse={selectedWarehouse}
                   savedCityName={savedData?.city}
-                  savedWarehouseNumber={savedData?.warehouse}
                 />
               </div>
 
               {/* Коментар */}
               <div>
                 <label className="block text-sm font-medium mb-1">Коментар до замовлення</label>
-                <textarea 
-                  {...register('comment')} 
-                  className="input-field" 
-                  rows={2} 
-                  placeholder="Додаткова інформація" 
+                <textarea
+                  {...register('comment')}
+                  className="input-field"
+                  rows={2}
+                  placeholder="Додаткова інформація"
                 />
               </div>
 
