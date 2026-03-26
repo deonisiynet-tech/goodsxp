@@ -35,13 +35,13 @@ export class NovaPoshtaService {
     console.log('[NovaPoshta] API Key:', NOVA_POSHTA_API_KEY.substring(0, 8) + '...');
 
     try {
-      // ✅ ВИКОРИСТОВУЄМО ПРАВИЛЬНІ ПАРАМЕТРИ ЗГІДНО З API NOVA POSHTA
+      // ✅ ПРАВИЛЬНИЙ ЗАПИТ ЗГІДНО З API NOVA POSHTA
       const requestBody = {
         apiKey: NOVA_POSHTA_API_KEY,
         modelName: 'Address',
         calledMethod: 'searchSettlements',
         methodProperties: {
-          SettlementName: cityName.trim(),  // ✅ ПРАВИЛЬНА НАЗВА ПАРАМЕТРА
+          CityName: cityName.trim(),  // ✅ CityName замість SettlementName
           Limit: 10,
         },
       };
@@ -73,24 +73,24 @@ export class NovaPoshtaService {
         return [];
       }
 
-      // searchSettlements повертає { settlements: [...] } в data[0]
-      const settlementsData = response.data.data?.[0];
-      console.log('[NovaPoshta] settlementsData:', JSON.stringify(settlementsData, null, 2));
+      // ✅ ПРАВИЛЬНА СТРУКТУРА ВІДПОВІДІ: response.data.data[0].Addresses
+      const addressesData = response.data.data?.[0]?.Addresses || [];
       
-      if (!settlementsData || !settlementsData.settlements) {
-        console.log('[NovaPoshta] searchCities: no settlements found in response');
-        console.log('[NovaPoshta] Available keys:', Object.keys(response.data.data?.[0] || {}));
+      console.log('[NovaPoshta] Addresses:', JSON.stringify(addressesData, null, 2));
+      console.log('[NovaPoshta] searchCities: found', addressesData.length, 'cities');
+      
+      if (addressesData.length === 0) {
+        console.log('[NovaPoshta] searchCities: no cities found');
         return [];
       }
 
-      const cities = settlementsData.settlements.map((settlement: any) => ({
-        Ref: settlement.Ref,
-        Description: settlement.Description,
-        RegionDescription: settlement.RegionDescription,
-        AreaDescription: settlement.AreaDescription,
+      const cities = addressesData.map((city: any) => ({
+        Ref: city.Ref,
+        Description: city.Present,  // ✅ Present - назва міста
+        RegionDescription: city.RegionDescription || '',
+        AreaDescription: city.AreaDescription || '',
       }));
 
-      console.log('[NovaPoshta] searchCities: found', cities.length, 'cities');
       if (cities.length > 0) {
         console.log('[NovaPoshta] First city:', cities[0]);
       }
