@@ -113,12 +113,6 @@ export class NovaPoshtaService {
     console.log('[NovaPoshta] getWarehouses: loading for cityRef', cityRef);
 
     try {
-      // ✅ ПЕРЕВІРКА: CityRef має бути UUID форматом
-      if (!cityRef.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
-        console.error('[NovaPoshta] getWarehouses: invalid cityRef format:', cityRef);
-        return [];
-      }
-
       // ✅ ВИКОРИСТОВУЄМО ПРАВИЛЬНУ МОДЕЛЬ AddressGeneral
       const requestBody = {
         apiKey: NOVA_POSHTA_API_KEY,
@@ -148,6 +142,13 @@ export class NovaPoshtaService {
       // Перевіряємо наявність помилок
       if (response.data.errors && response.data.errors.length > 0) {
         console.error('[NovaPoshta] getWarehouses API errors:', response.data.errors);
+        
+        // ✅ СПЕЦІАЛЬНА ОБРОБКА ПОМИЛКИ "City not found"
+        if (response.data.errors.includes('City not found')) {
+          console.warn('[NovaPoshta] getWarehouses: Місто не знайдено. Можливо CityRef застарів або некоректний.');
+          console.warn('[NovaPoshta] getWarehouses FALLBACK: Спробуйте обрати інше місто');
+        }
+        
         return [];
       }
 
@@ -163,7 +164,7 @@ export class NovaPoshtaService {
 
       if (data.length === 0) {
         console.warn('[NovaPoshta] getWarehouses: API повернув пустий масив відділень для cityRef:', cityRef);
-        console.warn('[NovaPoshta] getWarehouses FALLBACK: Спробуйте використати альтернативне джерело даних');
+        console.warn('[NovaPoshta] getWarehouses FALLBACK: Відділення не знайдено. Спробуйте інший населений пункт');
         return [];
       }
 
@@ -204,12 +205,6 @@ export class NovaPoshtaService {
     console.log('[NovaPoshta] getPostomats: loading for cityRef', cityRef);
 
     try {
-      // ✅ ПЕРЕВІРКА: CityRef має бути UUID форматом
-      if (!cityRef.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
-        console.error('[NovaPoshta] getPostomats: invalid cityRef format:', cityRef);
-        return [];
-      }
-
       // ✅ ВИКОРИСТОВУЄМО ПРАВИЛЬНУ МОДЕЛЬ AddressGeneral
       const requestBody = {
         apiKey: NOVA_POSHTA_API_KEY,
@@ -240,6 +235,13 @@ export class NovaPoshtaService {
       // Перевіряємо наявність помилок
       if (response.data.errors && response.data.errors.length > 0) {
         console.error('[NovaPoshta] getPostomats API errors:', response.data.errors);
+        
+        // ✅ СПЕЦІАЛЬНА ОБРОБКА ПОМИЛКИ "City not found"
+        if (response.data.errors.includes('City not found')) {
+          console.warn('[NovaPoshta] getPostomats: Місто не знайдено. Можливо CityRef застарів або некоректний.');
+          console.warn('[NovaPoshta] getPostomats FALLBACK: Спробуйте обрати інше місто');
+        }
+        
         return [];
       }
 
