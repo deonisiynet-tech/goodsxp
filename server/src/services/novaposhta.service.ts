@@ -113,6 +113,12 @@ export class NovaPoshtaService {
     console.log('[NovaPoshta] getWarehouses: loading for cityRef', cityRef);
 
     try {
+      // ✅ ПЕРЕВІРКА: CityRef має бути UUID форматом
+      if (!cityRef.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+        console.error('[NovaPoshta] getWarehouses: invalid cityRef format:', cityRef);
+        return [];
+      }
+
       // ✅ ВИКОРИСТОВУЄМО ПРАВИЛЬНУ МОДЕЛЬ AddressGeneral
       const requestBody = {
         apiKey: NOVA_POSHTA_API_KEY,
@@ -120,6 +126,7 @@ export class NovaPoshtaService {
         calledMethod: 'getWarehouses',
         methodProperties: {
           CityRef: cityRef,
+          Limit: 50,  // ✅ ЗБІЛЬШЕНО ЛІМІТ
         },
       };
 
@@ -135,7 +142,8 @@ export class NovaPoshtaService {
         }
       );
 
-      console.log('[NovaPoshta] getWarehouses response:', JSON.stringify(response.data, null, 2));
+      // ✅ ЛОГУВАННЯ ПОВНОЇ ВІДПОВІДІ API
+      console.log('[NovaPoshta] getWarehouses FULL RESPONSE:', JSON.stringify(response.data, null, 2));
 
       // Перевіряємо наявність помилок
       if (response.data.errors && response.data.errors.length > 0) {
@@ -143,7 +151,21 @@ export class NovaPoshtaService {
         return [];
       }
 
+      // Перевіряємо success
+      if (!response.data.success) {
+        console.error('[NovaPoshta] getWarehouses API returned success: false');
+        return [];
+      }
+
+      // ✅ ОТРИМУЄМО ВІДДІЛЕННЯ З ПРАВИЛЬНОЇ СТРУКТУРИ
       const data = response.data.data || [];
+      console.log('[NovaPoshta] getWarehouses raw data count:', data.length);
+
+      if (data.length === 0) {
+        console.warn('[NovaPoshta] getWarehouses: API повернув пустий масив відділень для cityRef:', cityRef);
+        console.warn('[NovaPoshta] getWarehouses FALLBACK: Спробуйте використати альтернативне джерело даних');
+        return [];
+      }
 
       const warehouses = data.map((warehouse: any) => ({
         Ref: warehouse.Ref,
@@ -156,12 +178,18 @@ export class NovaPoshtaService {
         Schedule: warehouse.Schedule || 'Пн-Пт: 9:00-20:00, Сб: 9:00-18:00',
       }));
 
-      console.log('[NovaPoshta] getWarehouses: found', warehouses.length, 'warehouses');
+      console.log('[NovaPoshta] getWarehouses: знайдено', warehouses.length, 'відділень');
+      
+      // ✅ ЛОГУВАННЯ ПЕРШИХ 3 ВІДДІЛЕНЬ ДЛЯ ПЕРЕВІРКИ
+      if (warehouses.length > 0) {
+        console.log('[NovaPoshta] getWarehouses перші 3 відділення:', warehouses.slice(0, 3));
+      }
+      
       return warehouses;
     } catch (error: any) {
       console.error('[NovaPoshta] getWarehouses error:', error.message);
       if (error.response) {
-        console.error('[NovaPoshta] Error response:', error.response.data);
+        console.error('[NovaPoshta] getWarehouses Error response:', error.response.data);
       }
       return [];
     }
@@ -176,6 +204,12 @@ export class NovaPoshtaService {
     console.log('[NovaPoshta] getPostomats: loading for cityRef', cityRef);
 
     try {
+      // ✅ ПЕРЕВІРКА: CityRef має бути UUID форматом
+      if (!cityRef.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+        console.error('[NovaPoshta] getPostomats: invalid cityRef format:', cityRef);
+        return [];
+      }
+
       // ✅ ВИКОРИСТОВУЄМО ПРАВИЛЬНУ МОДЕЛЬ AddressGeneral
       const requestBody = {
         apiKey: NOVA_POSHTA_API_KEY,
@@ -183,7 +217,8 @@ export class NovaPoshtaService {
         calledMethod: 'getWarehouses',
         methodProperties: {
           CityRef: cityRef,
-          TypeOfWarehouseRef: 'd904c7aa-4c45-4275-a111-99643895928b', // Почтомат
+          TypeOfWarehouseRef: 'd904c7aa-4c45-4275-a111-99643895928b', // ✅ Почтомат
+          Limit: 50,  // ✅ ЗБІЛЬШЕНО ЛІМІТ
         },
       };
 
@@ -199,7 +234,8 @@ export class NovaPoshtaService {
         }
       );
 
-      console.log('[NovaPoshta] getPostomats response:', JSON.stringify(response.data, null, 2));
+      // ✅ ЛОГУВАННЯ ПОВНОЇ ВІДПОВІДІ API
+      console.log('[NovaPoshta] getPostomats FULL RESPONSE:', JSON.stringify(response.data, null, 2));
 
       // Перевіряємо наявність помилок
       if (response.data.errors && response.data.errors.length > 0) {
@@ -207,7 +243,21 @@ export class NovaPoshtaService {
         return [];
       }
 
+      // Перевіряємо success
+      if (!response.data.success) {
+        console.error('[NovaPoshta] getPostomats API returned success: false');
+        return [];
+      }
+
+      // ✅ ОТРИМУЄМО ПОШТОМАТИ З ПРАВИЛЬНОЇ СТРУКТУРИ
       const data = response.data.data || [];
+      console.log('[NovaPoshta] getPostomats raw data count:', data.length);
+
+      if (data.length === 0) {
+        console.warn('[NovaPoshta] getPostomats: API повернув пустий масив почтоматів для cityRef:', cityRef);
+        console.warn('[NovaPoshta] getPostomats FALLBACK: Спробуйте використати відділення замість почтоматів');
+        return [];
+      }
 
       const warehouses = data.map((warehouse: any) => ({
         Ref: warehouse.Ref,
@@ -220,12 +270,18 @@ export class NovaPoshtaService {
         Schedule: '24/7',
       }));
 
-      console.log('[NovaPoshta] getPostomats: found', warehouses.length, 'postomats');
+      console.log('[NovaPoshta] getPostomats: знайдено', warehouses.length, 'почтоматів');
+      
+      // ✅ ЛОГУВАННЯ ПЕРШИХ 3 ПОШТОМАТІВ ДЛЯ ПЕРЕВІРКИ
+      if (warehouses.length > 0) {
+        console.log('[NovaPoshta] getPostomats перші 3 почтомати:', warehouses.slice(0, 3));
+      }
+      
       return warehouses;
     } catch (error: any) {
       console.error('[NovaPoshta] getPostomats error:', error.message);
       if (error.response) {
-        console.error('[NovaPoshta] Error response:', error.response.data);
+        console.error('[NovaPoshta] getPostomats Error response:', error.response.data);
       }
       return [];
     }
