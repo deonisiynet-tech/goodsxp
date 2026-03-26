@@ -113,14 +113,14 @@ export class NovaPoshtaService {
     console.log('[NovaPoshta] getWarehouses: loading for cityRef', cityRef);
 
     try {
-      // ✅ ВИКОРИСТОВУЄМО ПРАВИЛЬНУ МОДЕЛЬ AddressGeneral
+      // ✅ ВИКОРИСТОВУЄМО МОДЕЛЬ AddressGeneral З ПРАВИЛЬНИМИ ПАРАМЕТРАМИ
       const requestBody = {
         apiKey: NOVA_POSHTA_API_KEY,
-        modelName: 'AddressGeneral',  // ✅ ПРАВИЛЬНА МОДЕЛЬ
+        modelName: 'AddressGeneral',
         calledMethod: 'getWarehouses',
         methodProperties: {
           CityRef: cityRef,
-          Limit: 50,  // ✅ ЗБІЛЬШЕНО ЛІМІТ
+          Limit: 100,  // ✅ ЗБІЛЬШЕНО ЛІМІТ
         },
       };
 
@@ -138,6 +138,8 @@ export class NovaPoshtaService {
 
       // ✅ ЛОГУВАННЯ ПОВНОЇ ВІДПОВІДІ API
       console.log('[NovaPoshta] getWarehouses FULL RESPONSE:', JSON.stringify(response.data, null, 2));
+      console.log('[NovaPoshta] getWarehouses response.data:', response.data.data);
+      console.log('[NovaPoshta] getWarehouses response.data length:', Array.isArray(response.data.data) ? response.data.data.length : 'NOT ARRAY');
 
       // Перевіряємо наявність помилок
       if (response.data.errors && response.data.errors.length > 0) {
@@ -158,8 +160,32 @@ export class NovaPoshtaService {
         return [];
       }
 
-      // ✅ ОТРИМУЄМО ВІДДІЛЕННЯ З ПРАВИЛЬНОЇ СТРУКТУРИ
-      const data = response.data.data || [];
+      // ✅ ОТРИМУЄМО ВІДДІЛЕННЯ - ПЕРЕВІРЯЄМО РІЗНІ ФОРМАТИ ВІДПОВІДІ
+      let data = [];
+      
+      // Варіант 1: data - це масив відділень
+      if (Array.isArray(response.data.data)) {
+        data = response.data.data;
+        console.log('[NovaPoshta] getWarehouses: data is array with', data.length, 'items');
+      }
+      // Варіант 2: data[0] містить warehouses
+      else if (response.data.data && response.data.data[0] && Array.isArray(response.data.data[0].warehouses)) {
+        data = response.data.data[0].warehouses;
+        console.log('[NovaPoshta] getWarehouses: data[0].warehouses is array with', data.length, 'items');
+      }
+      // Варіант 3: data[0] містить settlements
+      else if (response.data.data && response.data.data[0] && Array.isArray(response.data.data[0].settlements)) {
+        data = response.data.data[0].settlements;
+        console.log('[NovaPoshta] getWarehouses: data[0].settlements is array with', data.length, 'items');
+      }
+      // Варіант 4: порожня відповідь
+      else {
+        console.warn('[NovaPoshta] getWarehouses: невідомий формат відповіді');
+        console.warn('[NovaPoshta] getWarehouses response.data type:', typeof response.data.data);
+        console.warn('[NovaPoshta] getWarehouses response.data keys:', Object.keys(response.data.data || {}));
+        return [];
+      }
+
       console.log('[NovaPoshta] getWarehouses raw data count:', data.length);
 
       if (data.length === 0) {
