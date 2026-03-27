@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { ordersApi } from '@/lib/api';
@@ -15,7 +15,7 @@ import { ArrowLeft, ShoppingCart } from 'lucide-react';
 // ✅ Нові інтерфейси для Nova Poshta
 interface City {
   label: string;
-  cityRef: string;
+  ref: string;  // ✅ Використовуємо ref замість cityRef
   description?: string;
   region?: string;
   area?: string;
@@ -68,11 +68,10 @@ export default function CheckoutPage() {
     setValue,
   } = useForm<CheckoutForm>();
 
-  const formData = watch();
   const { savedData, isLoaded, saveData } = useCheckoutStorage();
 
-  // ✅ Debounce для збереження даних - щоб уникнути моргання
-  const [debouncedFormData, setDebouncedFormData] = useState<CheckoutData | null>(null);
+  // ✅ Оптимізація: зберігаємо дані тільки при значних змінах (debounce 1000ms)
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Завантаження збережених даних при монтажі
   useEffect(() => {
@@ -85,34 +84,48 @@ export default function CheckoutPage() {
     }
   }, [isLoaded, savedData, setValue]);
 
-  // ✅ Debounce для форми - зберігаємо тільки через 500ms після змін
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      if (isLoaded && formData) {
-        const dataToSave: CheckoutData = {
-          surname: formData.surname || '',
-          firstName: formData.firstName || '',
-          middleName: formData.middleName || '',
-          phone: formData.phone || '',
-          email: formData.email || '',
-          city: selectedCity?.label || null,
-          cityRef: selectedCity?.cityRef || null,
-          warehouse: selectedWarehouse?.number || null,
-          warehouseAddress: selectedWarehouse?.shortAddress || null,
-        };
-        setDebouncedFormData(dataToSave);
-      }
-    }, 500);
-
-    return () => clearTimeout(timer);
-  }, [formData, selectedCity, selectedWarehouse, isLoaded]);
-
-  // ✅ Збереження даних тільки після debounce
-  useEffect(() => {
-    if (debouncedFormData) {
-      saveData(debouncedFormData);
+  // ✅ Оптимізоване збереження даних - debounce 1000ms
+  const saveFormData = useCallback((data: CheckoutData) => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
     }
-  }, [debouncedFormData]);
+    
+    saveTimeoutRef.current = setTimeout(() => {
+      saveData(data);
+    }, 1000);
+  }, [saveData]);
+
+  // Збереження даних при зміні форми
+  useEffect(() => {
+    // Не зберігаємо якщо дані ще не завантажені
+    if (!isLoaded) return;
+
+    const dataToSave: CheckoutData = {
+      surname: watch('surname') || '',
+      firstName: watch('firstName') || '',
+      middleName: watch('middleName') || '',
+      phone: watch('phone') || '',
+      email: watch('email') || '',
+      city: selectedCity?.label || null,
+      cityRef: selectedCity?.ref || null,
+      warehouse: selectedWarehouse?.number || null,
+      warehouseAddress: selectedWarehouse?.shortAddress || null,
+    };
+    
+    saveFormData(dataToSave);
+    
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [
+    isLoaded,
+    selectedCity?.label,
+    selectedCity?.ref,
+    selectedWarehouse?.number,
+    selectedWarehouse?.shortAddress,
+  ]);
 
   const onSubmit = async (data: CheckoutForm) => {
     if (!selectedCity) {
@@ -156,12 +169,11 @@ export default function CheckoutPage() {
     }
   };
 
-  // ✅ Обробка зміни міста - без зайвих ререндерів
+  // ✅ Оптимізовані callback функції - без зайвих ререндерів
   const handleCityChange = useCallback((city: City | null) => {
     setSelectedCity(city);
   }, []);
 
-  // ✅ Обробка зміни відділення - без зайвих ререндерів
   const handleWarehouseChange = useCallback((warehouse: Warehouse | null) => {
     setSelectedWarehouse(warehouse);
   }, []);
