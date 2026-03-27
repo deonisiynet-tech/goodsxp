@@ -47,7 +47,6 @@ const nextConfig = {
 
   // Experimental features for better SSR support
   experimental: {
-    // Fix for styled-jsx hydration issues
     optimizePackageImports: ['lucide-react', 'react-hot-toast'],
   },
 
@@ -56,7 +55,6 @@ const nextConfig = {
 
   // Webpack configuration to fix styled-jsx issues
   webpack: (config, { isServer, dev }) => {
-    // Fix React/styled-jsx conflicts on production builds
     if (!isServer && !dev) {
       config.resolve.alias = {
         ...config.resolve.alias,

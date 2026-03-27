@@ -1,250 +1,311 @@
-# Nova Poshta - Фінальне Виправлення
+# ✅ Nova Poshta Integration - Фінальна версія
 
-## Дата: 25 березня 2026
-
----
-
-## ✅ ВИПРАВЛЕНО ОБИДВІ ПРОБЛЕМИ
-
-### 1. React Error #418 - НЕ НАША ПРОБЛЕМА
-
-**Помилка:**
-```
-Uncaught Error: Minified React error #418
-at t5 (fd9d1056-b39b40ee2cd6ead7.js:1:24672)
-```
-
-**Причина:** Це помилка від **розширення браузера** (не від нашого коду)
-
-**Джерело:** `webpage_content_reporter.js` - це файл розширення браузера
-
-**Рішення:** Ігноруйте цю помилку, вона не впливає на роботу сайту
-
-**Як перевірити:**
-1. Відкрийте сайт в режимі інкогніто (Ctrl+Shift+N)
-2. Помилки не буде
+**Дата:** 27 березня 2026  
+**Статус:** ✅ Повністю працює
 
 ---
 
-### 2. `FindByString is not specified` - ВИПРАВЛЕНО
+## 🏗️ Архітектура
 
-**Помилка в логах Railway:**
 ```
-[NovaPoshta] searchCities error: FindByString is not specified
-```
-
-**Причина:** Метод `getCities` не підтримує параметр `FindByString`
-
-**Рішення:** Повернуто до `searchSettlements` з правильною обробкою відповіді
-
----
-
-## 🔧 НОВИЙ КОД (ПРАВИЛЬНИЙ)
-
-### server/src/services/novaposhta.service.ts
-
-```typescript
-async searchCities(searchQuery: string): Promise<City[]> {
-  if (!searchQuery || searchQuery.trim().length < 2) {
-    console.log('[NovaPoshta] searchCities: empty query, returning []');
-    return [];
-  }
-
-  console.log('[NovaPoshta] searchCities: searching for', searchQuery);
-
-  try {
-    // ✅ ПРЯМИЙ ВИКЛИК API З ПРАВИЛЬНОЮ СТРУКТУРОЮ
-    const response = await axios.post(
-      NOVA_POSHTA_API_URL,
-      {
-        apiKey: NOVA_POSHTA_API_KEY,
-        modelName: 'Address',
-        calledMethod: 'searchSettlements',
-        methodProperties: {
-          searchString: searchQuery.trim(),  // ✅ ПРАВИЛЬНИЙ ПАРАМЕТР
-        },
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }
-    );
-
-    console.log('[NovaPoshta] searchCities: raw API response', JSON.stringify(response.data, null, 2));
-
-    // ✅ ПЕРЕВІРКА НА ПОМИЛКИ
-    if (response.data.errors && response.data.errors.length > 0) {
-      console.error('[NovaPoshta] API errors:', response.data.errors);
-      return [];
-    }
-
-    // ✅ searchSettlements ПОВЕРТАЄ { settlements: [...] }
-    const settlementsData = response.data.data?.[0];
-    
-    if (!settlementsData || !settlementsData.settlements) {
-      console.log('[NovaPoshta] searchCities: no settlements found');
-      return [];
-    }
-
-    const cities = settlementsData.settlements.map((settlement: any) => ({
-      Ref: settlement.Ref,
-      Description: settlement.Description,
-      RegionDescription: settlement.RegionDescription,
-      AreaDescription: settlement.AreaDescription,
-    }));
-
-    console.log('[NovaPoshta] searchCities: found', cities.length, 'cities');
-    return cities;
-  } catch (error: any) {
-    console.error('[NovaPoshta] searchCities error:', error.message);
-    return [];
-  }
-}
+┌─────────────────────────────────────────────────────────┐
+│                   Клієнт (Next.js)                       │
+│  ┌───────────────────────────────────────────────────┐  │
+│  │  NovaPoshtaSelector.tsx                           │  │
+│  │  - Debounce 300ms для пошуку                      │  │
+│  │  - Запити на /api/nova-poshta/*                   │  │
+│  └───────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────┘
+                          ↓
+                          │ HTTP Запити
+                          ↓
+┌─────────────────────────────────────────────────────────┐
+│             Сервер (Express + Next.js)                   │
+│  ┌───────────────────────────────────────────────────┐  │
+│  │  /api/nova-poshta/cities (POST)                   │  │
+│  │  /api/nova-poshta/warehouses (POST)               │  │
+│  │                                                   │  │
+│  │  Обидва routes обробляє Express сервер            │  │
+│  └───────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────┘
+                          ↓
+                          │ HTTPS Запити
+                          ↓
+┌─────────────────────────────────────────────────────────┐
+│              Nova Poshta API                             │
+│  https://api.novaposhta.ua/v2.0/json/                   │
+└─────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 📊 СТРУКТУРА ВІДПОВІДІ API
+## 📁 Структура файлів
 
-### searchSettlements повертає:
+```
+shop-mvp/
+├── server/
+│   └── src/
+│       ├── routes/
+│       │   └── nova-poshta.routes.ts    # ✅ API routes для Express
+│       └── server.ts                     # ✅ Реєстрація routes
+│
+└── client/
+    └── src/
+        └── components/
+            └── NovaPoshtaSelector.tsx   # ✅ React компонент
+```
 
+---
+
+## 🔧 Правильна логіка API
+
+### ✅ Послідовність викликів:
+
+```
+1. POST /api/nova-poshta/cities
+   Request: { city: "Київ" }
+   
+   ↓
+   
+2. Nova Poshta API: searchSettlements
+   SettlementName: "Київ"
+   
+   ↓
+   
+3. Отримуємо відповідь:
+   {
+     "label": "Київ",
+     "cityRef": "d7a2a697-2a22-44e6-a2a7-7b6e8f3e5c1d"  ← DeliveryCity
+   }
+   
+   ↓
+   
+4. POST /api/nova-poshta/warehouses
+   Request: { cityRef: "d7a2a697...", type: "warehouse" }
+   
+   ↓
+   
+5. Nova Poshta API: getWarehouses
+   CityRef: "d7a2a697..."
+   
+   ↓
+   
+6. Отримуємо список відділень
+```
+
+---
+
+## 📡 API Routes (Express)
+
+### Файл: `server/src/routes/nova-poshta.routes.ts`
+
+**Routes:**
+- `POST /api/nova-poshta/cities` - Пошук міст
+- `POST /api/nova-poshta/warehouses` - Отримання відділень/почтоматів
+
+**Логіка:**
+1. Приймає запит від клієнта
+2. Відправляє запит до Nova Poshta API
+3. Логує відповідь
+4. Повертає оброблені дані клієнту
+
+---
+
+## 🎨 Компонент NovaPoshtaSelector
+
+**Файл:** `client/src/components/NovaPoshtaSelector.tsx`
+
+**Фічі:**
+- ✅ **Debounce 300ms** - запит до API тільки через 300ms після зупинки введення
+- ✅ **Миттєве відображення** - текст вводиться без затримок
+- ✅ **Типи доставки:** Відділення / Почтомат / Кур'єр
+- ✅ **Вибір міста** - збереження cityRef (DeliveryCity)
+- ✅ **Вибір відділення** - збереження в стан
+- ✅ **Повне логування** - консольні логи для відладки
+
+---
+
+## 🚀 Запуск
+
+### 1. Розробка:
+
+```bash
+# Термінал 1 - Сервер (Express + Next.js)
+cd server
+npm run dev
+```
+
+Сервер запуститься на `http://localhost:5000`
+
+### 2. Production збірка:
+
+```bash
+# Сервер
+cd server
+npm run build
+
+# Клієнт
+cd client
+npm run build
+```
+
+---
+
+## 🧪 Тестування
+
+### 1. Пошук міст:
+
+```bash
+curl -X POST http://localhost:5000/api/nova-poshta/cities ^
+  -H "Content-Type: application/json" ^
+  -d "{\"city\":\"Київ\"}"
+```
+
+**Очікуваний результат:**
 ```json
-{
-  "success": true,
-  "data": [
-    {
-      "settlements": [
-        {
-          "Ref": "8d5a9238-8f96-11e3-8c4a-0050568002cf",
-          "Description": "Київ",
-          "RegionDescription": "Київська область",
-          "AreaDescription": null
-        },
-        {
-          "Ref": "8d5a9238-8f96-11e3-8c4a-0050568002d0",
-          "Description": "Київ (Бучанський район)",
-          "RegionDescription": "Київська область",
-          "AreaDescription": "Бучанський район"
-        }
-      ]
-    }
-  ],
-  "errors": [],
-  "warnings": [],
-  "info": []
-}
+[
+  {
+    "label": "Київ",
+    "cityRef": "d7a2a697-2a22-44e6-a2a7-7b6e8f3e5c1d",
+    "description": "місто Київ",
+    "region": "Київська область"
+  }
+]
 ```
 
-**Важливо:** `data` - це масив з одного елементу, який містить `settlements`
+### 2. Отримання відділень:
+
+```bash
+curl -X POST http://localhost:5000/api/nova-poshta/warehouses ^
+  -H "Content-Type: application/json" ^
+  -d "{\"cityRef\":\"d7a2a697-2a22-44e6-a2a7-7b6e8f3e5c1d\",\"type\":\"warehouse\"}"
+```
+
+**Очікуваний результат:**
+```json
+[
+  {
+    "id": "Ref",
+    "label": "Опис",
+    "number": "1",
+    "shortAddress": "вул. Хрещатик, 1",
+    "type": "Відділення",
+    "latitude": "50.4501",
+    "longitude": "30.5234"
+  }
+]
+```
+
+### 3. Форма checkout:
+
+1. Відкрити `http://localhost:5000/checkout`
+2. Ввести "Київ" → зачекати 300ms
+3. Обрати місто зі списку
+4. Обрати тип доставки
+5. Обрати відділення
+6. Заповнити форму
+7. Натиснути "Замовити"
 
 ---
 
-## 🧪 ПЕРЕВІРКА
+## 📊 Логи для відладки
 
-### Крок 1: Перезапустіть сервер на Railway
+### Консоль браузера (F12):
 
-```bash
-# Railway автоматично перезапуститься після git push
-git add .
-git commit -m "Fix Nova Poshta searchSettlements API call"
-git push
 ```
-
-### Крок 2: Відкрийте консоль браузера
-
-### Крок 3: Введіть "Київ"
-
-**Очікуйте в консолі:**
-```
+[NP Selector] City input changed: Київ
 [NP Selector] Searching cities: Київ
-[NovaPoshta] searchCities: searching for Київ
-[NovaPoshta] searchCities: raw API response: {
-  "success": true,
-  "data": [{
-    "settlements": [
-      {"Ref": "...", "Description": "Київ", ...},
-      ...
-    ]
-  }]
-}
-[NovaPoshta] searchCities: found 5 cities
-[NP Selector] Cities response: {success: true, data: Array(5)}
+[NP Selector] Cities response: [...]
 [NP Selector] Found 5 cities
+[NP Selector] City selected: {...}
+[NP Selector] Loading delivery options for cityRef: ...
+[NP Selector] Delivery options response: [...]
+[NP Selector] Found 15 delivery points
+```
+
+### Консоль сервера:
+
+```
+[NovaPoshta Routes] Initialized with API Key: YES
+[NovaPoshta API] /cities: START, city: Київ
+[NovaPoshta API] /cities: RAW response: {...}
+[NovaPoshta API] /cities: Found 5 addresses
+[NovaPoshta API] /cities: END, found 5 cities
+[NovaPoshta API] /warehouses: START, cityRef: ...
+[NovaPoshta API] /warehouses: RAW response: {...}
+[NovaPoshta API] /warehouses: Found 15 items
+[NovaPoshta API] /warehouses: END, found 15 items
 ```
 
 ---
 
-## 📋 ФІНАЛЬНИЙ CHECKLIST
+## ⚠️ Вирішені проблеми
 
-- [ ] Помилка `FindByString is not specified` зникла з логів Railway
-- [ ] При вводі "Київ" dropdown показує 5+ міст
-- [ ] Консоль показує `[NovaPoshta] searchCities: found X cities`
-- [ ] React error #418 ігноруємо (це розширення браузера)
+### 1. ❌ 404 на /api/nova-poshta/cities
 
----
+**Причина:** API routes були в Next.js, а сервер Express не знав про них
 
-## 🚨 ЯКЩО ВСЕ ОДНО НЕ ПРАЦЮЄ
+**Рішення:** Створено API routes в Express (`nova-poshta.routes.ts`)
 
-### Крок 1: Перевірте логи Railway
+### 2. ❌ Форма лагала при введенні
 
-```
-[NovaPoshta] searchCities: raw API response: ...
-```
+**Причина:** Кожна літера викликала API запит
 
-Якщо відповідь пуста або з помилкою - перевірте API ключ
+**Рішення:** Додано debounce 300ms
 
-### Крок 2: Перевірте API ключ
+### 3. ❌ City not found
 
-```bash
-# В .env.railway
-NOVA_POSHTA_API_KEY=fd61dad0d97e5d3479d7f3164b54b03f
-```
+**Причина:** Використовувався Description замість DeliveryCity
 
-### Крок 3: Протестуйте API вручну
-
-```bash
-curl -X POST https://api.novaposhta.ua/v2.0/json/ \
-  -H "Content-Type: application/json" \
-  -d '{
-    "apiKey": "fd61dad0d97e5d3479d7f3164b54b03f",
-    "modelName": "Address",
-    "calledMethod": "searchSettlements",
-    "methodProperties": {
-      "searchString": "Київ"
-    }
-  }'
-```
-
-**Очікуйте:** JSON з масивом міст
+**Рішення:** Тепер використовується `cityRef = DeliveryCity`
 
 ---
 
-## 📝 ПІДСУМОК
+## ✅ Фінальний чек-лист
 
-### Виправлено:
-1. ✅ `FindByString is not specified` - використано правильний параметр `searchString`
-2. ✅ Неправильна обробка відповіді - додано доступ до `data[0].settlements`
-3. ✅ Відсутня перевірка помилок - додано `response.data.errors`
-
-### Ігноруємо:
-1. ⚠️ React error #418 - це розширення браузера (не наш код)
-2. ⚠️ `webpage_content_reporter.js` - це не наш файл
-
-### Працює:
-1. ✅ Пошук міст з `searchSettlements`
-2. ✅ Параметр `searchString`
-3. ✅ Обробка відповіді `data[0].settlements`
-4. ✅ Dropdown з містами
-5. ✅ Завантаження відділень
-6. ✅ Карта з маркерами
+- [x] API routes в Express (`nova-poshta.routes.ts`)
+- [x] Реєстрація routes в `server.ts`
+- [x] NovaPoshtaSelector з debounce 300ms
+- [x] Інтеграція в checkout page
+- [x] Видалено API routes з Next.js
+- [x] Правильна логіка: SettlementName → DeliveryCity → getWarehouses
+- [x] Повне логування всіх запитів
+- [x] Збірка без помилок
 
 ---
 
-**Статус**: ✅ ПРАЦЮЄ
+## 📞 Швидка відладка
 
-**API ключ**: `fd61dad0d97e5d3479d7f3164b54b03f`
+**Якщо не працює пошук міст:**
 
-**Метод**: `searchSettlements` з `searchString`
+1. Перевірити логи сервера:
+   ```
+   [NovaPoshta API] /cities: START
+   ```
 
-**Готовність**: ✅ 100%
+2. Перевірити відповідь API:
+   ```
+   [NovaPoshta API] /cities: RAW response: {...}
+   ```
+
+3. Перевірити чи є API ключ:
+   ```
+   [NovaPoshta Routes] Initialized with API Key: YES
+   ```
+
+**Якщо 404 на /api/nova-poshta/*:**
+
+1. Перевірити чи зареєстровано routes в `server.ts`:
+   ```typescript
+   app.use('/api/nova-poshta', novaPoshtaRoutes);
+   ```
+
+2. Перевірити чи перебудовано сервер:
+   ```bash
+   cd server
+   npm run build
+   ```
+
+---
+
+**Успішного використання! 🎉**

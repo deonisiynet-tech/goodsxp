@@ -79,6 +79,7 @@ import orderRoutes from './routes/order.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import uploadRoutes from './routes/upload.routes.js';
 import adminAuthRoutes from './routes/admin.auth.routes.js';
+import novaPoshtaRoutes from './routes/nova-poshta.routes.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 import { initializeAdmin } from './utils/initAdmin.js';
 import { runMigrations } from './prisma/migrate.js';
@@ -210,7 +211,7 @@ app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/admin', adminRoutes);           // Admin only - requires auth
 app.use('/api/upload', uploadRoutes);
-// Nova Poshta API routes are handled by Next.js in /api/nova-poshta/*
+app.use('/api/nova-poshta', novaPoshtaRoutes);  // ✅ Nova Poshta API routes
 
 // ==================================
 // Next.js Handler - MUST be last
