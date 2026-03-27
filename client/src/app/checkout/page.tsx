@@ -12,20 +12,24 @@ import { useCheckoutStorage } from '@/hooks/useCheckoutStorage';
 import toast from 'react-hot-toast';
 import { ArrowLeft, ShoppingCart } from 'lucide-react';
 
+// ✅ Нові інтерфейси для Nova Poshta
 interface City {
-  Ref: string;
-  Description: string;
-  RegionDescription: string;
-  AreaDescription?: string;
+  label: string;
+  cityRef: string;
+  description?: string;
+  region?: string;
+  area?: string;
 }
 
 interface Warehouse {
-  Ref: string;
-  Description: string;
-  ShortAddress: string;
-  Number: string;
-  Latitude?: string;
-  Longitude?: string;
+  id: string;
+  label: string;
+  number: string;
+  shortAddress: string;
+  type: string;
+  latitude?: string;
+  longitude?: string;
+  schedule?: string;
 }
 
 interface CheckoutForm {
@@ -44,6 +48,7 @@ interface CheckoutData {
   phone: string;
   email: string;
   city?: string | null;
+  cityRef?: string | null;
   warehouse?: string | null;
   warehouseAddress?: string | null;
 }
@@ -90,9 +95,10 @@ export default function CheckoutPage() {
           middleName: formData.middleName || '',
           phone: formData.phone || '',
           email: formData.email || '',
-          city: selectedCity?.Description || null,
-          warehouse: selectedWarehouse?.Number || null,
-          warehouseAddress: selectedWarehouse?.ShortAddress || null,
+          city: selectedCity?.label || null,
+          cityRef: selectedCity?.cityRef || null,
+          warehouse: selectedWarehouse?.number || null,
+          warehouseAddress: selectedWarehouse?.shortAddress || null,
         };
         setDebouncedFormData(dataToSave);
       }
@@ -125,9 +131,9 @@ export default function CheckoutPage() {
         name: fullName,
         phone: data.phone,
         email: data.email,
-        city: selectedCity.Description,
-        warehouse: `Відділення №${selectedWarehouse.Number}`,
-        warehouseAddress: selectedWarehouse.ShortAddress,
+        city: selectedCity.label,
+        warehouse: `${selectedWarehouse.type} №${selectedWarehouse.number}`,
+        warehouseAddress: selectedWarehouse.shortAddress,
         comment: data.comment,
         items: items.map((item) => ({
           productId: item.productId,
@@ -139,7 +145,7 @@ export default function CheckoutPage() {
       saveData({
         surname: '', firstName: '', middleName: '',
         phone: '', email: '',
-        city: null, warehouse: null, warehouseAddress: null
+        city: null, cityRef: null, warehouse: null, warehouseAddress: null
       });
       toast.success('Замовлення успішно оформлено!');
       router.push('/orders/success');
