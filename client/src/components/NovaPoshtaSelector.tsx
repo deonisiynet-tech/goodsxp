@@ -130,8 +130,6 @@ export default function NovaPoshtaSelector({
   const searchCities = useCallback(async (query: string) => {
     setIsLoadingCities(true);
     try {
-      console.log("[NP Selector] Searching cities:", query);
-      
       const response = await fetch("/api/nova-poshta/cities", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -139,19 +137,17 @@ export default function NovaPoshtaSelector({
       });
 
       const result = await response.json();
-      console.log("[NP Selector] Cities response:", result);
 
       if (Array.isArray(result) && result.length > 0) {
         setCities(result);
         setShowCityDropdown(true);
-        console.log("[NP Selector] Found", result.length, "cities");
       } else {
         setCities([]);
-        console.log("[NP Selector] No cities found");
+        setShowCityDropdown(false);
       }
     } catch (error) {
-      console.error("[NP Selector] Error searching cities:", error);
       setCities([]);
+      setShowCityDropdown(false);
     } finally {
       setIsLoadingCities(false);
     }
@@ -163,13 +159,12 @@ export default function NovaPoshtaSelector({
    * Після вибору міста - завантажуємо відділення
    */
   const handleCitySelect = (city: City) => {
-    console.log("[NP Selector] City selected:", city);
     onCityChange(city);
-    setCityInput(city.label);  // ✅ Показуємо label (Present) в інпуті
+    setCityInput(city.label);
     setShowCityDropdown(false);
     setWarehouses([]);
     onWarehouseChange(null);
-    loadWarehouses(city.ref, deliveryType);  // ✅ Використовуємо city.ref (DeliveryCity)
+    loadWarehouses(city.ref, deliveryType);
   };
 
   /**
@@ -180,8 +175,6 @@ export default function NovaPoshtaSelector({
   const loadWarehouses = async (cityRef: string, type: DeliveryType = "warehouse") => {
     setIsLoadingWarehouses(true);
     try {
-      console.log("[NP Selector] Loading warehouses for cityRef:", cityRef, "type:", type);
-
       const endpoint = type === "postomat" ? "/api/nova-poshta/postomats" : "/api/nova-poshta/warehouses";
       
       const response = await fetch(endpoint, {
@@ -191,17 +184,13 @@ export default function NovaPoshtaSelector({
       });
 
       const result = await response.json();
-      console.log("[NP Selector] Warehouses response:", result);
 
       if (Array.isArray(result) && result.length > 0) {
         setWarehouses(result);
-        console.log("[NP Selector] Found", result.length, "warehouses");
       } else {
         setWarehouses([]);
-        console.log("[NP Selector] No warehouses found");
       }
     } catch (error) {
-      console.error("[NP Selector] Error loading warehouses:", error);
       setWarehouses([]);
     } finally {
       setIsLoadingWarehouses(false);
@@ -212,7 +201,6 @@ export default function NovaPoshtaSelector({
    * ✅ ЗМІНА ТИПУ ДОСТАВКИ
    */
   const handleDeliveryTypeChange = (type: DeliveryType) => {
-    console.log("[NP Selector] Delivery type changed:", type);
     setDeliveryType(type);
     if (selectedCity) {
       loadWarehouses(selectedCity.ref, type);
@@ -224,7 +212,6 @@ export default function NovaPoshtaSelector({
    * ✅ ВИБІР ВІДДІЛЕННЯ
    */
   const handleWarehouseSelect = (warehouse: Warehouse) => {
-    console.log("[NP Selector] Warehouse selected:", warehouse);
     onWarehouseChange(warehouse);
     setShowWarehouseDropdown(false);
   };
@@ -236,10 +223,8 @@ export default function NovaPoshtaSelector({
    */
   const handleCityInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    console.log("[NP Selector] City input changed:", value);
-    setCityInput(value);  // ✅ Оновлюємо стан для controlled input
+    setCityInput(value);
     
-    // Скидаємо вибрані дані при зміні міста
     if (!value) {
       onCityChange(null);
       onWarehouseChange(null);
@@ -248,11 +233,23 @@ export default function NovaPoshtaSelector({
     } else {
       setShowCityDropdown(true);
     }
-    // ✅ API запит викличе useEffect з debouncedCitySearch через 500ms
   };
 
+  /**
+   * ✅ ОТРИМАННЯ РОЗКЛАДУ - безпечне перетворення об'єкта в рядок
+   */
   const getSchedule = (warehouse: Warehouse): string => {
-    return warehouse.schedule || "Пн-Пт: 9:00-20:00";
+    const schedule = warehouse.schedule;
+    
+    // Якщо schedule - об'єкт (наприклад {Monday: "9:00-20:00", ...})
+    if (schedule && typeof schedule === 'object') {
+      // Беремо перші 2-3 дні для відображення
+      const days = Object.entries(schedule as Record<string, string>).slice(0, 3);
+      return days.map(([day, time]) => `${day.substring(0, 3)}: ${time}`).join(', ');
+    }
+    
+    // Якщо schedule - рядок або undefined
+    return (typeof schedule === 'string' ? schedule : undefined) || "Пн-Пт: 9:00-20:00";
   };
 
   return (

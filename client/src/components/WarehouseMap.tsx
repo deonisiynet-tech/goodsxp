@@ -138,7 +138,11 @@ export default function WarehouseMap({ warehouses, selectedWarehouse, onWarehous
                 <div className="text-sm text-gray-600 mb-2">{warehouse.ShortAddress}</div>
                 <div className="text-xs text-gray-500 mb-3 flex items-center gap-1">
                   <span>🕐</span>
-                  <span>{warehouse.Schedule || 'Пн-Пт: 9:00-20:00, Сб: 9:00-18:00'}</span>
+                  <span>
+                    {typeof warehouse.Schedule === 'string' 
+                      ? warehouse.Schedule 
+                      : 'Пн-Пт: 9:00-20:00, Сб: 9:00-18:00'}
+                  </span>
                 </div>
                 <button
                   onClick={() => handleMarkerClick(warehouse)}
