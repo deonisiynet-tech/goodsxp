@@ -1,6 +1,7 @@
-"use client";
+'use client';
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 
 interface City {
   label: string;
@@ -34,9 +35,6 @@ interface NovaPoshtaSelectorProps {
 
 /**
  * ✅ DEBOUNCE ХУК - 500ms
- * 
- * Затримка виклику функції після останньої зміни значення.
- * Використовується для API запитів при пошуку.
  */
 function useDebounce<T>(value: T, delay: number = 500): T {
   const [debouncedValue, setDebouncedValue] = useState<T>(value);
@@ -46,12 +44,24 @@ function useDebounce<T>(value: T, delay: number = 500): T {
       setDebouncedValue(value);
     }, delay);
 
-    return () => {
-      clearTimeout(timer);
-    };
+    return () => clearTimeout(timer);
   }, [value, delay]);
 
   return debouncedValue;
+}
+
+/**
+ * ✅ Визначення типу пункту видачі з API даних
+ */
+function getWarehouseType(warehouseType: string): { isPostomat: boolean; icon: string; label: string } {
+  const typeLower = warehouseType.toLowerCase();
+  const isPostomat = typeLower.includes("поштомат") || typeLower.includes("postomat");
+  
+  return {
+    isPostomat,
+    icon: isPostomat ? "📦" : "🏢",
+    label: isPostomat ? "Поштомат" : "Відділення",
+  };
 }
 
 export default function NovaPoshtaSelector({
@@ -62,7 +72,7 @@ export default function NovaPoshtaSelector({
   selectedWarehouse,
   savedCityName,
 }: NovaPoshtaSelectorProps) {
-  // ✅ СТАН ДЛЯ МІСТА - controlled input
+  // ✅ СТАН ДЛЯ МІСТА
   const [cityInput, setCityInput] = useState("");
   const [cities, setCities] = useState<City[]>([]);
   const [isLoadingCities, setIsLoadingCities] = useState(false);
@@ -77,8 +87,17 @@ export default function NovaPoshtaSelector({
   // ✅ DEBOUNCED значення для пошуку (500ms затримка)
   const debouncedCitySearch = useDebounce(cityInput, 500);
 
+  // ✅ Рефи для dropdown
   const cityDropdownRef = useRef<HTMLDivElement>(null);
   const warehouseDropdownRef = useRef<HTMLDivElement>(null);
+  const [warehouseDropdownPosition, setWarehouseDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
+
+  // ✅ Mounted state for portal
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // ✅ Відновлення збереженого міста
   useEffect(() => {
@@ -122,10 +141,33 @@ export default function NovaPoshtaSelector({
     }
   }, [deliveryType, onDeliveryTypeChange]);
 
+  // ✅ Оновлення позиції dropdown при зміні розміру вікна
+  useEffect(() => {
+    const updatePosition = () => {
+      if (warehouseDropdownRef.current && showWarehouseDropdown) {
+        const rect = warehouseDropdownRef.current.getBoundingClientRect();
+        setWarehouseDropdownPosition({
+          top: rect.bottom + window.scrollY + 4,
+          left: rect.left + window.scrollX,
+          width: rect.width,
+        });
+      }
+    };
+
+    if (showWarehouseDropdown) {
+      updatePosition();
+      window.addEventListener("scroll", updatePosition, true);
+      window.addEventListener("resize", updatePosition);
+    }
+
+    return () => {
+      window.removeEventListener("scroll", updatePosition, true);
+      window.removeEventListener("resize", updatePosition);
+    };
+  }, [showWarehouseDropdown]);
+
   /**
    * ✅ ПОШУК МІСТ - API ЗАПИТ
-   * 
-   * Викликається тільки з debounced значенням (500ms після зупинки введення)
    */
   const searchCities = useCallback(async (query: string) => {
     setIsLoadingCities(true);
@@ -155,8 +197,6 @@ export default function NovaPoshtaSelector({
 
   /**
    * ✅ ВИБІР МІСТА
-   *
-   * Після вибору міста - завантажуємо відділення
    */
   const handleCitySelect = (city: City) => {
     onCityChange(city);
@@ -169,9 +209,6 @@ export default function NovaPoshtaSelector({
 
   /**
    * ✅ ЗАВАНТАЖЕННЯ ВІДДІЛЕНЬ ТА ПОШТОМАТІВ
-   *
-   * Використовуємо CityRef = DeliveryCity з searchSettlements
-   * Завантажуємо і відділення і поштомати одночасно
    */
   const loadWarehouses = async (cityRef: string) => {
     setIsLoadingWarehouses(true);
@@ -216,9 +253,7 @@ export default function NovaPoshtaSelector({
   };
 
   /**
-   * ✅ ОБРОБКА ВВЕДЕННЯ МІСТА - controlled input без зайвих ререндерів
-   * 
-   * Миттєве оновлення стану, API запит тільки через debounce 500ms
+   * ✅ ОБРОБКА ВВЕДЕННЯ МІСТА
    */
   const handleCityInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
@@ -232,6 +267,77 @@ export default function NovaPoshtaSelector({
     } else {
       setShowCityDropdown(true);
     }
+  };
+
+  /**
+   * ✅ ВІДКРИТТЯ DROPDOWN ВІДДІЛЕНЬ
+   */
+  const handleWarehouseInputFocus = () => {
+    if (warehouses.length > 0) {
+      const rect = warehouseDropdownRef.current?.getBoundingClientRect();
+      if (rect) {
+        setWarehouseDropdownPosition({
+          top: rect.bottom + window.scrollY + 4,
+          left: rect.left + window.scrollX,
+          width: rect.width,
+        });
+      }
+      setShowWarehouseDropdown(true);
+    }
+  };
+
+  // ✅ Render dropdown portal
+  const renderWarehouseDropdown = () => {
+    if (!mounted || !showWarehouseDropdown || warehouses.length === 0 || !warehouseDropdownPosition) {
+      return null;
+    }
+
+    return createPortal(
+      <div
+        className="z-[100] w-full bg-[#18181c] border border-purple-500/30 rounded-xl shadow-2xl shadow-purple-500/20 max-h-80 overflow-y-auto pb-2"
+        style={{
+          position: 'fixed',
+          top: `${warehouseDropdownPosition.top}px`,
+          left: `${warehouseDropdownPosition.left}px`,
+          width: `${warehouseDropdownPosition.width}px`,
+        }}
+      >
+        {warehouses.map((warehouse) => {
+          const { icon, label: typeLabel } = getWarehouseType(warehouse.type);
+          
+          return (
+            <button
+              key={warehouse.id}
+              type="button"
+              onClick={() => handleWarehouseSelect(warehouse)}
+              className={`w-full px-4 py-3 text-left transition-colors duration-150 border-b border-purple-500/10 last:border-b-0 ${
+                selectedWarehouse?.id === warehouse.id
+                  ? "bg-purple-500/20 text-purple-400"
+                  : "hover:bg-purple-500/10"
+              }`}
+            >
+              <div className="flex items-start gap-3">
+                <div className="text-xl shrink-0">{icon}</div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium text-white text-sm">
+                    {typeLabel} №{warehouse.number}
+                  </div>
+                  <div className="text-sm text-muted mt-0.5 truncate">
+                    📍 {warehouse.shortAddress}
+                  </div>
+                </div>
+                {selectedWarehouse?.id === warehouse.id && (
+                  <svg className="w-5 h-5 text-purple-400 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                )}
+              </div>
+            </button>
+          );
+        })}
+      </div>,
+      document.body
+    );
   };
 
   return (
@@ -326,12 +432,12 @@ export default function NovaPoshtaSelector({
         )}
       </div>
 
-      {/* Відділення / Почтомат / Кур'єр */}
+      {/* Відділення / Поштомат / Кур'єр */}
       {selectedCity && deliveryType !== "courier" && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <label className="block text-sm font-medium">
-              {deliveryType === "postomat" ? "Почтомат" : "Відділення"} <span className="text-red-500">*</span>
+              Відділення / Поштомат <span className="text-red-500">*</span>
             </label>
           </div>
 
@@ -342,8 +448,8 @@ export default function NovaPoshtaSelector({
                 type="text"
                 value={selectedWarehouse ? `№${selectedWarehouse.number} - ${selectedWarehouse.shortAddress}` : ""}
                 readOnly
-                placeholder={deliveryType === "postomat" ? "Оберіть почтомат..." : "Оберіть відділення..."}
-                onFocus={() => warehouses.length > 0 && setShowWarehouseDropdown(true)}
+                placeholder="Оберіть відділення або поштомат..."
+                onFocus={handleWarehouseInputFocus}
                 className="input-field pr-10 cursor-pointer"
                 autoComplete="off"
               />
@@ -360,60 +466,16 @@ export default function NovaPoshtaSelector({
                 </div>
               )}
             </div>
-
-            {showWarehouseDropdown && warehouses.length > 0 && (
-              <div className="absolute z-50 w-full mt-1 bg-[#18181c] border border-purple-500/30 rounded-xl shadow-2xl shadow-purple-500/20 max-h-80 overflow-y-auto pb-2">
-                {warehouses.map((warehouse) => {
-                  // ✅ Визначаємо тип пункту видачі
-                  const isPostomat = warehouse.type.toLowerCase().includes("почтомат") || 
-                                    warehouse.type.toLowerCase().includes("поштомат");
-                  const icon = isPostomat ? "📦" : "🏢";
-                  const typeLabel = isPostomat ? "Поштомат" : "Відділення";
-                  
-                  return (
-                    <button
-                      key={warehouse.id}
-                      type="button"
-                      onClick={() => handleWarehouseSelect(warehouse)}
-                      className={`w-full px-4 py-3 text-left transition-colors duration-150 border-b border-purple-500/10 last:border-b-0 ${
-                        selectedWarehouse?.id === warehouse.id
-                          ? "bg-purple-500/20 text-purple-400"
-                          : "hover:bg-purple-500/10"
-                      }`}
-                    >
-                      <div className="flex items-start gap-3">
-                        {/* Іконка */}
-                        <div className="text-xl shrink-0">{icon}</div>
-                        
-                        {/* Інформація */}
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-white text-sm">
-                            {typeLabel} №{warehouse.number}
-                          </div>
-                          <div className="text-sm text-muted mt-0.5 truncate">
-                            📍 {warehouse.shortAddress}
-                          </div>
-                        </div>
-                        
-                        {/* Галочка вибраного */}
-                        {selectedWarehouse?.id === warehouse.id && (
-                          <svg className="w-5 h-5 text-purple-400 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                          </svg>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-
-            {showWarehouseDropdown && warehouses.length === 0 && !isLoadingWarehouses && (
-              <div className="absolute z-50 w-full mt-1 bg-[#18181c] border border-purple-500/30 rounded-xl shadow-2xl shadow-purple-500/20 p-4 text-center text-muted">
-                Відділення не знайдено
-              </div>
-            )}
           </div>
+
+          {/* Portal dropdown */}
+          {renderWarehouseDropdown()}
+
+          {warehouses.length === 0 && !isLoadingWarehouses && selectedCity && (
+            <div className="text-sm text-muted text-center py-4">
+              Відділення не знайдено
+            </div>
+          )}
 
           {isLoadingWarehouses && (
             <div className="flex items-center gap-2 text-sm text-muted">
@@ -430,7 +492,7 @@ export default function NovaPoshtaSelector({
 
           {selectedWarehouse && (
             <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 text-sm text-green-400">
-              ✅ Обрано: {selectedWarehouse.type} №{selectedWarehouse.number}, {selectedWarehouse.shortAddress}
+              ✅ Обрано: {getWarehouseType(selectedWarehouse.type).label} №{selectedWarehouse.number}, {selectedWarehouse.shortAddress}
             </div>
           )}
         </div>
