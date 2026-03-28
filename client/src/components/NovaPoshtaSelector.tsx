@@ -21,7 +21,7 @@ interface Warehouse {
   schedule?: string;
 }
 
-type DeliveryType = "warehouse" | "postomat" | "courier";
+type DeliveryType = "warehouse" | "courier";
 
 interface NovaPoshtaSelectorProps {
   onCityChange: (city: City | null) => void;
@@ -155,7 +155,7 @@ export default function NovaPoshtaSelector({
 
   /**
    * ✅ ВИБІР МІСТА
-   * 
+   *
    * Після вибору міста - завантажуємо відділення
    */
   const handleCitySelect = (city: City) => {
@@ -164,23 +164,22 @@ export default function NovaPoshtaSelector({
     setShowCityDropdown(false);
     setWarehouses([]);
     onWarehouseChange(null);
-    loadWarehouses(city.ref, deliveryType);
+    loadWarehouses(city.ref);
   };
 
   /**
-   * ✅ ЗАВАНТАЖЕННЯ ВІДДІЛЕНЬ
-   * 
+   * ✅ ЗАВАНТАЖЕННЯ ВІДДІЛЕНЬ ТА ПОШТОМАТІВ
+   *
    * Використовуємо CityRef = DeliveryCity з searchSettlements
+   * Завантажуємо і відділення і поштомати одночасно
    */
-  const loadWarehouses = async (cityRef: string, type: DeliveryType = "warehouse") => {
+  const loadWarehouses = async (cityRef: string) => {
     setIsLoadingWarehouses(true);
     try {
-      const endpoint = type === "postomat" ? "/api/nova-poshta/postomats" : "/api/nova-poshta/warehouses";
-      
-      const response = await fetch(endpoint, {
+      const response = await fetch("/api/nova-poshta/warehouses", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cityRef, type }),
+        body: JSON.stringify({ cityRef }),
       });
 
       const result = await response.json();
@@ -203,7 +202,7 @@ export default function NovaPoshtaSelector({
   const handleDeliveryTypeChange = (type: DeliveryType) => {
     setDeliveryType(type);
     if (selectedCity) {
-      loadWarehouses(selectedCity.ref, type);
+      loadWarehouses(selectedCity.ref);
     }
     onWarehouseChange(null);
   };
@@ -244,8 +243,8 @@ export default function NovaPoshtaSelector({
         <h3 className="text-lg font-medium">Доставка Новою Поштою</h3>
       </div>
 
-      {/* Тип доставки */}
-      <div className="grid grid-cols-3 gap-2">
+      {/* Тип доставки - 2 кнопки */}
+      <div className="grid grid-cols-2 gap-2">
         <button
           type="button"
           onClick={() => handleDeliveryTypeChange("warehouse")}
@@ -255,18 +254,7 @@ export default function NovaPoshtaSelector({
               : "bg-[#1f1f23] border-purple-500/20 text-muted hover:border-purple-500/40"
           }`}
         >
-          <div className="text-xs font-medium mb-1">🏢 Відділення</div>
-        </button>
-        <button
-          type="button"
-          onClick={() => handleDeliveryTypeChange("postomat")}
-          className={`p-3 rounded-xl border transition-all duration-200 ${
-            deliveryType === "postomat"
-              ? "bg-purple-500/20 border-purple-500/50 text-purple-400"
-              : "bg-[#1f1f23] border-purple-500/20 text-muted hover:border-purple-500/40"
-          }`}
-        >
-          <div className="text-xs font-medium mb-1">📦 Почтомат</div>
+          <div className="text-sm font-medium">🏣 Відділення / Поштомат</div>
         </button>
         <button
           type="button"
@@ -277,7 +265,7 @@ export default function NovaPoshtaSelector({
               : "bg-[#1f1f23] border-purple-500/20 text-muted hover:border-purple-500/40"
           }`}
         >
-          <div className="text-xs font-medium mb-1">🚚 Кур'єр</div>
+          <div className="text-sm font-medium">🚚 Кур'єр</div>
         </button>
       </div>
 
@@ -422,7 +410,7 @@ export default function NovaPoshtaSelector({
 
             {showWarehouseDropdown && warehouses.length === 0 && !isLoadingWarehouses && (
               <div className="absolute z-50 w-full mt-1 bg-[#18181c] border border-purple-500/30 rounded-xl shadow-2xl shadow-purple-500/20 p-4 text-center text-muted">
-                {deliveryType === "postomat" ? "Почтомати не знайдено" : "Відділення не знайдено"}
+                Відділення не знайдено
               </div>
             )}
           </div>
@@ -436,13 +424,13 @@ export default function NovaPoshtaSelector({
 
           {warehouses.length > 0 && !selectedWarehouse && (
             <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3 text-sm text-yellow-400">
-              ⚠️ Оберіть {deliveryType === "postomat" ? "почтомат" : "відділення"} для продовження
+              ⚠️ Оберіть відділення або поштомат для продовження
             </div>
           )}
 
           {selectedWarehouse && (
             <div className="bg-green-500/10 border border-green-500/30 rounded-lg p-3 text-sm text-green-400">
-              ✅ Обрано: {deliveryType === "postomat" ? "Почтомат" : "Відділення"} №{selectedWarehouse.number}, {selectedWarehouse.shortAddress}
+              ✅ Обрано: {selectedWarehouse.type} №{selectedWarehouse.number}, {selectedWarehouse.shortAddress}
             </div>
           )}
         </div>

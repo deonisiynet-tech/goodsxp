@@ -37,7 +37,6 @@ interface CheckoutForm {
   firstName: string;
   middleName: string;
   phone: string;
-  email: string;
   comment?: string;
 }
 
@@ -46,7 +45,6 @@ interface CheckoutData {
   firstName?: string;
   middleName?: string;
   phone: string;
-  email: string;
   city?: string | null;
   cityRef?: string | null;
   warehouse?: string | null;
@@ -80,7 +78,6 @@ export default function CheckoutPage() {
       if (savedData.firstName) setValue('firstName', savedData.firstName);
       if (savedData.middleName) setValue('middleName', savedData.middleName);
       if (savedData.phone) setValue('phone', savedData.phone);
-      if (savedData.email) setValue('email', savedData.email);
     }
   }, [isLoaded, savedData, setValue]);
 
@@ -105,7 +102,6 @@ export default function CheckoutPage() {
       firstName: watch('firstName') || '',
       middleName: watch('middleName') || '',
       phone: watch('phone') || '',
-      email: watch('email') || '',
       city: selectedCity?.label || null,
       cityRef: selectedCity?.ref || null,
       warehouse: selectedWarehouse?.number || null,
@@ -143,7 +139,6 @@ export default function CheckoutPage() {
       const orderData = {
         name: fullName,
         phone: data.phone,
-        email: data.email,
         city: selectedCity.label,
         warehouse: `${selectedWarehouse.type} №${selectedWarehouse.number}`,
         warehouseAddress: selectedWarehouse.shortAddress,
@@ -157,7 +152,7 @@ export default function CheckoutPage() {
       clearCart();
       saveData({
         surname: '', firstName: '', middleName: '',
-        phone: '', email: '',
+        phone: '',
         city: null, cityRef: null, warehouse: null, warehouseAddress: null
       });
       toast.success('Замовлення успішно оформлено!');
@@ -264,23 +259,6 @@ export default function CheckoutPage() {
                   placeholder="+38 (0XX) XXX-XX-XX"
                 />
                 {errors.phone && <p className="text-red-500 text-sm mt-1">{errors.phone.message}</p>}
-              </div>
-
-              {/* Email */}
-              <div>
-                <label className="block text-sm font-medium mb-1">Email *</label>
-                <input
-                  {...register('email', {
-                    required: 'Email обов&apos;язковий',
-                    pattern: {
-                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                      message: 'Некоректний email'
-                    }
-                  })}
-                  className="input-field"
-                  placeholder="example@mail.com"
-                />
-                {errors.email && <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>}
               </div>
 
               {/* Nova Poshta Selector */}
