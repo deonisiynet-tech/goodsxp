@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { createPortal } from "react-dom";
 
 interface City {
   label: string;
@@ -52,7 +51,6 @@ function useDebounce<T>(value: T, delay: number = 500): T {
 
 /**
  * ✅ Визначення типу пункту видачі з API даних
- * Сервер повертає правильний тип з CategoryOfWarehouse
  */
 function getWarehouseType(warehouseType: string): { isPostomat: boolean; icon: string; label: string } {
   const isPostomat = warehouseType === "Поштомат";
@@ -90,14 +88,6 @@ export default function NovaPoshtaSelector({
   // ✅ Рефи для dropdown
   const cityDropdownRef = useRef<HTMLDivElement>(null);
   const warehouseDropdownRef = useRef<HTMLDivElement>(null);
-  const [warehouseDropdownPosition, setWarehouseDropdownPosition] = useState<{ top: number; left: number; width: number } | null>(null);
-
-  // ✅ Mounted state for portal
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   // ✅ Відновлення збереженого міста
   useEffect(() => {
@@ -140,31 +130,6 @@ export default function NovaPoshtaSelector({
       onDeliveryTypeChange(deliveryType);
     }
   }, [deliveryType, onDeliveryTypeChange]);
-
-  // ✅ Оновлення позиції dropdown при зміні розміру вікна/скролі
-  useEffect(() => {
-    const updatePosition = () => {
-      if (warehouseDropdownRef.current && showWarehouseDropdown) {
-        const rect = warehouseDropdownRef.current.getBoundingClientRect();
-        setWarehouseDropdownPosition({
-          top: rect.bottom + window.scrollY + 4,
-          left: rect.left + window.scrollX,
-          width: rect.width,
-        });
-      }
-    };
-
-    if (showWarehouseDropdown) {
-      updatePosition();
-      window.addEventListener("scroll", updatePosition, true);
-      window.addEventListener("resize", updatePosition);
-    }
-
-    return () => {
-      window.removeEventListener("scroll", updatePosition, true);
-      window.removeEventListener("resize", updatePosition);
-    };
-  }, [showWarehouseDropdown]);
 
   /**
    * ✅ ПОШУК МІСТ - API ЗАПИТ
@@ -269,81 +234,6 @@ export default function NovaPoshtaSelector({
     }
   };
 
-  /**
-   * ✅ ВІДКРИТТЯ DROPDOWN ВІДДІЛЕНЬ
-   */
-  const handleWarehouseInputFocus = () => {
-    if (warehouses.length > 0) {
-      const rect = warehouseDropdownRef.current?.getBoundingClientRect();
-      if (rect) {
-        setWarehouseDropdownPosition({
-          top: rect.bottom + window.scrollY + 4,
-          left: rect.left + window.scrollX,
-          width: rect.width,
-        });
-      }
-      setShowWarehouseDropdown(true);
-    }
-  };
-
-  // ✅ Render warehouse dropdown portal (outside container)
-  const renderWarehouseDropdown = () => {
-    if (!mounted || !showWarehouseDropdown || warehouses.length === 0 || !warehouseDropdownPosition) {
-      return null;
-    }
-
-    return createPortal(
-      <div
-        className="z-[9999] bg-[#18181c] border border-purple-500/30 rounded-xl shadow-2xl shadow-purple-500/20"
-        style={{
-          position: 'fixed',
-          top: `${warehouseDropdownPosition.top}px`,
-          left: `${warehouseDropdownPosition.left}px`,
-          width: `${warehouseDropdownPosition.width}px`,
-          maxHeight: '400px',
-          overflowY: 'auto',
-          overflowX: 'hidden',
-          paddingBottom: '20px',
-        }}
-      >
-        {warehouses.map((warehouse) => {
-          const { icon, label: typeLabel } = getWarehouseType(warehouse.type);
-          
-          return (
-            <button
-              key={warehouse.id}
-              type="button"
-              onClick={() => handleWarehouseSelect(warehouse)}
-              className={`w-full px-4 py-3 text-left transition-colors duration-150 border-b border-purple-500/10 last:border-b-0 ${
-                selectedWarehouse?.id === warehouse.id
-                  ? "bg-purple-500/20 text-purple-400"
-                  : "hover:bg-purple-500/10"
-              }`}
-            >
-              <div className="flex items-start gap-3">
-                <div className="text-xl shrink-0">{icon}</div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium text-white text-sm">
-                    {typeLabel} №{warehouse.number}
-                  </div>
-                  <div className="text-sm text-muted mt-0.5 truncate">
-                    📍 {warehouse.shortAddress}
-                  </div>
-                </div>
-                {selectedWarehouse?.id === warehouse.id && (
-                  <svg className="w-5 h-5 text-purple-400 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                  </svg>
-                )}
-              </div>
-            </button>
-          );
-        })}
-      </div>,
-      document.body
-    );
-  };
-
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 mb-4">
@@ -445,37 +335,86 @@ export default function NovaPoshtaSelector({
             </label>
           </div>
 
-          {/* Список відділень/почтоматів - input */}
-          <div>
-            <div className="relative" ref={warehouseDropdownRef}>
-              <div className="relative">
-                <input
-                  type="text"
-                  value={selectedWarehouse ? `№${selectedWarehouse.number} - ${selectedWarehouse.shortAddress}` : ""}
-                  readOnly
-                  placeholder="Оберіть відділення або поштомат..."
-                  onFocus={handleWarehouseInputFocus}
-                  className="input-field pr-10 cursor-pointer"
-                  autoComplete="off"
-                />
-                {isLoadingWarehouses && (
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                    <div className="w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
-                  </div>
-                )}
-                {!isLoadingWarehouses && warehouses.length > 0 && (
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                    <svg className="w-5 h-5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </div>
-                )}
-              </div>
+          {/* Список відділень/почтоматів */}
+          <div className="relative" ref={warehouseDropdownRef}>
+            <div className="relative">
+              <input
+                type="text"
+                value={selectedWarehouse ? `№${selectedWarehouse.number} - ${selectedWarehouse.shortAddress}` : ""}
+                readOnly
+                placeholder="Оберіть відділення або поштомат..."
+                onFocus={() => warehouses.length > 0 && setShowWarehouseDropdown(true)}
+                className="input-field pr-10 cursor-pointer"
+                autoComplete="off"
+              />
+              {isLoadingWarehouses && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <div className="w-5 h-5 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+              {!isLoadingWarehouses && warehouses.length > 0 && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  <svg className="w-5 h-5 text-muted" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              )}
             </div>
-          </div>
 
-          {/* Portal dropdown - рендериться поза контейнером */}
-          {renderWarehouseDropdown()}
+            {/* ✅ Dropdown з високим z-index і overflow-y-auto */}
+            {showWarehouseDropdown && warehouses.length > 0 && (
+              <div 
+                className="absolute z-[9999] w-full mt-1 bg-[#18181c] border border-purple-500/30 rounded-xl shadow-2xl shadow-purple-500/20"
+                style={{
+                  maxHeight: '400px',
+                  overflowY: 'auto',
+                  overflowX: 'hidden',
+                }}
+              >
+                <div className="pb-[20px]">
+                  {warehouses.map((warehouse) => {
+                    const { icon, label: typeLabel } = getWarehouseType(warehouse.type);
+                    
+                    return (
+                      <button
+                        key={warehouse.id}
+                        type="button"
+                        onClick={() => handleWarehouseSelect(warehouse)}
+                        className={`w-full px-4 py-3 text-left transition-colors duration-150 border-b border-purple-500/10 last:border-b-0 ${
+                          selectedWarehouse?.id === warehouse.id
+                            ? "bg-purple-500/20 text-purple-400"
+                            : "hover:bg-purple-500/10"
+                        }`}
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="text-xl shrink-0">{icon}</div>
+                          <div className="flex-1 min-w-0">
+                            <div className="font-medium text-white text-sm">
+                              {typeLabel} №{warehouse.number}
+                            </div>
+                            <div className="text-sm text-muted mt-0.5 truncate">
+                              📍 {warehouse.shortAddress}
+                            </div>
+                          </div>
+                          {selectedWarehouse?.id === warehouse.id && (
+                            <svg className="w-5 h-5 text-purple-400 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {showWarehouseDropdown && warehouses.length === 0 && !isLoadingWarehouses && (
+              <div className="absolute z-50 w-full mt-1 bg-[#18181c] border border-purple-500/30 rounded-xl shadow-2xl shadow-purple-500/20 p-4 text-center text-muted">
+                Відділення не знайдено
+              </div>
+            )}
+          </div>
 
           {warehouses.length === 0 && !isLoadingWarehouses && selectedCity && (
             <div className="text-sm text-muted text-center py-4">

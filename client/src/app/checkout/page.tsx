@@ -209,7 +209,7 @@ export default function CheckoutPage() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <div className="card p-6">
+          <div className="card p-6" style={{ overflow: 'visible', position: 'relative' }}>
             <h2 className="text-xl font-light mb-6">Контактні дані</h2>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
               {/* Прізвище */}
