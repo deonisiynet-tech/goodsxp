@@ -308,7 +308,7 @@ export default function CheckoutPage() {
                   </div>
                 ))}
               </div>
-              <div className="border-t border-border pt-4 space-y-2">
+              <div className="border-t border-border pt-4 space-y-3">
                 <div className="flex justify-between text-muted">
                   <span>Товари:</span>
                   <span>{getTotal().toLocaleString('uk-UA')} ₴</span>
@@ -321,8 +321,11 @@ export default function CheckoutPage() {
                   <span>Разом:</span>
                   <span>{getTotal().toLocaleString('uk-UA')} ₴</span>
                 </div>
-                <div className="text-xs text-muted mt-2">
-                  Вартість доставки оплачується окремо при отриманні замовлення.
+                <div className="flex items-start gap-2 mt-3 p-3 bg-purple-500/5 rounded-lg border border-purple-500/10">
+                  <span className="text-purple-400 text-sm shrink-0 mt-0.5">ⓘ</span>
+                  <span className="text-xs text-muted leading-relaxed">
+                    Вартість доставки оплачується окремо при отриманні замовлення
+                  </span>
                 </div>
               </div>
             </div>
