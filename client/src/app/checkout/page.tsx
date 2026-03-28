@@ -314,12 +314,15 @@ export default function CheckoutPage() {
                   <span>{getTotal().toLocaleString('uk-UA')} ₴</span>
                 </div>
                 <div className="flex justify-between text-muted">
-                  <span>Доставка:</span>
-                  <span className="text-green-500">Безкоштовно</span>
+                  <span>Доставка Новою Поштою:</span>
+                  <span>за тарифами перевізника</span>
                 </div>
                 <div className="border-t border-border pt-2 flex justify-between text-lg font-medium">
                   <span>Разом:</span>
                   <span>{getTotal().toLocaleString('uk-UA')} ₴</span>
+                </div>
+                <div className="text-xs text-muted mt-2">
+                  Вартість доставки оплачується окремо при отриманні замовлення.
                 </div>
               </div>
             </div>
