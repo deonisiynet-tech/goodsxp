@@ -107,17 +107,38 @@ router.post('/warehouses', async (req: Request, res: Response) => {
       return res.json([]);
     }
 
-    const result = warehouses.map((w: any) => ({
-      id: w.Ref,
-      label: w.Description,
-      number: w.Number,
-      shortAddress: w.ShortAddress,
-      // ✅ Визначаємо тип з CategoryOfWarehouse
-      type: w.CategoryOfWarehouse === "Postomat" ? "Поштомат" : "Відділення",
-      latitude: w.Latitude,
-      longitude: w.Longitude,
-      schedule: typeof w.Schedule === 'string' ? w.Schedule : "Пн-Пт: 9:00-20:00",
-    }));
+    const result = warehouses.map((w: any) => {
+      // ✅ Розширена перевірка типу з різних полів API
+      const typeOfWarehouse = (w.TypeOfWarehouse || "").toLowerCase();
+      const categoryOfWarehouse = (w.CategoryOfWarehouse || "").toLowerCase();
+      const warehouseType = (w.WarehouseType || "").toLowerCase();
+      const description = (w.Description || "").toLowerCase();
+      
+      // ✅ Перевіряємо всі можливі варіанти "Поштомат"
+      const isPostomat = 
+        typeOfWarehouse.includes("postomat") ||
+        typeOfWarehouse.includes("поштомат") ||
+        typeOfWarehouse.includes("parcellocker") ||
+        categoryOfWarehouse.includes("postomat") ||
+        categoryOfWarehouse.includes("поштомат") ||
+        categoryOfWarehouse.includes("parcellocker") ||
+        warehouseType.includes("postomat") ||
+        warehouseType.includes("поштомат") ||
+        warehouseType.includes("parcellocker") ||
+        // ✅ Додатково перевіряємо номер (поштомати мають 5-значні номери)
+        (w.Number && /^\d{5}$/.test(w.Number.toString()));
+      
+      return {
+        id: w.Ref,
+        label: w.Description,
+        number: w.Number,
+        shortAddress: w.ShortAddress,
+        type: isPostomat ? "Поштомат" : "Відділення",
+        latitude: w.Latitude,
+        longitude: w.Longitude,
+        schedule: typeof w.Schedule === 'string' ? w.Schedule : "Пн-Пт: 9:00-20:00",
+      };
+    });
 
     res.json(result);
   } catch (error: any) {
