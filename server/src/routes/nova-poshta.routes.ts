@@ -112,7 +112,7 @@ router.post('/warehouses', async (req: Request, res: Response) => {
       label: w.Description,
       number: w.Number,
       shortAddress: w.ShortAddress,
-      type: w.TypeOfWarehouse || "Відділення",
+      type: w.CategoryOfWarehouse === "Postomat" || w.TypeOfWarehouse === "Postomat" ? "Поштомат" : "Відділення",
       latitude: w.Latitude,
       longitude: w.Longitude,
       schedule: typeof w.Schedule === 'string' ? w.Schedule : "Пн-Пт: 9:00-20:00",

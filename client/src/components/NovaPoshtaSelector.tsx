@@ -51,18 +51,10 @@ function useDebounce<T>(value: T, delay: number = 500): T {
 
 /**
  * ✅ Визначення типу пункту видачі з API даних
- * Перевіряє різні варіанти назв з API Нової Пошти
+ * Сервер вже повертає правильний тип, тому просто перевіряємо значення
  */
 function getWarehouseType(warehouseType: string): { isPostomat: boolean; icon: string; label: string } {
-  const typeLower = (warehouseType || "").toLowerCase();
-  
-  // ✅ Перевіряємо різні варіанти написання "Поштомат"
-  const isPostomat = 
-    typeLower.includes("поштомат") || 
-    typeLower.includes("postomat") ||
-    typeLower.includes("почтомат") ||
-    typeLower.includes("автоматизована") ||  // АПВ - автоматизована поштова відділення
-    typeLower.includes("апв");
+  const isPostomat = warehouseType === "Поштомат";
   
   return {
     isPostomat,
@@ -373,7 +365,7 @@ export default function NovaPoshtaSelector({
 
               {/* ✅ Dropdown з високим z-index і overflow-y-auto */}
               {showWarehouseDropdown && warehouses.length > 0 && (
-                <div className="absolute z-[9999] w-full mt-1 bg-[#18181c] border border-purple-500/30 rounded-xl shadow-2xl shadow-purple-500/20 max-h-80 overflow-y-auto pb-4">
+                <div className="absolute z-[9999] w-full mt-1 bg-[#18181c] border border-purple-500/30 rounded-xl shadow-2xl shadow-purple-500/20 max-h-[400px] overflow-y-auto overflow-x-hidden pb-[20px]">
                   {warehouses.map((warehouse) => {
                     const { icon, label: typeLabel } = getWarehouseType(warehouse.type);
                     
