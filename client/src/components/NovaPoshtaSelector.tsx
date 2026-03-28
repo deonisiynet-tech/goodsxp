@@ -235,23 +235,6 @@ export default function NovaPoshtaSelector({
     }
   };
 
-  /**
-   * ✅ ОТРИМАННЯ РОЗКЛАДУ - безпечне перетворення об'єкта в рядок
-   */
-  const getSchedule = (warehouse: Warehouse): string => {
-    const schedule = warehouse.schedule;
-    
-    // Якщо schedule - об'єкт (наприклад {Monday: "9:00-20:00", ...})
-    if (schedule && typeof schedule === 'object') {
-      // Беремо перші 2-3 дні для відображення
-      const days = Object.entries(schedule as Record<string, string>).slice(0, 3);
-      return days.map(([day, time]) => `${day.substring(0, 3)}: ${time}`).join(', ');
-    }
-    
-    // Якщо schedule - рядок або undefined
-    return (typeof schedule === 'string' ? schedule : undefined) || "Пн-Пт: 9:00-20:00";
-  };
-
   return (
     <div className="space-y-4">
       <div className="flex items-center gap-2 mb-4">
@@ -391,43 +374,49 @@ export default function NovaPoshtaSelector({
             </div>
 
             {showWarehouseDropdown && warehouses.length > 0 && (
-              <div className="absolute z-50 w-full mt-1 bg-[#18181c] border border-purple-500/30 rounded-xl shadow-2xl shadow-purple-500/20 max-h-80 overflow-y-auto">
-                {warehouses.map((warehouse) => (
-                  <button
-                    key={warehouse.id}
-                    type="button"
-                    onClick={() => handleWarehouseSelect(warehouse)}
-                    className={`w-full px-4 py-3 text-left transition-colors duration-150 border-b border-purple-500/10 last:border-b-0 ${
-                      selectedWarehouse?.id === warehouse.id
-                        ? "bg-purple-500/20 text-purple-400"
-                        : "hover:bg-purple-500/10"
-                    }`}
-                  >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <span className="text-xs bg-purple-500/20 text-purple-400 px-2 py-0.5 rounded">
-                            {warehouse.type}
-                          </span>
-                          <span className="font-medium text-white">
-                            №{warehouse.number}
-                          </span>
+              <div className="absolute z-50 w-full mt-1 bg-[#18181c] border border-purple-500/30 rounded-xl shadow-2xl shadow-purple-500/20 max-h-80 overflow-y-auto pb-2">
+                {warehouses.map((warehouse) => {
+                  // ✅ Визначаємо тип пункту видачі
+                  const isPostomat = warehouse.type.toLowerCase().includes("почтомат") || 
+                                    warehouse.type.toLowerCase().includes("поштомат");
+                  const icon = isPostomat ? "📦" : "🏢";
+                  const typeLabel = isPostomat ? "Поштомат" : "Відділення";
+                  
+                  return (
+                    <button
+                      key={warehouse.id}
+                      type="button"
+                      onClick={() => handleWarehouseSelect(warehouse)}
+                      className={`w-full px-4 py-3 text-left transition-colors duration-150 border-b border-purple-500/10 last:border-b-0 ${
+                        selectedWarehouse?.id === warehouse.id
+                          ? "bg-purple-500/20 text-purple-400"
+                          : "hover:bg-purple-500/10"
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        {/* Іконка */}
+                        <div className="text-xl shrink-0">{icon}</div>
+                        
+                        {/* Інформація */}
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-white text-sm">
+                            {typeLabel} №{warehouse.number}
+                          </div>
+                          <div className="text-sm text-muted mt-0.5 truncate">
+                            📍 {warehouse.shortAddress}
+                          </div>
                         </div>
-                        <div className="text-sm text-muted mt-0.5">
-                          {warehouse.shortAddress}
-                        </div>
-                        <div className="text-xs text-purple-400/80 mt-1">
-                          🕐 {getSchedule(warehouse)}
-                        </div>
+                        
+                        {/* Галочка вибраного */}
+                        {selectedWarehouse?.id === warehouse.id && (
+                          <svg className="w-5 h-5 text-purple-400 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                          </svg>
+                        )}
                       </div>
-                      {selectedWarehouse?.id === warehouse.id && (
-                        <svg className="w-5 h-5 text-purple-400 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                        </svg>
-                      )}
-                    </div>
-                  </button>
-                ))}
+                    </button>
+                  );
+                })}
               </div>
             )}
 
