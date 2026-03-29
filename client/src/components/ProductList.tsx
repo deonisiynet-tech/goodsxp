@@ -26,9 +26,10 @@ interface ProductListProps {
   title?: string;
   limit?: number;
   showAllLink?: boolean;
+  popular?: boolean;  // ✅ Фільтр популярних товарів
 }
 
-export default function ProductList({ title = 'Каталог товарів', limit = 20, showAllLink = false }: ProductListProps) {
+export default function ProductList({ title = 'Каталог товарів', limit = 20, showAllLink = false, popular = false }: ProductListProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const addItem = useCartStore((state) => state.addItem);
@@ -41,8 +42,19 @@ export default function ProductList({ title = 'Каталог товарів', l
     try {
       setLoading(true);
       const response = await productsApi.getAll({ limit });
-      // productsApi.getAll already returns the parsed JSON directly
-      setProducts(response.products || []);
+      let productsList = response.products || [];
+      
+      // ✅ Фільтрація популярних товарів
+      if (popular) {
+        productsList = productsList.filter((p: Product) => p.isPopular === true);
+        // Якщо популярних менше 5, показуємо всі
+        // Якщо більше - обмежуємо до limit
+        if (productsList.length > limit) {
+          productsList = productsList.slice(0, limit);
+        }
+      }
+      
+      setProducts(productsList);
     } catch (error) {
       console.error('Failed to load products:', error);
       toast.error('Помилка завантаження товарів');
@@ -76,8 +88,8 @@ export default function ProductList({ title = 'Каталог товарів', l
               )}
             </div>
           )}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {Array.from({ length: limit > 8 ? 8 : limit }).map((_, i) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+            {Array.from({ length: limit > 5 ? 5 : limit }).map((_, i) => (
               <div key={i} className="animate-pulse">
                 <div className="aspect-square bg-[#1f1f23] rounded-xl mb-4" />
                 <div className="h-4 bg-[#1f1f23] rounded mb-2" />
@@ -113,7 +125,7 @@ export default function ProductList({ title = 'Каталог товарів', l
             Товари не знайдено
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
             {products.map((product) => (
               <Link
                 key={product.id}

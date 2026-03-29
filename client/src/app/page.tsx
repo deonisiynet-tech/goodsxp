@@ -140,7 +140,7 @@ export default function Home() {
         </section>
 
         {/* ===== POPULAR PRODUCTS ===== */}
-        <ProductList title="Популярні товари" limit={8} showAllLink />
+        <ProductList title="Популярні товари" limit={5} showAllLink popular />
 
         {/* ===== WHY CHOOSE US ===== */}
         <section className="py-24 bg-surface/50">
