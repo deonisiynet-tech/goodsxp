@@ -293,35 +293,63 @@ export default function CheckoutPage() {
           {/* Замовлення Summary */}
           <div>
             <div className="card p-6 sticky top-24">
-              <h2 className="text-xl font-light mb-4">Твоє замовлення</h2>
-              <div className="space-y-4 max-h-96 overflow-y-auto mb-4">
-                {items.map((item) => (
-                  <div key={item.productId} className="flex gap-4">
-                    <div className="w-16 h-16 flex-shrink-0 overflow-hidden bg-surfaceLight rounded-lg">
-                      <img src={item.imageUrl || '/placeholder.jpg'} alt={item.title} className="w-full h-full object-cover" />
+              <h2 className="text-xl font-light mb-6">Твоє замовлення</h2>
+              
+              {/* Товари */}
+              <div className="mb-6">
+                <h3 className="text-sm font-medium text-muted mb-3 uppercase tracking-wide">Товари</h3>
+                <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
+                  {items.map((item) => (
+                    <div key={item.productId} className="flex gap-3 p-3 rounded-lg bg-surfaceLight/50">
+                      <div className="w-16 h-16 flex-shrink-0 overflow-hidden rounded-md bg-surfaceLight">
+                        <img 
+                          src={item.imageUrl || '/placeholder.jpg'} 
+                          alt={item.title} 
+                          className="w-full h-full object-cover" 
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-medium text-sm truncate mb-1">{item.title}</h4>
+                        <div className="flex items-center gap-2 text-xs text-muted">
+                          <span>{item.quantity} шт.</span>
+                          <span>×</span>
+                          <span>{item.price.toLocaleString('uk-UA')} ₴</span>
+                        </div>
+                      </div>
+                      <div className="font-medium text-sm whitespace-nowrap">
+                        {(item.price * item.quantity).toLocaleString('uk-UA')} ₴
+                      </div>
                     </div>
-                    <div className="flex-1">
-                      <h4 className="font-medium text-sm">{item.title}</h4>
-                      <p className="text-muted text-sm">{item.quantity} шт. × {item.price.toLocaleString('uk-UA')} ₴</p>
-                    </div>
-                    <div className="font-medium">{(item.price * item.quantity).toLocaleString('uk-UA')} ₴</div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-              <div className="border-t border-border pt-4 space-y-3">
-                <div className="flex justify-between text-muted">
-                  <span>Товари:</span>
-                  <span>{getTotal().toLocaleString('uk-UA')} ₴</span>
+
+              {/* Підсумок */}
+              <div className="border-t border-border pt-4 space-y-2">
+                <h3 className="text-sm font-medium text-muted mb-3 uppercase tracking-wide">Підсумок</h3>
+                
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted">Товари:</span>
+                  <span className="font-medium">{getTotal().toLocaleString('uk-UA')} ₴</span>
                 </div>
-                <div className="flex justify-between text-muted">
-                  <span>Доставка Новою Поштою:</span>
-                  <span>за тарифами перевізника</span>
+                
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted">Доставка Новою Поштою:</span>
+                  <span className="font-medium text-purple-400">за тарифами перевізника</span>
                 </div>
-                <div className="border-t border-border pt-2 flex justify-between text-lg font-medium">
-                  <span>Разом:</span>
-                  <span>{getTotal().toLocaleString('uk-UA')} ₴</span>
+
+                {/* Разом до сплати */}
+                <div className="border-t border-border pt-3 mt-3">
+                  <div className="flex justify-between items-center">
+                    <span className="text-base font-medium">Разом до сплати зараз:</span>
+                    <span className="text-2xl font-bold text-purple-400">
+                      {getTotal().toLocaleString('uk-UA')} ₴
+                    </span>
+                  </div>
                 </div>
-                <div className="flex items-start gap-2 mt-3 p-3 bg-purple-500/5 rounded-lg border border-purple-500/10">
+
+                {/* Інформаційний блок */}
+                <div className="flex items-start gap-2 mt-4 p-3 bg-purple-500/5 rounded-lg border border-purple-500/10">
                   <span className="text-purple-400 text-sm shrink-0 mt-0.5">ⓘ</span>
                   <span className="text-xs text-muted leading-relaxed">
                     Вартість доставки оплачується окремо при отриманні замовлення

@@ -40,7 +40,7 @@ export default function CartPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      <main className="flex-1 container mx-auto px-4 py-8">
+      <main className="flex-1 container mx-auto px-4 py-8 mt-16">
         <h1 className="text-3xl font-light mb-8">Кошик</h1>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -121,7 +121,7 @@ export default function CartPage() {
                 </div>
                 <div className="flex justify-between text-muted">
                   <span>Доставка:</span>
-                  <span className="text-green-500">Безкоштовно</span>
+                  <span className="text-purple-400">за тарифом перевізника</span>
                 </div>
                 <div className="border-t border-border pt-3 flex justify-between text-lg font-medium">
                   <span>Разом:</span>
