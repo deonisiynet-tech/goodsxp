@@ -138,7 +138,7 @@ export class ProductController {
       if (price) updateData.price = Number(price);
       if (categoryId !== undefined) updateData.categoryId = categoryId;
       if (stock !== undefined) updateData.stock = Number(stock);
-      if (isActive !== undefined) updateData.isActive = isActive !== 'false';
+      if (isActive !== undefined) updateData.isActive = isActive === 'true' || isActive === true;
       if (isFeatured !== undefined) updateData.isFeatured = isFeatured === 'true' || isFeatured === true;
       if (isPopular !== undefined) updateData.isPopular = isPopular === 'true' || isPopular === true;
       if (originalPrice !== undefined) updateData.originalPrice = originalPrice ? Number(originalPrice) : null;

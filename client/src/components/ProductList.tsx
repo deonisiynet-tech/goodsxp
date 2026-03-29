@@ -27,9 +27,10 @@ interface ProductListProps {
   limit?: number;
   showAllLink?: boolean;
   popular?: boolean;  // ✅ Фільтр популярних товарів
+  featured?: boolean;  // ✅ Фільтр хітів-продаж (isFeatured)
 }
 
-export default function ProductList({ title = 'Каталог товарів', limit = 20, showAllLink = false, popular = false }: ProductListProps) {
+export default function ProductList({ title = 'Каталог товарів', limit = 20, showAllLink = false, popular = false, featured = false }: ProductListProps) {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const addItem = useCartStore((state) => state.addItem);
@@ -47,8 +48,14 @@ export default function ProductList({ title = 'Каталог товарів', l
       // ✅ Фільтрація популярних товарів
       if (popular) {
         productsList = productsList.filter((p: Product) => p.isPopular === true);
-        // Якщо популярних менше 5, показуємо всі
-        // Якщо більше - обмежуємо до limit
+        if (productsList.length > limit) {
+          productsList = productsList.slice(0, limit);
+        }
+      }
+
+      // ✅ Фільтрація хітів-продаж (isFeatured)
+      if (featured) {
+        productsList = productsList.filter((p: Product) => p.isFeatured === true);
         if (productsList.length > limit) {
           productsList = productsList.slice(0, limit);
         }
@@ -147,7 +154,7 @@ export default function ProductList({ title = 'Каталог товарів', l
                   <div className="absolute top-2 left-2 flex flex-col gap-1">
                     {product.isFeatured && (
                       <span className="px-2 py-1 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-bold rounded-md shadow-lg">
-                        🔥 Хіт
+                        🔥 Хіт-продаж
                       </span>
                     )}
                     {product.isPopular && (

@@ -196,8 +196,8 @@ export const productsApi = {
     formData.append('stock', String(data.stock))
     formData.append('isActive', String(data.isActive))
     formData.append('images', JSON.stringify(data.images))
-    if (data.isFeatured) formData.append('isFeatured', String(data.isFeatured))
-    if (data.isPopular) formData.append('isPopular', String(data.isPopular))
+    formData.append('isFeatured', String(data.isFeatured))
+    formData.append('isPopular', String(data.isPopular))
 
     return fetchAPI('/products', {
       method: 'POST',
@@ -227,8 +227,8 @@ export const productsApi = {
     formData.append('stock', String(data.stock))
     formData.append('isActive', String(data.isActive))
     formData.append('images', JSON.stringify(data.images))
-    if (data.isFeatured) formData.append('isFeatured', String(data.isFeatured))
-    if (data.isPopular) formData.append('isPopular', String(data.isPopular))
+    formData.append('isFeatured', String(data.isFeatured))
+    formData.append('isPopular', String(data.isPopular))
 
     return fetchAPI(`/products/${id}`, {
       method: 'PUT',

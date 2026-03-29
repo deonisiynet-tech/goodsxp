@@ -343,7 +343,7 @@ export default function CatalogContent() {
                       <div className="absolute top-2 left-2 flex flex-col gap-1">
                         {product.isFeatured && (
                           <span className="px-2 py-1 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-bold rounded shadow-lg">
-                            🔥 Хіт
+                            🔥 Хіт-продаж
                           </span>
                         )}
                         {product.isPopular && (

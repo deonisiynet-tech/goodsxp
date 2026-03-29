@@ -341,7 +341,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
                 className="w-5 h-5 rounded accent-purple-500"
               />
               <div>
-                <span className="font-medium text-white">🔥 Хіт продаж</span>
+                <span className="font-medium text-white">🔥 Хіт-продаж</span>
                 <p className="text-xs text-muted">Показувати бейдж на товарі</p>
               </div>
             </label>

@@ -304,7 +304,7 @@ export default function ProductPage() {
               <div className="flex flex-wrap gap-2 mb-4">
                 {product.isFeatured && (
                   <span className="px-3 py-1.5 bg-gradient-to-r from-orange-500 to-red-500 text-white text-sm font-bold rounded-lg shadow-lg">
-                    🔥 Хіт продажу
+                    🔥 Хіт-продаж
                   </span>
                 )}
                 {product.isPopular && (
