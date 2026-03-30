@@ -262,6 +262,12 @@ export class AdminController {
   async getSetting(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const setting = await adminService.getSetting(req.params.key);
+      
+      // ✅ NO CACHE HEADERS - завжди актуальне значення
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+      
       res.json(setting);
     } catch (error) {
       next(error);
