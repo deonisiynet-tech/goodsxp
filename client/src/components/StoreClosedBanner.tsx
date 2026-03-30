@@ -1,18 +1,46 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { AlertTriangle, Clock, RefreshCw } from 'lucide-react';
+import { usePathname } from 'next/navigation';
+import { AlertTriangle, Clock, RefreshCw, ShieldCheck } from 'lucide-react';
 
+/**
+ * Компонент показує сторінку технічного обслуговування тільки для:
+ * - Звичайних користувачів (не адмінів)
+ * - Публічних сторінок (не /admin)
+ * 
+ * Адміністратори завжди мають доступ до сайту
+ */
 export default function StoreClosedBanner() {
+  const pathname = usePathname();
   const [isClosed, setIsClosed] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   useEffect(() => {
+    checkAdminStatus();
     checkStoreStatus();
+    
     // Перевіряємо статус кожні 30 секунд
     const interval = setInterval(checkStoreStatus, 30000);
     return () => clearInterval(interval);
   }, []);
+
+  const checkAdminStatus = async () => {
+    try {
+      const response = await fetch('/api/admin/auth/me', {
+        credentials: 'include',
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setIsAdmin(data.role === 'ADMIN');
+      }
+    } catch (error) {
+      // Не адмін або помилка
+      setIsAdmin(false);
+    }
+  };
 
   const checkStoreStatus = async () => {
     try {
@@ -34,13 +62,26 @@ export default function StoreClosedBanner() {
     }
   };
 
-  // Під час завантаження не показуємо нічого
+  // ✅ НЕ ПОКАЗУЄМО ПІД ЧАС ЗАВАНТАЖЕННЯ
   if (loading) return null;
-  
-  // Якщо магазин відкритий - не показуємо банер
+
+  // ✅ НЕ ПОКАЗУЄМО ЯКЩО МАГАЗИН ВІДКРИТИЙ
   if (!isClosed) return null;
 
-  // Якщо магазин закритий - показуємо повноекранне повідомлення
+  // ✅ НЕ ПОКАЗУЄМО АДМІНАМ
+  if (isAdmin) return null;
+
+  // ✅ НЕ ПОКАЗУЄМО НА АДМІНСЬКИХ СТОРІНКАХ
+  if (pathname?.startsWith('/admin')) return null;
+
+  // ✅ НЕ ПОКАЗУЄМО НА API МАРШРУТАХ
+  if (pathname?.startsWith('/api')) return null;
+
+  // ✅ НЕ ПОКАЗУЄМО НА ТЕХНІЧНИХ МАРШРУТАХ
+  if (pathname?.startsWith('/_next')) return null;
+  if (pathname?.startsWith('/favicon')) return null;
+
+  // Якщо магазин закритий і це не адмін - показуємо повноекранне повідомлення
   return (
     <div className="fixed inset-0 z-[9999] min-h-screen bg-[#0a0a0c] flex items-center justify-center p-4">
       {/* Background Effects */}
@@ -68,24 +109,29 @@ export default function StoreClosedBanner() {
                 Магазин тимчасово недоступний
               </h1>
               <p className="text-muted text-lg leading-relaxed">
-                Через технічні причини
+                Наш сайт тимчасово закритий через технічне обслуговування.
               </p>
             </div>
 
             <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-2xl p-6 space-y-4">
               <div className="flex items-center justify-center gap-3 text-yellow-400">
-                <Clock size={20} />
+                <ShieldCheck size={24} />
                 <span className="font-medium">Ми вже працюємо над вирішенням</span>
               </div>
               <p className="text-sm text-muted">
-                Будь ласка, спробуйте пізніше або зв'яжіться з нами за контактами, вказаними внизу сторінки.
+                Будь ласка, спробуйте зайти пізніше. Ми вдячні за ваше терпіння.
               </p>
+            </div>
+
+            <div className="flex items-center justify-center gap-2 text-muted text-sm">
+              <Clock size={16} />
+              <span>Орієнтовний час відновлення: найближчим часом</span>
             </div>
 
             {/* Refresh button */}
             <button
               onClick={checkStoreStatus}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-purple-500/20 border border-purple-500/30 text-purple-400 font-medium hover:bg-purple-500/30 transition-all duration-200"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-purple-500/20 border border-purple-500/30 text-purple-400 font-medium hover:bg-purple-500/30 transition-all duration-200 hover:scale-105"
             >
               <RefreshCw size={18} />
               Перевірити доступність

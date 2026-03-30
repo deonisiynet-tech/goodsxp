@@ -3,8 +3,11 @@ import prisma from '../prisma/client.js';
 
 /**
  * Middleware для перевірки статусу магазину
- * Якщо магазин вимкнений (storeEnabled = false), додає заголовок X-Store-Status
- * і повертає спеціальну відповідь для публічних маршрутів
+ * Якщо магазин вимкнений (storeEnabled = false):
+ * - Блокує публічні API маршрути
+ * - Дозволяє адмінські маршрути (/api/admin/*)
+ * - Дозволяє auth маршрути
+ * - Додає заголовок X-Store-Status для клієнта
  */
 export async function checkStoreStatus(
   req: Request,
@@ -22,22 +25,32 @@ export async function checkStoreStatus(
     // Додаємо заголовок для Next.js
     res.setHeader('X-Store-Status', isStoreEnabled ? 'enabled' : 'disabled');
 
-    // Якщо магазин включений - продовжуємо
+    // ✅ ЯКЩО МАГАЗИН ВКЛЮЧЕНИЙ - ПРОДОВЖУЄМО
     if (isStoreEnabled) {
       return next();
     }
 
-    // Якщо магазин вимкнений - перевіряємо, чи це адмінський маршрут
-    const isAdminRoute = req.path.startsWith('/api/admin');
-    const isAuthRoute = req.path.startsWith('/api/auth') || req.path.startsWith('/api/admin/auth');
-    const isHealthRoute = req.path.startsWith('/health');
+    // ✅ ЯКЩО МАГАЗИН ВИМКНЕНИЙ - ПЕРЕВІРЯЄМО МАРШРУТ
 
-    // Адмінські та auth маршрути дозволені навіть коли магазин вимкнений
-    if (isAdminRoute || isAuthRoute || isHealthRoute) {
+    // Адмінські маршрути - завжди дозволені
+    const isAdminRoute = req.path.startsWith('/api/admin');
+    if (isAdminRoute) {
       return next();
     }
 
-    // Для API маршрутів повертаємо помилку
+    // Auth маршрути - завжди дозволені (для перевірки ролі)
+    const isAuthRoute = req.path.startsWith('/api/auth') || req.path.startsWith('/api/admin/auth');
+    if (isAuthRoute) {
+      return next();
+    }
+
+    // Health check - завжди дозволений
+    const isHealthRoute = req.path.startsWith('/health');
+    if (isHealthRoute) {
+      return next();
+    }
+
+    // Для інших API маршрутів - повертаємо помилку
     if (req.path.startsWith('/api')) {
       return res.status(503).json({
         success: false,
@@ -46,8 +59,9 @@ export async function checkStoreStatus(
       });
     }
 
-    // Для веб-маршрутів - пропускаємо далі (Next.js обробить)
-    // Але додаємо заголовок, щоб клієнт знав про статус
+    // ✅ ДЛЯ ВЕБ-МАРШРУТІВ - ПРОПУСКАЄМО ДАЛІ
+    // Next.js обробить і StoreClosedBanner покаже сторінку для не-адмінів
+    // Адміни мають доступ до всіх сторінок
     return next();
   } catch (error) {
     console.error('[StoreStatus] Error:', error);
