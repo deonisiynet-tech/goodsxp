@@ -414,26 +414,101 @@ export class AdminService {
     return settingsObject;
   }
 
-  async updateSetting(key: string, value: string, description?: string) {
+  /**
+   * Оновлення налаштування з валідацією
+   */
+  async updateSetting(key: string, value: string | undefined | null, description?: string) {
+    // ✅ ВАЛІДАЦІЯ: key обов'язковий
+    if (!key) {
+      throw new AppError('Ключ налаштування обов\'язковий', 400);
+    }
+
+    // ✅ ВАЛІДАЦІЯ: value не може бути undefined/null
+    if (value === undefined || value === null) {
+      throw new AppError('Значення налаштування обов\'язкове', 400);
+    }
+
+    // ✅ ВИЗНАЧАЄМО ТИП ЗА КЛЮЧЕМ
+    let settingType = 'text';
+    if (key.includes('json')) {
+      settingType = 'json';
+    } else if (key === 'storeEnabled') {
+      settingType = 'boolean';
+    } else if (key.includes('json')) {
+      settingType = 'json';
+    }
+
+    // ✅ ПЕРЕТВОРЮЄМО value для boolean
+    let stringValue = String(value);
+    if (settingType === 'boolean') {
+      // Нормалізуємо boolean значення
+      const valueStr = String(value).toLowerCase();
+      stringValue = (valueStr === 'true' || valueStr === '1') ? 'true' : 'false';
+    }
+
+    // ✅ UPSERT - створення або оновлення
     return prisma.siteSettings.upsert({
       where: { key },
-      update: { value, description },
+      update: { 
+        value: stringValue,
+        description: description || undefined,
+      },
       create: {
         key,
-        value,
-        description,
-        type: key.includes('json') ? 'json' : 'text',
+        value: stringValue,
+        description: description || `Налаштування: ${key}`,
+        type: settingType,
       },
     });
   }
 
+  /**
+   * Отримання налаштування з автоматичним створенням якщо не існує
+   */
   async getSetting(key: string) {
-    const setting = await prisma.siteSettings.findUnique({
+    // ✅ СПРОБУЄМО ОТРИМАТИ
+    let setting = await prisma.siteSettings.findUnique({
       where: { key },
     });
 
+    // ✅ ЯКЩО НЕ ІСНУЄ - СТВОРЮЄМО З ДЕФОЛТНИМ ЗНАЧЕННЯМ
     if (!setting) {
-      throw new AppError('Налаштування не знайдено', 404);
+      const defaults: Record<string, { value: string; type: string; description: string }> = {
+        storeEnabled: {
+          value: 'true',
+          type: 'boolean',
+          description: 'Статус магазину (включений/вимкнений)',
+        },
+        storeName: {
+          value: 'GoodsXP',
+          type: 'text',
+          description: 'Назва магазину',
+        },
+        contactEmail: {
+          value: '',
+          type: 'text',
+          description: 'Контактний email',
+        },
+        currency: {
+          value: 'UAH',
+          type: 'text',
+          description: 'Валюта магазину',
+        },
+      };
+
+      const defaultValue = defaults[key];
+      if (defaultValue) {
+        setting = await prisma.siteSettings.create({
+          data: {
+            key,
+            value: defaultValue.value,
+            type: defaultValue.type,
+            description: defaultValue.description,
+          },
+        });
+      } else {
+        throw new AppError('Налаштування не знайдено', 404);
+      }
     }
 
     return setting;

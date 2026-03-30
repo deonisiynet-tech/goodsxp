@@ -225,6 +225,24 @@ export class AdminController {
       const { key } = req.params;
       const { value, description } = req.body;
 
+      // ✅ ВАЛІДАЦІЯ: key обов'язковий
+      if (!key) {
+        return res.status(400).json({
+          success: false,
+          error: 'BAD_REQUEST',
+          message: 'Ключ налаштування обов\'язковий',
+        });
+      }
+
+      // ✅ ВАЛІДАЦІЯ: value не може бути undefined
+      if (value === undefined) {
+        return res.status(400).json({
+          success: false,
+          error: 'BAD_REQUEST',
+          message: 'Значення налаштування обов\'язкове',
+        });
+      }
+
       const setting = await adminService.updateSetting(key, value, description);
 
       await adminService.logAction({

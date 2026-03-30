@@ -65,24 +65,32 @@ export default function SettingsPage() {
 
       // Save each setting individually via API
       const settingsToUpdate = [
-        { key: 'storeName', value: form.storeName },
-        { key: 'contactEmail', value: form.contactEmail },
-        { key: 'currency', value: form.currency },
+        { key: 'storeName', value: form.storeName || 'GoodsXP' },
+        { key: 'contactEmail', value: form.contactEmail || '' },
+        { key: 'currency', value: form.currency || 'UAH' },
         { key: 'storeEnabled', value: form.storeEnabled ? 'true' : 'false' },
       ]
 
       for (const setting of settingsToUpdate) {
+        // ✅ ПЕРЕВІРКА: value не може бути undefined
+        if (setting.value === undefined || setting.value === null) {
+          throw new Error(`Значення для ${setting.key} не може бути пустим`)
+        }
+
         const response = await fetch(`/api/admin/settings/${setting.key}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ value: setting.value }),
+          body: JSON.stringify({ 
+            value: String(setting.value), // ✅ ЗАВЖДИ ВІДПРАВЛЯЄМО ЯК РЯДОК
+          }),
           credentials: 'include',
         })
 
         if (!response.ok) {
-          throw new Error(`Failed to save ${setting.key}`)
+          const errorData = await response.json().catch(() => ({}))
+          throw new Error(errorData.message || `Failed to save ${setting.key}`)
         }
       }
 
