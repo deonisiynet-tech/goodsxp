@@ -11,6 +11,7 @@ import type { NextRequest } from 'next/server';
  */
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const origin = request.nextUrl.origin; // ✅ Отримуємо origin (протокол + хост + порт)
 
   // 🛠️ DEBUG: Логуємо кожен запит
   console.log('[MIDDLEWARE] request:', pathname);
@@ -33,10 +34,12 @@ export async function middleware(request: NextRequest) {
   let isStoreEnabled = true;
 
   // ✅ ПЕРЕВІРЯЄМО статус магазину на сервері
-  // Використовуємо внутрішній URL для fetch
+  // Використовуємо ПОВНИЙ URL для fetch (протокол + хост + порт)
   try {
-    // Спробуємо використати відносний URL (Next.js сам обробить)
-    const response = await fetch('/api/admin/settings/storeEnabled', {
+    const fullUrl = `${origin}/api/admin/settings/storeEnabled`;
+    console.log('[MIDDLEWARE] full URL:', fullUrl);
+    
+    const response = await fetch(fullUrl, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
