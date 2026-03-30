@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import AdminLayout from '@/components/admin/AdminLayout'
 import toast from 'react-hot-toast'
 import { Settings as SettingsIcon, Save, RefreshCw, Store, Mail, DollarSign, Power } from 'lucide-react'
+import StoreDisableConfirmModal from '@/components/admin/StoreDisableConfirmModal'
 
 interface Settings {
   storeName: string
@@ -30,6 +31,8 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [form, setForm] = useState<Settings>(defaultSettings)
+  const [showDisableModal, setShowDisableModal] = useState(false)
+  const [pendingStoreEnabled, setPendingStoreEnabled] = useState<boolean | null>(null)
 
   useEffect(() => {
     loadSettings()
@@ -90,6 +93,24 @@ export default function SettingsPage() {
     } finally {
       setSaving(false)
     }
+  }
+
+  const handleStoreStatusChange = (enable: boolean) => {
+    if (enable) {
+      // Включення магазину - без підтвердження
+      setForm({ ...form, storeEnabled: true })
+    } else {
+      // Вимкнення магазину - показуємо модальне вікно
+      setPendingStoreEnabled(false)
+      setShowDisableModal(true)
+    }
+  }
+
+  const handleDisableConfirm = () => {
+    setForm({ ...form, storeEnabled: false })
+    setShowDisableModal(false)
+    setPendingStoreEnabled(null)
+    toast.success('Магазин вимкнено')
   }
 
   if (loading) {
@@ -207,7 +228,7 @@ export default function SettingsPage() {
                   name="storeEnabled"
                   value="true"
                   checked={form.storeEnabled}
-                  onChange={() => setForm({ ...form, storeEnabled: true })}
+                  onChange={() => handleStoreStatusChange(true)}
                   className="w-4 h-4 text-primary focus:ring-primary"
                 />
                 <span className="text-green-400 font-medium">Включений</span>
@@ -218,7 +239,7 @@ export default function SettingsPage() {
                   name="storeEnabled"
                   value="false"
                   checked={!form.storeEnabled}
-                  onChange={() => setForm({ ...form, storeEnabled: false })}
+                  onChange={() => handleStoreStatusChange(false)}
                   className="w-4 h-4 text-primary focus:ring-primary"
                 />
                 <span className="text-red-400 font-medium">Вимкнений</span>
@@ -231,6 +252,18 @@ export default function SettingsPage() {
             )}
           </div>
         </div>
+
+        {/* Modals */}
+        <StoreDisableConfirmModal
+          isOpen={showDisableModal}
+          onClose={() => {
+            setShowDisableModal(false)
+            setPendingStoreEnabled(null)
+            // Повертаємо радіо-кнопку до попереднього стану
+            setForm({ ...form, storeEnabled: true })
+          }}
+          onConfirm={handleDisableConfirm}
+        />
       </div>
     </AdminLayout>
   )

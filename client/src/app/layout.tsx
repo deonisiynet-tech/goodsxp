@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
 import { Providers } from '@/components/Providers';
+import StoreClosedBanner from '@/components/StoreClosedBanner';
 
 const inter = Inter({
   subsets: ['latin', 'cyrillic'],
@@ -22,7 +23,11 @@ export default function RootLayout({
   return (
     <html lang="uk">
       <body className={inter.className}>
-        <Providers>{children}</Providers>
+        <Providers>
+          {/* Перевірка статусу магазину - показує банер якщо вимкнений */}
+          <StoreClosedBanner />
+          {children}
+        </Providers>
       </body>
     </html>
   );
