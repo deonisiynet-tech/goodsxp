@@ -10,6 +10,12 @@ const productController = new ProductController();
 const orderController = new OrderController();
 const adminController = new AdminController();
 
+// ✅ ПУБЛІЧНИЙ ДОСТУП: Статус магазину (для middleware maintenance mode)
+// Цей маршрут має бути ПЕРЕД авторизацією!
+router.get('/settings/storeEnabled', (req, res, next) => {
+  adminController.getSetting(req, res, next);
+});
+
 // Всі маршрути вимагають авторизації та ролі ADMIN
 router.use(authenticate);
 router.use(authorize(Role.ADMIN));
