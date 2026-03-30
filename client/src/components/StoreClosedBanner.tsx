@@ -128,9 +128,9 @@ export default function StoreClosedBanner() {
               <span>Орієнтовний час відновлення: найближчим часом</span>
             </div>
 
-            {/* Refresh button */}
+            {/* Refresh button - перезавантажує сторінку */}
             <button
-              onClick={checkStoreStatus}
+              onClick={() => window.location.reload()}
               className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-purple-500/20 border border-purple-500/30 text-purple-400 font-medium hover:bg-purple-500/30 transition-all duration-200 hover:scale-105"
             >
               <RefreshCw size={18} />
