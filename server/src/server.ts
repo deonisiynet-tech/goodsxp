@@ -81,7 +81,6 @@ import uploadRoutes from './routes/upload.routes.js';
 import adminAuthRoutes from './routes/admin.auth.routes.js';
 import novaPoshtaRoutes from './routes/nova-poshta.routes.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
-import { checkStoreStatus } from './middleware/store-status.js';
 import { initializeAdmin } from './utils/initAdmin.js';
 import { runMigrations } from './prisma/migrate.js';
 console.log('✅ All imports completed successfully');
@@ -218,24 +217,6 @@ app.use('/api/nova-poshta', novaPoshtaRoutes);  // ✅ Nova Poshta API routes
 // Next.js Handler - MUST be last
 // ==================================
 console.log('✅ Registering Next.js handler...');
-
-// Middleware для перевірки статусу магазину (для публічних маршрутів)
-app.use((req, res, next) => {
-  // Не перевіряємо статус для:
-  // - API маршрутів (вже обробляються в admin.routes.ts)
-  // - health check
-  // - статичних файлів
-  if (req.path.startsWith('/api') || 
-      req.path.startsWith('/health') ||
-      req.path.startsWith('/_next') ||
-      req.path.startsWith('/uploads') ||
-      req.path.startsWith('/public')) {
-    return next();
-  }
-  
-  // Перевіряємо статус магазину для всіх інших маршрутів
-  checkStoreStatus(req, res, next);
-});
 
 // All non-API requests go to Next.js
 app.all('*', (req: Request, res: Response, next) => {
