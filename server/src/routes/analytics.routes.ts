@@ -18,8 +18,10 @@ router.post('/heartbeat', async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'visitorId is required' });
     }
 
+    console.log('[Analytics] Heartbeat from:', visitorId, 'page:', page);
+
     // ✅ Оновлюємо або створюємо відвідувача
-    const visitor = await prisma.visitor.upsert({
+    await prisma.visitor.upsert({
       where: { visitorId },
       update: {
         lastSeenAt: new Date(),
@@ -33,11 +35,10 @@ router.post('/heartbeat', async (req: Request, res: Response) => {
         isOnline: true,
         userAgent: userAgent || undefined,
         ipAddress: ipAddress || undefined,
-        fingerprint: undefined, // Можна додати відбиток браузера
       },
     });
 
-    // ✅ Створюємо новий візит
+    // ✅ Створюємо новий візит (без foreign key)
     await prisma.siteVisit.create({
       data: {
         visitorId,
@@ -70,6 +71,7 @@ router.get('/online', async (req: Request, res: Response) => {
       },
     });
 
+    console.log('[Analytics] Online count:', onlineCount);
     res.json({ count: onlineCount });
   } catch (error) {
     console.error('[Analytics] Online count error:', error);
@@ -88,7 +90,7 @@ router.get('/visitors', async (req: Request, res: Response) => {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    // ✅ Унікальні відвідувачі за період
+    // ✅ Унікальні відвідувачі за період (по lastSeenAt)
     const uniqueVisitors = await prisma.visitor.findMany({
       where: {
         lastSeenAt: {
@@ -98,10 +100,11 @@ router.get('/visitors', async (req: Request, res: Response) => {
       select: {
         visitorId: true,
       },
-      distinct: ['visitorId'],
     });
 
-    res.json({ count: uniqueVisitors.length, days, period: `${days} днів` });
+    const count = uniqueVisitors.length;
+    console.log('[Analytics] Visitors count:', count, 'days:', days);
+    res.json({ count, days, period: `${days} днів` });
   } catch (error) {
     console.error('[Analytics] Visitors count error:', error);
     res.status(500).json({ error: 'Failed to get visitors count' });

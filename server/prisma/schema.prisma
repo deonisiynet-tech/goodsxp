@@ -181,7 +181,6 @@ model Visitor {
   userAgent       String?
   ipAddress       String?
   isOnline        Boolean     @default(false)
-  visits          SiteVisit[]
   createdAt       DateTime    @default(now()) @db.Timestamptz(6)
   updatedAt       DateTime    @updatedAt @db.Timestamptz(6)
 
@@ -195,8 +194,7 @@ model Visitor {
  */
 model SiteVisit {
   id          String   @id @default(uuid())
-  visitorId   String
-  visitor     Visitor  @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+  visitorId   String   // Зберігаємо visitorId без foreign key для продуктивності
   page        String?  // URL сторінки
   referrer    String?  // Звідки прийшов
   sessionStart DateTime @default(now()) @db.Timestamptz(6)

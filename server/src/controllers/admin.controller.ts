@@ -261,13 +261,47 @@ export class AdminController {
   }
 
   /**
+   * Оновлення статусу магазину (storeEnabled)
+   * Використовується в адмінці для ввімкнення/вимкнення
+   */
+  async updateStoreEnabled(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { value } = req.body;
+      
+      console.log('[API] Updating storeEnabled to:', value);
+
+      // ✅ Перевірка значення
+      const stringValue = value === 'true' || value === true ? 'true' : 'false';
+
+      // ✅ Оновлюємо або створюємо налаштування
+      const setting = await prisma.siteSettings.upsert({
+        where: { key: 'storeEnabled' },
+        update: { value: stringValue },
+        create: {
+          key: 'storeEnabled',
+          value: stringValue,
+          type: 'boolean',
+          description: 'Статус магазину (включений/вимкнений)',
+        },
+      });
+
+      console.log('[API] storeEnabled updated to:', setting.value);
+      
+      res.json({ success: true, value: setting.value });
+    } catch (error) {
+      console.error('[API] Error updating storeEnabled:', error instanceof Error ? error.message : error);
+      next(error);
+    }
+  }
+
+  /**
    * Отримання статусу магазину (storeEnabled)
    * Спеціальний endpoint для middleware - не вимагає авторизації
    */
   async getStoreEnabled(req: Request, res: Response, next: NextFunction) {
     try {
       console.log('[API] Getting storeEnabled status');
-      
+
       const setting = await prisma.siteSettings.findUnique({
         where: {
           key: 'storeEnabled',
@@ -290,7 +324,7 @@ export class AdminController {
       }
 
       console.log('[API] storeEnabled:', setting.value);
-      
+
       // ✅ NO CACHE HEADERS - завжди актуальне значення
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
       res.setHeader('Pragma', 'no-cache');

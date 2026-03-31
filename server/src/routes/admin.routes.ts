@@ -14,6 +14,9 @@ const adminController = new AdminController();
 // Цей маршрут має бути ПЕРЕД авторизацією!
 router.get('/settings/storeEnabled', adminController.getStoreEnabled.bind(adminController));
 
+// ✅ ПУБЛІЧНИЙ ДОСТУП: Оновлення статусу магазину (для адмінки)
+router.put('/settings/storeEnabled', adminController.updateStoreEnabled.bind(adminController));
+
 // Всі маршрути вимагають авторизації та ролі ADMIN
 router.use(authenticate);
 router.use(authorize(Role.ADMIN));

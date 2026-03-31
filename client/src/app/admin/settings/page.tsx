@@ -50,7 +50,12 @@ export default function SettingsPage() {
       }
 
       const settings = await response.json()
-      setForm(settings)
+      setForm({
+        storeName: settings.storeName || 'GoodsXP',
+        contactEmail: settings.contactEmail || '',
+        currency: settings.currency || 'UAH',
+        storeEnabled: settings.storeEnabled !== false,
+      })
     } catch (error) {
       console.error('Error loading settings:', error)
       toast.error('Помилка завантаження налаштувань')
@@ -103,22 +108,60 @@ export default function SettingsPage() {
     }
   }
 
-  const handleStoreStatusChange = (enable: boolean) => {
-    if (enable) {
-      // Включення магазину - без підтвердження
-      setForm({ ...form, storeEnabled: true })
-    } else {
-      // Вимкнення магазину - показуємо модальне вікно
-      setPendingStoreEnabled(false)
-      setShowDisableModal(true)
+  const handleStoreEnabledToggle = async (enable: boolean) => {
+    try {
+      if (enable) {
+        // ✅ ВКЛЮЧЕННЯ - миттєво
+        const response = await fetch('/api/admin/settings/storeEnabled', {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ value: 'true' }),
+          credentials: 'include',
+        })
+
+        if (!response.ok) {
+          throw new Error('Failed to enable store')
+        }
+
+        setForm({ ...form, storeEnabled: true })
+        toast.success('Магазин включено')
+      } else {
+        // ✅ ВИМКНЕННЯ - показуємо модальне вікно з паролем
+        setPendingStoreEnabled(false)
+        setShowDisableModal(true)
+      }
+    } catch (error: any) {
+      console.error('Error toggling store:', error)
+      toast.error(error.message || 'Помилка при зміні статусу')
     }
   }
 
-  const handleDisableConfirm = () => {
-    setForm({ ...form, storeEnabled: false })
-    setShowDisableModal(false)
-    setPendingStoreEnabled(null)
-    toast.success('Магазин вимкнено')
+  const handleDisableConfirm = async () => {
+    try {
+      // ✅ ВИМКНЕННЯ - підтверджено паролем
+      const response = await fetch('/api/admin/settings/storeEnabled', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ value: 'false' }),
+        credentials: 'include',
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to disable store')
+      }
+
+      setForm({ ...form, storeEnabled: false })
+      setShowDisableModal(false)
+      setPendingStoreEnabled(null)
+      toast.success('Магазин вимкнено')
+    } catch (error: any) {
+      console.error('Error disabling store:', error)
+      toast.error(error.message || 'Помилка при вимкненні магазину')
+    }
   }
 
   if (loading) {
@@ -229,33 +272,42 @@ export default function SettingsPage() {
                 <p className="text-sm text-muted">Включений чи вимкнений</p>
               </div>
             </div>
+            
+            {/* Toggle Switch */}
             <div className="flex items-center gap-4">
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="radio"
-                  name="storeEnabled"
-                  value="true"
-                  checked={form.storeEnabled}
-                  onChange={() => handleStoreStatusChange(true)}
-                  className="w-4 h-4 text-primary focus:ring-primary"
-                />
-                <span className="text-green-400 font-medium">Включений</span>
-              </label>
-              <label className="flex items-center gap-3 cursor-pointer">
-                <input
-                  type="radio"
-                  name="storeEnabled"
-                  value="false"
-                  checked={!form.storeEnabled}
-                  onChange={() => handleStoreStatusChange(false)}
-                  className="w-4 h-4 text-primary focus:ring-primary"
-                />
-                <span className="text-red-400 font-medium">Вимкнений</span>
-              </label>
+              <button
+                onClick={() => handleStoreEnabledToggle(true)}
+                disabled={form.storeEnabled}
+                className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all duration-200 ${
+                  form.storeEnabled
+                    ? 'bg-green-500/20 border-2 border-green-500/50 text-green-400'
+                    : 'bg-surface border border-border text-muted hover:border-green-500/30'
+                }`}
+              >
+                ✅ Включений
+              </button>
+              <button
+                onClick={() => handleStoreEnabledToggle(false)}
+                disabled={!form.storeEnabled}
+                className={`flex-1 py-3 px-4 rounded-xl font-medium transition-all duration-200 ${
+                  !form.storeEnabled
+                    ? 'bg-red-500/20 border-2 border-red-500/50 text-red-400'
+                    : 'bg-surface border border-border text-muted hover:border-red-500/30'
+                }`}
+              >
+                ❌ Вимкнений
+              </button>
             </div>
+
             {!form.storeEnabled && (
-              <p className="text-sm text-yellow-500 mt-3">
-                ⚠️ Магазин буде недоступний для покупців
+              <p className="text-sm text-red-400 mt-3 flex items-center gap-2">
+                ⚠️ Магазин вимкнено - відвідувачі бачать сторінку технічних робіт
+              </p>
+            )}
+
+            {form.storeEnabled && (
+              <p className="text-sm text-green-400 mt-3 flex items-center gap-2">
+                ✅ Магазин працює у звичайному режимі
               </p>
             )}
           </div>
@@ -267,8 +319,6 @@ export default function SettingsPage() {
           onClose={() => {
             setShowDisableModal(false)
             setPendingStoreEnabled(null)
-            // Повертаємо радіо-кнопку до попереднього стану
-            setForm({ ...form, storeEnabled: true })
           }}
           onConfirm={handleDisableConfirm}
         />

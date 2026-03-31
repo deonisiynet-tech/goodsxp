@@ -48,9 +48,9 @@ export default function StoreDisableConfirmModal({
       
       {/* Modal */}
       <div className="relative z-10 w-full max-w-md mx-4">
-        <div className="bg-[#1f1f23] border border-purple-500/30 rounded-2xl shadow-2xl shadow-purple-500/20 overflow-hidden">
+        <div className="bg-[#1f1f23] border border-red-500/30 rounded-2xl shadow-2xl shadow-red-500/20 overflow-hidden">
           {/* Header */}
-          <div className="px-6 py-4 border-b border-purple-500/20 bg-red-500/10">
+          <div className="px-6 py-4 border-b border-red-500/20 bg-red-500/10">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-red-500/20 border border-red-500/40 flex items-center justify-center">
                 <svg className="w-5 h-5 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -86,7 +86,7 @@ export default function StoreDisableConfirmModal({
                 }}
                 onKeyDown={handleKeyDown}
                 placeholder="Введіть код..."
-                className="w-full px-4 py-3 bg-[#18181c] border border-purple-500/30 rounded-xl text-white placeholder-muted focus:outline-none focus:ring-2 focus:ring-purple-500/50 focus:border-transparent transition-all"
+                className="w-full px-4 py-3 bg-[#18181c] border border-red-500/30 rounded-xl text-white placeholder-muted focus:outline-none focus:ring-2 focus:ring-red-500/50 focus:border-transparent transition-all"
                 autoFocus
               />
               {error && (
@@ -101,10 +101,10 @@ export default function StoreDisableConfirmModal({
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-4 border-t border-purple-500/20 bg-purple-500/5 flex gap-3">
+          <div className="px-6 py-4 border-t border-red-500/20 bg-red-500/5 flex gap-3">
             <button
               onClick={onClose}
-              className="flex-1 px-4 py-3 rounded-xl border border-purple-500/30 text-white font-medium hover:bg-purple-500/10 transition-all duration-200"
+              className="flex-1 px-4 py-3 rounded-xl border border-red-500/30 text-white font-medium hover:bg-red-500/10 transition-all duration-200"
             >
               Скасувати
             </button>
