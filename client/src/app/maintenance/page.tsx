@@ -1,15 +1,10 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { AlertTriangle, Clock, RefreshCw, ShieldCheck } from 'lucide-react';
 
 export default function MaintenancePage() {
   const [isChecking, setIsChecking] = useState(false);
-
-  const handleRefresh = () => {
-    setIsChecking(true);
-    window.location.reload();
-  };
 
   return (
     <div className="min-h-screen bg-[#0a0a0c] flex items-center justify-center p-4">
@@ -57,9 +52,13 @@ export default function MaintenancePage() {
               <span>Орієнтовний час відновлення: найближчим часом</span>
             </div>
 
-            {/* Refresh button */}
+            {/* Refresh button - перенаправляє на головний домен */}
             <button
-              onClick={handleRefresh}
+              onClick={() => {
+                setIsChecking(true);
+                // ✅ Перенаправлення на головний домен
+                window.location.href = 'https://goodsxp.store/';
+              }}
               disabled={isChecking}
               className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-purple-500/20 border border-purple-500/30 text-purple-400 font-medium hover:bg-purple-500/30 transition-all duration-200 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
             >
