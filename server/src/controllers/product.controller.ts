@@ -194,11 +194,18 @@ export class ProductController {
 
   async delete(req: AuthRequest, res: Response, next: NextFunction) {
     try {
+      console.log('🗑️ Delete product:', req.params.id);
+      console.log('   req.user:', req.user);
+      
       const product = await productService.getById(req.params.id);
       const result = await productService.delete(req.params.id);
 
+      console.log('   Product deleted, creating log...');
+      console.log('   adminId:', req.user?.id);
+      console.log('   action:', ActionType.DELETE);
+
       // Log the action
-      await adminService.logAction({
+      const logResult = await adminService.logAction({
         adminId: req.user!.id,
         action: ActionType.DELETE,
         entity: 'Product',
@@ -206,9 +213,12 @@ export class ProductController {
         details: `Deleted product: ${product.title}`,
         ipAddress: req.ip,
       });
+      
+      console.log('   Log result:', logResult ? '✅ SUCCESS' : '❌ FAILED');
 
       res.json(result);
     } catch (error) {
+      console.error('Delete product error:', error);
       next(error);
     }
   }
