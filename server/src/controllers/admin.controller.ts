@@ -267,7 +267,8 @@ export class AdminController {
   async updateStoreEnabled(req: Request, res: Response, next: NextFunction) {
     try {
       const { value } = req.body;
-      
+      const adminId = (req as AuthRequest).user?.id;
+
       console.log('[API] Updating storeEnabled to:', value);
 
       // ✅ Перевірка значення
@@ -286,7 +287,23 @@ export class AdminController {
       });
 
       console.log('[API] storeEnabled updated to:', setting.value);
-      
+
+      // ✅ ЛОГУВАННЯ ДІЇ
+      if (adminId) {
+        try {
+          await adminService.logAction({
+            adminId,
+            action: ActionType.SETTINGS_UPDATE,
+            entity: 'SiteSettings',
+            entityId: 'storeEnabled',
+            details: `Store ${stringValue === 'true' ? 'enabled' : 'disabled'}`,
+            ipAddress: req.ip,
+          });
+        } catch (logError: any) {
+          console.warn('⚠️ Failed to log storeEnabled update:', logError.message);
+        }
+      }
+
       res.json({ success: true, value: setting.value });
     } catch (error) {
       console.error('[API] Error updating storeEnabled:', error instanceof Error ? error.message : error);

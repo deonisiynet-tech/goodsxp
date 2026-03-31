@@ -15,10 +15,12 @@ export const api = axios.create({
 api.interceptors.request.use((config) => {
   // Тільки на клієнті додаємо токен
   if (typeof window !== 'undefined') {
+    // Спочатку пробуємо токен з localStorage (для звичайних користувачів)
     const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
+    // Для адмін-запитів cookie admin_session додається автоматично через credentials: 'include'
   }
   return config;
 });
@@ -113,7 +115,11 @@ export const adminApi = {
 
   // Logs
   getLogs: (params?: { page?: number; limit?: number; adminId?: string; action?: string }) =>
-    api.get('/admin/logs', { params }),
+    api.get('/admin/logs', { 
+      params,
+      // Для адмін-запитів використовуємо cookie для автентифікації
+      ...(typeof window !== 'undefined' ? { credentials: 'include' as const } : {}),
+    }),
 
   // Settings
   getSettings: () => api.get('/admin/settings'),

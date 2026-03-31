@@ -142,9 +142,6 @@ export default function Home() {
         {/* ===== POPULAR PRODUCTS ===== */}
         <ProductList title="Популярні товари" limit={5} showAllLink popular />
 
-        {/* ===== FEATURED PRODUCTS (ХІТИ-ПРОДАЖ) ===== */}
-        <ProductList title="🔥 Хіти-продаж" limit={5} showAllLink featured />
-
         {/* ===== WHY CHOOSE US ===== */}
         <section className="py-24 bg-surface/50">
           <div className="container mx-auto px-4">

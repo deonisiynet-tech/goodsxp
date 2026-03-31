@@ -2,7 +2,7 @@ import { Router } from 'express';
 import prisma from '../prisma/client.js';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { Role } from '@prisma/client';
+import { Role, ActionType } from '@prisma/client';
 
 const router = Router();
 
@@ -96,6 +96,19 @@ router.post('/login', async (req, res) => {
  */
 router.post('/logout', async (req, res) => {
   try {
+    // Get admin info from token before clearing
+    let adminId: string | undefined = undefined;
+    const token = req.cookies?.admin_session;
+    if (token) {
+      try {
+        const secret = process.env.JWT_SECRET || 'default-secret';
+        const decoded = jwt.verify(token, secret) as { id: string; email: string; role: string };
+        adminId = decoded.id;
+      } catch (e) {
+        // Token invalid, just proceed with logout
+      }
+    }
+
     // Clear the cookie
     res.clearCookie('admin_session', {
       httpOnly: true,
@@ -103,6 +116,23 @@ router.post('/logout', async (req, res) => {
       sameSite: 'lax',
       path: '/',
     });
+
+    // Log admin action
+    if (adminId) {
+      try {
+        await prisma.adminLog.create({
+          data: {
+            adminId,
+            action: ActionType.LOGOUT,
+            ipAddress: req.ip,
+            userAgent: req.headers['user-agent'],
+            details: 'Admin logout',
+          },
+        });
+      } catch (logError: any) {
+        console.warn('⚠️ Failed to log admin logout:', logError.message);
+      }
+    }
 
     res.json({ success: true });
   } catch (error: any) {
