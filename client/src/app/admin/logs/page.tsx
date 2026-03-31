@@ -226,7 +226,9 @@ export default function LogsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {logs.map((log) => {
+                  {console.log('🔍 Rendering logs:', logs.length, 'items')}
+                  {logs.map((log, index) => {
+                    console.log(`  Log[${index}]:`, log.action, log.entity, log.details?.slice(0, 50));
                     const ActionIcon = getActionIcon(log.action);
                     const EntityIcon = getEntityIcon(log.entity);
                     const actionColor = getActionColor(log.action);
