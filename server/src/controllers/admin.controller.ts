@@ -3,6 +3,7 @@ import { AdminService } from '../services/admin.service.js';
 import { LoggerService } from '../services/logger.service.js';
 import { AuthRequest } from '../middleware/auth.js';
 import { ActionType, LogLevel, LogSource } from '@prisma/client';
+import { prisma } from '../prisma/config.js';
 
 const adminService = new AdminService();
 const loggerService = new LoggerService();
@@ -259,15 +260,58 @@ export class AdminController {
     }
   }
 
-  async getSetting(req: AuthRequest, res: Response, next: NextFunction) {
+  /**
+   * Отримання статусу магазину (storeEnabled)
+   * Спеціальний endpoint для middleware - не вимагає авторизації
+   */
+  async getStoreEnabled(req: Request, res: Response, next: NextFunction) {
     try {
-      const setting = await adminService.getSetting(req.params.key);
+      console.log('[API] Getting storeEnabled status');
+      
+      const setting = await prisma.siteSettings.findUnique({
+        where: {
+          key: 'storeEnabled',
+        },
+      });
+
+      // ✅ ЯКЩО НЕМАЄ - СТВОРЮЄМО З ЗНАЧЕННЯМ ЗА ЗАМОВЧУВАННЯМ
+      if (!setting) {
+        console.log('[API] storeEnabled not found, creating with default value: true');
+        const newSetting = await prisma.siteSettings.create({
+          data: {
+            key: 'storeEnabled',
+            value: 'true',
+            type: 'boolean',
+            description: 'Статус магазину (включений/вимкнений)',
+          },
+        });
+        console.log('[API] storeEnabled:', newSetting.value);
+        return res.json(newSetting);
+      }
+
+      console.log('[API] storeEnabled:', setting.value);
       
       // ✅ NO CACHE HEADERS - завжди актуальне значення
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
       res.setHeader('Pragma', 'no-cache');
       res.setHeader('Expires', '0');
-      
+
+      res.json(setting);
+    } catch (error) {
+      console.error('[API] Error getting storeEnabled:', error instanceof Error ? error.message : error);
+      next(error);
+    }
+  }
+
+  async getSetting(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const setting = await adminService.getSetting(req.params.key);
+
+      // ✅ NO CACHE HEADERS - завжди актуальне значення
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      res.setHeader('Pragma', 'no-cache');
+      res.setHeader('Expires', '0');
+
       res.json(setting);
     } catch (error) {
       next(error);
