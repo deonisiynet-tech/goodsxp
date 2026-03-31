@@ -12,9 +12,6 @@ import type { NextRequest } from 'next/server';
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 🛠️ DEBUG: Логуємо кожен запит
-  console.log('[MIDDLEWARE] request:', pathname);
-
   // ✅ НЕ ПЕРЕВІРЯЄМО технічні маршрути та maintenance
   if (
     pathname.startsWith('/_next') ||
@@ -25,18 +22,16 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/robots.txt') ||
     pathname === '/maintenance'
   ) {
-    console.log('[MIDDLEWARE] skipping technical route:', pathname);
     return NextResponse.next();
   }
 
-  // ✅ ОТРИМУЄМО статус магазину через Internal API
-  // Використовуємо INTERNAL_API_URL або будуємо URL з request
-  const internalUrl = process.env.INTERNAL_API_URL || request.nextUrl.origin;
+  // ✅ ОТРИМУЄМО статус магазину через внутрішній API
+  // Використовуємо http://127.0.0.1 замість localhost для уникнення DNS проблем
+  const port = process.env.PORT || '8080';
+  const internalUrl = `http://127.0.0.1:${port}`;
   const storeStatusUrl = `${internalUrl}/api/admin/settings/storeEnabled`;
 
-  console.log('[MIDDLEWARE] fetching from:', storeStatusUrl);
-  console.log('[MIDDLEWARE] INTERNAL_API_URL:', process.env.INTERNAL_API_URL);
-  console.log('[MIDDLEWARE] origin:', request.nextUrl.origin);
+  console.log('[Middleware] fetching from:', storeStatusUrl);
 
   let storeEnabled = true; // За замовчуванням включений
 
@@ -48,50 +43,35 @@ export async function middleware(request: NextRequest) {
       },
       // ✅ NO CACHE - завжди актуальне значення
       cache: 'no-store',
-      // ✅ Додаємо timestamp щоб уникнути кешування
-      next: { revalidate: 0 },
     });
 
-    console.log('[MIDDLEWARE] API response status:', response.status);
+    console.log('[Middleware] API response status:', response.status);
 
     if (response.ok) {
       const data = await response.json();
-      console.log('[MIDDLEWARE] API response data:', data);
-      console.log('[MIDDLEWARE] storeEnabled value:', data.value);
-      
+      console.log('[Middleware] storeEnabled value:', data.value);
       storeEnabled = data.value !== 'false';
-      console.log('[MIDDLEWARE] isStoreEnabled:', storeEnabled);
     } else {
-      const errorText = await response.text();
-      console.warn('[MIDDLEWARE] API returned error:', response.status, errorText);
+      console.warn('[Middleware] API returned:', response.status);
     }
   } catch (error) {
-    console.error('[MIDDLEWARE] Store status check failed:', error instanceof Error ? error.message : error);
+    console.error('[Middleware] Store status check failed:', error instanceof Error ? error.message : error);
     // fail-safe: якщо API недоступний, вважаємо що магазин включений
     storeEnabled = true;
   }
 
   // ✅ ЯКЩО МАГАЗИН ВИМКНЕНИЙ - редірект на maintenance
   if (!storeEnabled) {
-    console.log('[MIDDLEWARE] redirecting to maintenance');
+    console.log('[Middleware] redirecting to maintenance');
     const maintenanceUrl = new URL('/maintenance', request.url);
     return NextResponse.redirect(maintenanceUrl);
   }
 
-  console.log('[MIDDLEWARE] allowing request to proceed');
   return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    /*
-     * Перевіряти всі маршрути крім:
-     * - api (API routes)
-     * - admin (адмінка)
-     * - _next (Next.js internals)
-     * - favicon.ico, sitemap.xml, robots.txt
-     * - maintenance (сторінка технічних робіт)
-     */
     '/((?!api|admin|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|maintenance).*)',
   ],
 };

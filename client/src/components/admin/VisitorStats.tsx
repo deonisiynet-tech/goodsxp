@@ -4,13 +4,13 @@ import { useState, useEffect } from 'react';
 import { Users, Activity } from 'lucide-react';
 
 interface VisitorStatsProps {
-  period?: 'today' | '3days' | '7days';
+  period?: 'today' | '3days' | '7days' | '30days';
 }
 
 export default function VisitorStats({ period = '7days' }: VisitorStatsProps) {
   const [onlineCount, setOnlineCount] = useState<number>(0);
   const [visitorCount, setVisitorCount] = useState<number>(0);
-  const [selectedPeriod, setSelectedPeriod] = useState<'today' | '3days' | '7days'>(period);
+  const [selectedPeriod, setSelectedPeriod] = useState<'today' | '3days' | '7days' | '30days'>(period);
   const [loading, setLoading] = useState(true);
 
   // Період в днях для API
@@ -18,6 +18,7 @@ export default function VisitorStats({ period = '7days' }: VisitorStatsProps) {
     today: 1,
     '3days': 3,
     '7days': 7,
+    '30days': 30,
   };
 
   const loadStats = async () => {
@@ -59,6 +60,7 @@ export default function VisitorStats({ period = '7days' }: VisitorStatsProps) {
     today: 'Сьогодні',
     '3days': '3 дні',
     '7days': '7 днів',
+    '30days': '30 днів',
   };
 
   return (
