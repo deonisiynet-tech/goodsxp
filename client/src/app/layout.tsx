@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { Providers } from '@/components/Providers';
 import AnalyticsTracker from '@/components/AnalyticsTracker';
+import StoreStatusChecker from '@/components/StoreStatusChecker';
 
 const inter = Inter({
   subsets: ['latin', 'cyrillic'],
@@ -26,6 +27,8 @@ export default function RootLayout({
         <Providers>
           {/* Відстеження відвідувачів */}
           <AnalyticsTracker />
+          {/* Перевірка статусу магазину в реальному часі */}
+          <StoreStatusChecker />
           {children}
         </Providers>
       </body>
