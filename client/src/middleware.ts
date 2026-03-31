@@ -11,7 +11,6 @@ import type { NextRequest } from 'next/server';
  */
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const origin = request.nextUrl.origin; // ✅ Отримуємо origin (протокол + хост + порт)
 
   // 🛠️ DEBUG: Логуємо кожен запит
   console.log('[MIDDLEWARE] request:', pathname);
@@ -30,45 +29,39 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // ✅ ЗА ЗАМОВЧУВАННЯМ - МАГАЗИН ВКЛЮЧЕНИЙ
-  let isStoreEnabled = true;
+  // ✅ ОТРИМУЄМО статус магазину через Internal API
+  // Використовуємо INTERNAL_API_URL або будуємо URL з request
+  const internalUrl = process.env.INTERNAL_API_URL || 'http://localhost:8080';
+  const storeStatusUrl = `${internalUrl}/api/admin/settings/storeEnabled`;
+  
+  console.log('[MIDDLEWARE] fetching from:', storeStatusUrl);
 
-  // ✅ ПЕРЕВІРЯЄМО статус магазину на сервері
-  // Використовуємо ПОВНИЙ URL для fetch (протокол + хост + порт)
+  let storeEnabled = true; // За замовчуванням включений
+
   try {
-    const fullUrl = `${origin}/api/admin/settings/storeEnabled`;
-    console.log('[MIDDLEWARE] full URL:', fullUrl);
-    
-    const response = await fetch(fullUrl, {
+    const response = await fetch(storeStatusUrl, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
       },
-      // ✅ NO CACHE - завжди актуальне значення
       cache: 'no-store',
     });
 
-    console.log('[MIDDLEWARE] API response status:', response.status);
-
     if (response.ok) {
       const data = await response.json();
-      console.log('[MIDDLEWARE] API response data:', data);
-      console.log('[MIDDLEWARE] storeEnabled value:', data.value);
-      
-      isStoreEnabled = data.value !== 'false';
-      console.log('[MIDDLEWARE] isStoreEnabled:', isStoreEnabled);
+      storeEnabled = data.value !== 'false';
+      console.log('[MIDDLEWARE] storeEnabled:', storeEnabled, '(value:', data.value, ')');
     } else {
-      // Якщо API повернув помилку - вважаємо що магазин включений (fail-safe)
-      console.warn('[Middleware] API returned non-OK status:', response.status);
+      console.warn('[MIDDLEWARE] API returned:', response.status);
     }
   } catch (error) {
-    // ✅ У разі помилки API - пропускаємо користувача (fail-safe)
-    console.error('[Middleware] Store status check failed:', error instanceof Error ? error.message : error);
-    isStoreEnabled = true;
+    console.error('[MIDDLEWARE] Store status check failed:', error instanceof Error ? error.message : error);
+    // fail-safe: якщо API недоступний, вважаємо що магазин включений
+    storeEnabled = true;
   }
 
   // ✅ ЯКЩО МАГАЗИН ВИМКНЕНИЙ - редірект на maintenance
-  if (!isStoreEnabled) {
+  if (!storeEnabled) {
     console.log('[MIDDLEWARE] redirecting to maintenance');
     const maintenanceUrl = new URL('/maintenance', request.url);
     return NextResponse.redirect(maintenanceUrl);
