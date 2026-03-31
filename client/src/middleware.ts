@@ -31,10 +31,12 @@ export async function middleware(request: NextRequest) {
 
   // ✅ ОТРИМУЄМО статус магазину через Internal API
   // Використовуємо INTERNAL_API_URL або будуємо URL з request
-  const internalUrl = process.env.INTERNAL_API_URL || 'http://localhost:8080';
+  const internalUrl = process.env.INTERNAL_API_URL || request.nextUrl.origin;
   const storeStatusUrl = `${internalUrl}/api/admin/settings/storeEnabled`;
-  
+
   console.log('[MIDDLEWARE] fetching from:', storeStatusUrl);
+  console.log('[MIDDLEWARE] INTERNAL_API_URL:', process.env.INTERNAL_API_URL);
+  console.log('[MIDDLEWARE] origin:', request.nextUrl.origin);
 
   let storeEnabled = true; // За замовчуванням включений
 
@@ -44,15 +46,24 @@ export async function middleware(request: NextRequest) {
       headers: {
         'Content-Type': 'application/json',
       },
+      // ✅ NO CACHE - завжди актуальне значення
       cache: 'no-store',
+      // ✅ Додаємо timestamp щоб уникнути кешування
+      next: { revalidate: 0 },
     });
+
+    console.log('[MIDDLEWARE] API response status:', response.status);
 
     if (response.ok) {
       const data = await response.json();
+      console.log('[MIDDLEWARE] API response data:', data);
+      console.log('[MIDDLEWARE] storeEnabled value:', data.value);
+      
       storeEnabled = data.value !== 'false';
-      console.log('[MIDDLEWARE] storeEnabled:', storeEnabled, '(value:', data.value, ')');
+      console.log('[MIDDLEWARE] isStoreEnabled:', storeEnabled);
     } else {
-      console.warn('[MIDDLEWARE] API returned:', response.status);
+      const errorText = await response.text();
+      console.warn('[MIDDLEWARE] API returned error:', response.status, errorText);
     }
   } catch (error) {
     console.error('[MIDDLEWARE] Store status check failed:', error instanceof Error ? error.message : error);
