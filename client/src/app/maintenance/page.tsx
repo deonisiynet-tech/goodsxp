@@ -71,7 +71,7 @@ export default function MaintenancePage() {
           {/* Footer */}
           <div className="px-8 py-6 border-t border-yellow-500/20 bg-yellow-500/5">
             <p className="text-sm text-muted text-center">
-              GoodsXP — повернеться найближчим часом
+              GoodsXP — ми скоро повернемось 🚀
             </p>
           </div>
         </div>

@@ -169,6 +169,46 @@ model SiteSettings {
   @@index([key])
 }
 
+/**
+ * Відвідувач сайту (унікальний ID в cookie/localStorage)
+ */
+model Visitor {
+  id              String      @id @default(uuid())
+  visitorId       String      @unique // UUID з cookie/localStorage
+  fingerprint     String?     // Відбиток браузера
+  firstSeenAt     DateTime    @default(now()) @db.Timestamptz(6)
+  lastSeenAt      DateTime    @updatedAt @db.Timestamptz(6)
+  userAgent       String?
+  ipAddress       String?
+  isOnline        Boolean     @default(false)
+  visits          SiteVisit[]
+  createdAt       DateTime    @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime    @updatedAt @db.Timestamptz(6)
+
+  @@index([visitorId])
+  @@index([isOnline])
+  @@index([lastSeenAt])
+}
+
+/**
+ * Історія відвідувань сайту
+ */
+model SiteVisit {
+  id          String   @id @default(uuid())
+  visitorId   String
+  visitor     Visitor  @relation(fields: [visitorId], references: [id], onDelete: Cascade)
+  page        String?  // URL сторінки
+  referrer    String?  // Звідки прийшов
+  sessionStart DateTime @default(now()) @db.Timestamptz(6)
+  sessionEnd  DateTime? @db.Timestamptz(6)
+  duration    Int?     // Тривалість в секундах
+  createdAt   DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([visitorId])
+  @@index([sessionStart])
+  @@index([createdAt])
+}
+
 enum Role {
   USER
   ADMIN

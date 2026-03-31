@@ -8,6 +8,7 @@ import ProductModal from '@/components/admin/ProductModal'
 import SalesChart from '@/components/admin/SalesChart'
 import LatestOrdersTable from '@/components/admin/LatestOrdersTable'
 import TopProducts from '@/components/admin/TopProducts'
+import VisitorStats from '@/components/admin/VisitorStats'
 import toast from 'react-hot-toast'
 import { Plus } from 'lucide-react'
 
@@ -375,6 +376,9 @@ export default function DashboardView() {
             color="purple"
           />
         </div>
+
+        {/* Visitor Analytics: Online now, Visitors */}
+        <VisitorStats period="7days" />
 
         {/* Middle: Sales Chart */}
         <SalesChart data={salesData} loading={chartLoading} days={30} />
