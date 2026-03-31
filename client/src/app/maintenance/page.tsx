@@ -54,8 +54,10 @@ export default function MaintenancePage() {
 
             {/* Refresh button - перенаправляє на головний домен */}
             <button
-              onClick={() => {
-                setIsChecking(true);
+              type="button"  // ✅ ВАЖЛИВО: не submit, щоб не відправляти форму
+              onClick={(e) => {
+                e.preventDefault();  // ✅ Запобігаємо будь-яким подіям форми
+                e.stopPropagation(); // ✅ Зупиняємо події
                 // ✅ Перенаправлення на головний домен
                 window.location.href = 'https://goodsxp.store/';
               }}
