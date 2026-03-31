@@ -86,12 +86,15 @@ export default function LogsPage() {
         action: actionFilter || undefined,
       });
       
-      console.log('✅ Logs loaded:', response);
-      console.log('   Logs count:', response.logs?.length || 0);
-      console.log('   Pagination:', response.pagination);
+      // Axios повертає { data: { logs, pagination } }
+      const data = response.data || response;
       
-      setLogs(response.logs || []);
-      setPagination(response.pagination);
+      console.log('✅ Logs loaded:', data);
+      console.log('   Logs count:', data.logs?.length || 0);
+      console.log('   Pagination:', data.pagination);
+      
+      setLogs(data.logs || []);
+      setPagination(data.pagination);
     } catch (error: any) {
       console.error('❌ Error loading logs:', error);
       toast.error('Помилка завантаження логів: ' + error.message);
