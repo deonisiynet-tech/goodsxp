@@ -139,14 +139,9 @@ export class AdminController {
   async getLogs(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const { page, limit, adminId, action, level, source, search } = req.query;
-      
-      console.log('📋 Admin.getLogs called');
-      console.log('   Query params:', { page, limit, adminId, action, level, source });
-      console.log('   req.user:', req.user);
 
       // If level or source is specified, use system logs
       if (level || source) {
-        console.log('   → Using system logs');
         const result = await loggerService.getSystemLogs({
           page: page ? Number(page) : 1,
           limit: limit ? Number(limit) : 50,
@@ -154,20 +149,16 @@ export class AdminController {
           source: source as LogSource,
           search: search as string,
         });
-        console.log('   → System logs result:', result.logs.length, 'logs');
         return res.json(result);
       }
 
       // Otherwise use admin logs (legacy)
-      console.log('   → Using admin logs');
       const result = await adminService.getAdminLogs({
         page: page ? Number(page) : 1,
         limit: limit ? Number(limit) : 50,
         adminId: adminId as string,
         action: action as string,
       });
-      console.log('   → Admin logs result:', result.logs.length, 'logs');
-      console.log('   → Pagination:', result.pagination);
       res.json(result);
     } catch (error) {
       console.error('❌ Admin.getLogs error:', error);

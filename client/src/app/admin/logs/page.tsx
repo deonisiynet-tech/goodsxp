@@ -78,7 +78,6 @@ export default function LogsPage() {
   const loadLogs = async () => {
     try {
       setLoading(true);
-      console.log('📋 Loading logs...', { page, limit: 50, action: actionFilter });
       
       const response = await adminApi.getLogs({
         page,
@@ -89,14 +88,10 @@ export default function LogsPage() {
       // Axios повертає { data: { logs, pagination } }
       const data = response.data || response;
       
-      console.log('✅ Logs loaded:', data);
-      console.log('   Logs count:', data.logs?.length || 0);
-      console.log('   Pagination:', data.pagination);
-      
       setLogs(data.logs || []);
       setPagination(data.pagination);
     } catch (error: any) {
-      console.error('❌ Error loading logs:', error);
+      console.error('Error loading logs:', error);
       toast.error('Помилка завантаження логів: ' + error.message);
     } finally {
       setLoading(false);
@@ -229,9 +224,7 @@ export default function LogsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
-                  {console.log('🔍 Rendering logs:', logs.length, 'items')}
-                  {logs.map((log, index) => {
-                    console.log(`  Log[${index}]:`, log.action, log.entity, log.details?.slice(0, 50));
+                  {logs.map((log) => {
                     const ActionIcon = getActionIcon(log.action);
                     const EntityIcon = getEntityIcon(log.entity);
                     const actionColor = getActionColor(log.action);
