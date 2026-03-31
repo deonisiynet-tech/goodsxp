@@ -78,15 +78,22 @@ export default function LogsPage() {
   const loadLogs = async () => {
     try {
       setLoading(true);
+      console.log('📋 Loading logs...', { page, limit: 50, action: actionFilter });
+      
       const response = await adminApi.getLogs({
         page,
         limit: 50,
         action: actionFilter || undefined,
       });
+      
+      console.log('✅ Logs loaded:', response);
+      console.log('   Logs count:', response.logs?.length || 0);
+      console.log('   Pagination:', response.pagination);
+      
       setLogs(response.logs || []);
       setPagination(response.pagination);
     } catch (error: any) {
-      console.error('Error loading logs:', error);
+      console.error('❌ Error loading logs:', error);
       toast.error('Помилка завантаження логів: ' + error.message);
     } finally {
       setLoading(false);
