@@ -387,9 +387,26 @@ export class AdminService {
     ipAddress?: string;
     userAgent?: string;
   }) {
-    return prisma.adminLog.create({
-      data,
-    });
+    try {
+      const log = await prisma.adminLog.create({
+        data: {
+          adminId: data.adminId,
+          action: data.action,
+          entity: data.entity || null,
+          entityId: data.entityId || null,
+          details: data.details || null,
+          ipAddress: data.ipAddress || null,
+          userAgent: data.userAgent || null,
+        },
+      });
+      console.log('✅ AdminLog created:', log.id, data.action, data.entity);
+      return log;
+    } catch (error: any) {
+      console.error('❌ Failed to create AdminLog:', error.message);
+      console.error('   Data:', JSON.stringify(data));
+      // Don't throw - logging should not break the main operation
+      return null;
+    }
   }
 
   // ==================== SITE SETTINGS ====================
