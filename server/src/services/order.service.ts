@@ -13,11 +13,11 @@ export class OrderService {
   async create(data: {
     name: string;
     phone: string;
-    email: string;
-    address?: string;
-    city?: string;
-    warehouse?: string;
-    warehouseAddress?: string;
+    email?: string | null;
+    address?: string | null;
+    city?: string | null;
+    warehouse?: string | null;
+    warehouseAddress?: string | null;
     comment?: string;
     items: { productId: string; quantity: number }[];
   }) {

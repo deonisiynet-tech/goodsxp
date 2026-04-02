@@ -31,7 +31,7 @@ export const productUpdateSchema = productSchema.partial();
 export const orderSchema = z.object({
   name: z.string().min(1, 'Ім\'я обов\'язкове').max(100),
   phone: z.string().min(5, 'Некоректний телефон').max(20),
-  email: z.string().email('Некоректний email'),
+  email: z.string().email('Некоректний email').optional().nullable(),
   address: z.string().min(1, 'Адреса обов\'язкова').max(500).optional().nullable(),
   city: z.string().min(1, 'Місто обов\'язкове').max(200).optional().nullable(),
   warehouse: z.string().min(1, 'Відділення обов\'язкове').max(200).optional().nullable(),
@@ -45,7 +45,7 @@ export const orderSchema = z.object({
   ).min(1, 'Кошик порожній'),
 }).refine((data) => {
   // Перевірка: або address, або city+warehouse мають бути заповнені
-  return (data.address && data.address.length > 0) || 
+  return (data.address && data.address.length > 0) ||
          (data.city && data.warehouse);
 }, {
   message: 'Вкажіть адресу доставки або оберіть відділення Нової Пошти',
