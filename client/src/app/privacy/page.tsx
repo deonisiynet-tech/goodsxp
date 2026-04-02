@@ -51,9 +51,17 @@ export default function PrivacyPolicyPage() {
                     </span>
                     Загальні положення
                   </h2>
-                  <p className="text-muted leading-relaxed">
-                    Ця Політика визначає порядок збору, зберігання та використання персональних даних користувачів сайту goodsxp.store. Використовуючи сайт, ви погоджуєтесь з умовами цієї Політики.
-                  </p>
+                  <div className="space-y-4 text-muted leading-relaxed">
+                    <p>
+                      Ця Політика конфіденційності визначає порядок збору, використання та захисту персональних даних користувачів сайту goodsxp.store.
+                    </p>
+                    <p>
+                      Користуючись сайтом, користувач підтверджує свою згоду на обробку персональних даних відповідно до Закону України «Про захист персональних даних».
+                    </p>
+                    <p>
+                      Якщо користувач не погоджується з умовами цієї політики, він повинен припинити використання сайту.
+                    </p>
+                  </div>
                 </div>
 
                 {/* Section 2 */}
@@ -62,27 +70,29 @@ export default function PrivacyPolicyPage() {
                     <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-purple-500/20 border border-primary/30 flex items-center justify-center text-sm font-bold">
                       2
                     </span>
-                    Збір персональних даних
+                    Адміністрація сайту
                   </h2>
-                  <p className="text-muted leading-relaxed mb-4">Ми можемо збирати:</p>
-                  <ul className="space-y-2 text-muted">
-                    <li className="flex items-start gap-3">
-                      <span className="text-primary font-bold mt-1">•</span>
-                      <span>Ім'я, прізвище;</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <span className="text-primary font-bold mt-1">•</span>
-                      <span>Контактні дані: телефон, email;</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <span className="text-primary font-bold mt-1">•</span>
-                      <span>Адресу доставки;</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <span className="text-primary font-bold mt-1">•</span>
-                      <span>Іншу інформацію, яку ви надаєте при замовленні або зверненні.</span>
-                    </li>
-                  </ul>
+                  <div className="space-y-4 text-muted leading-relaxed">
+                    <p>
+                      Адміністратором сайту goodsxp.store є приватна особа, що здійснює діяльність з продажу товарів через мережу Інтернет.
+                    </p>
+                    <p className="font-medium text-white">
+                      Контактна інформація адміністрації сайту:
+                    </p>
+                    <div className="space-y-2 ml-4">
+                      <p className="flex items-center gap-2">
+                        <Mail size={16} className="text-primary" />
+                        <span>Email: support@goodsxp.store</span>
+                      </p>
+                      <p className="flex items-center gap-2">
+                        <MessageCircle size={16} className="text-primary" />
+                        <span>Telegram: @goodsxp</span>
+                      </p>
+                    </div>
+                    <p>
+                      Адміністрація сайту відповідає за обробку персональних даних користувачів відповідно до чинного законодавства України.
+                    </p>
+                  </div>
                 </div>
 
                 {/* Section 3 */}
@@ -91,27 +101,48 @@ export default function PrivacyPolicyPage() {
                     <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-purple-500/20 border border-primary/30 flex items-center justify-center text-sm font-bold">
                       3
                     </span>
-                    Мета обробки
+                    Які дані ми збираємо
                   </h2>
-                  <p className="text-muted leading-relaxed mb-4">Персональні дані використовуються для:</p>
-                  <ul className="space-y-2 text-muted">
+                  <p className="text-muted leading-relaxed mb-4">
+                    Під час використання сайту можуть збиратися такі дані:
+                  </p>
+                  <ul className="space-y-2 text-muted ml-4">
                     <li className="flex items-start gap-3">
                       <span className="text-primary font-bold mt-1">•</span>
-                      <span>Оформлення та доставки замовлень;</span>
+                      <span>ім'я та прізвище</span>
                     </li>
                     <li className="flex items-start gap-3">
                       <span className="text-primary font-bold mt-1">•</span>
-                      <span>Консультацій та підтримки;</span>
+                      <span>номер телефону</span>
                     </li>
                     <li className="flex items-start gap-3">
                       <span className="text-primary font-bold mt-1">•</span>
-                      <span>Інформаційного супроводу за вашою згодою;</span>
+                      <span>адреса доставки</span>
                     </li>
                     <li className="flex items-start gap-3">
                       <span className="text-primary font-bold mt-1">•</span>
-                      <span>Виконання вимог законодавства.</span>
+                      <span>email (за необхідності)</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="text-primary font-bold mt-1">•</span>
+                      <span>інформація про замовлення</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="text-primary font-bold mt-1">•</span>
+                      <span>IP-адреса</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="text-primary font-bold mt-1">•</span>
+                      <span>тип браузера та пристрою</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="text-primary font-bold mt-1">•</span>
+                      <span>файли cookie</span>
                     </li>
                   </ul>
+                  <p className="text-muted leading-relaxed mt-4">
+                    Ці дані надаються користувачем добровільно під час оформлення замовлення.
+                  </p>
                 </div>
 
                 {/* Section 4 */}
@@ -120,21 +151,35 @@ export default function PrivacyPolicyPage() {
                     <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-purple-500/20 border border-primary/30 flex items-center justify-center text-sm font-bold">
                       4
                     </span>
-                    Правові підстави
+                    Мета обробки даних
                   </h2>
-                  <p className="text-muted leading-relaxed mb-4">Обробка даних здійснюється на підставі:</p>
-                  <ul className="space-y-2 text-muted">
+                  <p className="text-muted leading-relaxed mb-4">
+                    Персональні дані використовуються для:
+                  </p>
+                  <ul className="space-y-2 text-muted ml-4">
                     <li className="flex items-start gap-3">
                       <span className="text-primary font-bold mt-1">•</span>
-                      <span>Вашої згоди;</span>
+                      <span>оформлення замовлення</span>
                     </li>
                     <li className="flex items-start gap-3">
                       <span className="text-primary font-bold mt-1">•</span>
-                      <span>Виконання договору;</span>
+                      <span>доставки товару</span>
                     </li>
                     <li className="flex items-start gap-3">
                       <span className="text-primary font-bold mt-1">•</span>
-                      <span>Виконання законних вимог.</span>
+                      <span>зв'язку з клієнтом</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="text-primary font-bold mt-1">•</span>
+                      <span>уточнення деталей замовлення</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="text-primary font-bold mt-1">•</span>
+                      <span>обробки повернень</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="text-primary font-bold mt-1">•</span>
+                      <span>покращення роботи сайту</span>
                     </li>
                   </ul>
                 </div>
@@ -145,18 +190,25 @@ export default function PrivacyPolicyPage() {
                     <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-purple-500/20 border border-primary/30 flex items-center justify-center text-sm font-bold">
                       5
                     </span>
-                    Зберігання та захист
+                    Правові підстави
                   </h2>
-                  <div className="space-y-4 text-muted">
-                    <p className="flex items-start gap-3">
+                  <p className="text-muted leading-relaxed mb-4">
+                    Обробка персональних даних здійснюється на підставі:
+                  </p>
+                  <ul className="space-y-2 text-muted ml-4">
+                    <li className="flex items-start gap-3">
                       <span className="text-primary font-bold mt-1">•</span>
-                      <span>Дані зберігаються лише стільки, скільки необхідно.</span>
-                    </p>
-                    <p className="flex items-start gap-3">
+                      <span>добровільної згоди користувача</span>
+                    </li>
+                    <li className="flex items-start gap-3">
                       <span className="text-primary font-bold mt-1">•</span>
-                      <span>Ми застосовуємо заходи для захисту даних від несанкціонованого доступу, втрати або пошкодження.</span>
-                    </p>
-                  </div>
+                      <span>необхідності виконання замовлення</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="text-primary font-bold mt-1">•</span>
+                      <span>законних інтересів адміністрації сайту</span>
+                    </li>
+                  </ul>
                 </div>
 
                 {/* Section 6 */}
@@ -165,11 +217,26 @@ export default function PrivacyPolicyPage() {
                     <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-purple-500/20 border border-primary/30 flex items-center justify-center text-sm font-bold">
                       6
                     </span>
-                    Передача третім особам
+                    Оплата
                   </h2>
-                  <p className="text-muted leading-relaxed">
-                    Персональні дані не передаються третім особам без вашої згоди, крім випадків, передбачених законодавством (кур'єрські служби, податкові органи).
-                  </p>
+                  <div className="space-y-4 text-muted leading-relaxed">
+                    <p>
+                      На сайті goodsxp.store доступні такі способи оплати:
+                    </p>
+                    <ul className="space-y-2 text-muted ml-4">
+                      <li className="flex items-start gap-3">
+                        <span className="text-primary font-bold mt-1">•</span>
+                        <span>Післяплата (накладений платіж) при отриманні товару у службі доставки</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <span className="text-primary font-bold mt-1">•</span>
+                        <span>Повна передоплата за домовленістю з покупцем</span>
+                      </li>
+                    </ul>
+                    <p className="font-medium text-white">
+                      Сайт не зберігає платіжні реквізити банківських карток користувачів.
+                    </p>
+                  </div>
                 </div>
 
                 {/* Section 7 */}
@@ -178,27 +245,25 @@ export default function PrivacyPolicyPage() {
                     <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-purple-500/20 border border-primary/30 flex items-center justify-center text-sm font-bold">
                       7
                     </span>
-                    Права користувачів
+                    Передача даних третім особам
                   </h2>
-                  <p className="text-muted leading-relaxed mb-4">Ви маєте право:</p>
-                  <ul className="space-y-2 text-muted">
-                    <li className="flex items-start gap-3">
-                      <span className="text-primary font-bold mt-1">•</span>
-                      <span>Доступу до своїх даних;</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <span className="text-primary font-bold mt-1">•</span>
-                      <span>Виправлення або оновлення;</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <span className="text-primary font-bold mt-1">•</span>
-                      <span>Відкликати згоду на обробку;</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <span className="text-primary font-bold mt-1">•</span>
-                      <span>Вимагати видалення даних, якщо це не суперечить закону.</span>
-                    </li>
-                  </ul>
+                  <div className="space-y-4 text-muted leading-relaxed">
+                    <p>
+                      Персональні дані можуть передаватися третім особам лише для виконання замовлення.
+                    </p>
+                    <p className="font-medium text-white">
+                      До таких осіб можуть належати:
+                    </p>
+                    <ul className="space-y-2 text-muted ml-4">
+                      <li className="flex items-start gap-3">
+                        <span className="text-primary font-bold mt-1">•</span>
+                        <span>служби доставки, наприклад Nova Poshta</span>
+                      </li>
+                    </ul>
+                    <p>
+                      Передача даних здійснюється лише у необхідному обсязі.
+                    </p>
+                  </div>
                 </div>
 
                 {/* Section 8 */}
@@ -207,10 +272,10 @@ export default function PrivacyPolicyPage() {
                     <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-purple-500/20 border border-primary/30 flex items-center justify-center text-sm font-bold">
                       8
                     </span>
-                    Файли cookie
+                    Зберігання персональних даних
                   </h2>
                   <p className="text-muted leading-relaxed">
-                    Сайт використовує cookie для покращення роботи та аналітики. Ви можете відключити cookie у налаштуваннях браузера, але деякий функціонал може стати недоступним.
+                    Персональні дані зберігаються протягом строку, необхідного для обробки замовлення та виконання зобов'язань перед клієнтом.
                   </p>
                 </div>
 
@@ -220,11 +285,27 @@ export default function PrivacyPolicyPage() {
                     <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-purple-500/20 border border-primary/30 flex items-center justify-center text-sm font-bold">
                       9
                     </span>
-                    Зміни до Політики
+                    Захист даних
                   </h2>
-                  <p className="text-muted leading-relaxed">
-                    Оновлена Політика набирає чинності з моменту публікації на сайті.
-                  </p>
+                  <div className="space-y-4 text-muted leading-relaxed">
+                    <p>
+                      Адміністрація сайту застосовує технічні та організаційні заходи для захисту персональних даних:
+                    </p>
+                    <ul className="space-y-2 text-muted ml-4">
+                      <li className="flex items-start gap-3">
+                        <span className="text-primary font-bold mt-1">•</span>
+                        <span>захищене з'єднання HTTPS</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <span className="text-primary font-bold mt-1">•</span>
+                        <span>обмежений доступ до даних</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <span className="text-primary font-bold mt-1">•</span>
+                        <span>захист від несанкціонованого доступу</span>
+                      </li>
+                    </ul>
+                  </div>
                 </div>
 
                 {/* Section 10 */}
@@ -233,20 +314,101 @@ export default function PrivacyPolicyPage() {
                     <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-purple-500/20 border border-primary/30 flex items-center justify-center text-sm font-bold">
                       10
                     </span>
+                    Права користувача
+                  </h2>
+                  <p className="text-muted leading-relaxed mb-4">
+                    Користувач має право:
+                  </p>
+                  <ul className="space-y-2 text-muted ml-4">
+                    <li className="flex items-start gap-3">
+                      <span className="text-primary font-bold mt-1">•</span>
+                      <span>отримати інформацію про обробку своїх даних</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="text-primary font-bold mt-1">•</span>
+                      <span>вимагати зміну або виправлення даних</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="text-primary font-bold mt-1">•</span>
+                      <span>відкликати згоду на обробку даних</span>
+                    </li>
+                    <li className="flex items-start gap-3">
+                      <span className="text-primary font-bold mt-1">•</span>
+                      <span>вимагати видалення персональних даних</span>
+                    </li>
+                  </ul>
+                  <p className="text-muted leading-relaxed mt-4">
+                    Запит можна надіслати на email: support@goodsxp.store
+                  </p>
+                </div>
+
+                {/* Section 11 */}
+                <div className="mb-10 animate-fade-in">
+                  <h2 className="text-2xl font-bold mb-4 flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-purple-500/20 border border-primary/30 flex items-center justify-center text-sm font-bold">
+                      11
+                    </span>
+                    Файли cookie
+                  </h2>
+                  <div className="space-y-4 text-muted leading-relaxed">
+                    <p>
+                      Сайт використовує cookie для:
+                    </p>
+                    <ul className="space-y-2 text-muted ml-4">
+                      <li className="flex items-start gap-3">
+                        <span className="text-primary font-bold mt-1">•</span>
+                        <span>стабільної роботи сайту</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <span className="text-primary font-bold mt-1">•</span>
+                        <span>аналізу відвідуваності</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <span className="text-primary font-bold mt-1">•</span>
+                        <span>покращення користувацького досвіду</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Section 12 */}
+                <div className="mb-10 animate-fade-in">
+                  <h2 className="text-2xl font-bold mb-4 flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-purple-500/20 border border-primary/30 flex items-center justify-center text-sm font-bold">
+                      12
+                    </span>
+                    Зміни політики
+                  </h2>
+                  <div className="space-y-4 text-muted leading-relaxed">
+                    <p>
+                      Адміністрація сайту може змінювати цю Політику конфіденційності.
+                    </p>
+                    <p className="font-medium text-white">
+                      Оновлена версія набирає чинності з моменту публікації на сайті.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Section 13 */}
+                <div className="mb-10 animate-fade-in">
+                  <h2 className="text-2xl font-bold mb-4 flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-purple-500/20 border border-primary/30 flex items-center justify-center text-sm font-bold">
+                      13
+                    </span>
                     Контакти
                   </h2>
                   <p className="text-muted leading-relaxed mb-4">
                     Питання щодо персональних даних:
                   </p>
                   <div className="space-y-3">
-                    <Link 
+                    <Link
                       href="mailto:support@goodsxp.store"
                       className="flex items-center gap-3 text-muted hover:text-primary transition-colors group"
                     >
                       <Mail size={20} className="text-primary group-hover:scale-110 transition-transform" />
                       <span>Email: support@goodsxp.store</span>
                     </Link>
-                    <Link 
+                    <Link
                       href="https://t.me/goodsxp"
                       target="_blank"
                       rel="noopener noreferrer"
