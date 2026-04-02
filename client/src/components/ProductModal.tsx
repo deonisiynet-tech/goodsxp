@@ -265,8 +265,8 @@ export default function ProductModal({ product, isOpen, onClose }: ProductModalP
               {/* Additional Info */}
               <div className="border-t border-[#26262b] mt-8 pt-6 space-y-3">
                 <div className="flex justify-between text-sm">
-                  <span className="text-[#9ca3af]">Гарантія:</span>
-                  <span className="text-white">12 місяців</span>
+                  <span className="text-[#9ca3af]">Підтримка клієнтів:</span>
+                  <span className="text-white">24/7</span>
                 </div>
               </div>
             </div>

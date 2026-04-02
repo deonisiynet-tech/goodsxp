@@ -391,7 +391,7 @@ export default function ProductPage() {
                 </div>
                 <div className="flex flex-col items-center text-center p-3 bg-[#1f1f23] rounded-xl">
                   <Shield size={20} className="text-[#6366f1] mb-2" />
-                  <span className="text-xs text-[#9ca3af]">Гарантія 12 міс</span>
+                  <span className="text-xs text-[#9ca3af]">Підтримка клієнтів</span>
                 </div>
                 <div className="flex flex-col items-center text-center p-3 bg-[#1f1f23] rounded-xl">
                   <RotateCcw size={20} className="text-[#6366f1] mb-2" />
