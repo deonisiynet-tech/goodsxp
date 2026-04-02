@@ -2,7 +2,7 @@
 
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { FileText, Shield, CheckCircle } from 'lucide-react';
+import { FileText, Mail, MessageCircle } from 'lucide-react';
 import Link from 'next/link';
 
 export default function TermsPage() {
@@ -46,148 +46,260 @@ export default function TermsPage() {
                 {/* Section 1 */}
                 <div className="animate-fade-in">
                   <h2 className="text-2xl font-bold mb-4 flex items-center gap-3">
-                    <Shield size={28} className="text-primary" strokeWidth={1.5} />
+                    <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-purple-500/20 border border-primary/30 flex items-center justify-center text-sm font-bold text-primary">
+                      1
+                    </span>
                     Прийняття умов
                   </h2>
-                  <p className="text-muted leading-relaxed">
-                    Використовуючи сайт goodsxp.store, ви підтверджуєте, що прочитали, зрозуміли та погоджуєтесь з цими Умовами використання. Якщо ви не згодні з будь-яким пунктом цих умов, будь ласка, не використовуйте наш сайт.
-                  </p>
+                  <div className="space-y-4 text-muted leading-relaxed">
+                    <p>
+                      Використовуючи сайт goodsxp.store, ви підтверджуєте, що прочитали, зрозуміли та погоджуєтесь з цими Умовами використання.
+                    </p>
+                    <p>
+                      Якщо ви не погоджуєтесь з будь-яким пунктом цих умов, будь ласка, припиніть використання сайту.
+                    </p>
+                    <p>
+                      Оформлюючи замовлення на сайті, користувач також підтверджує свою згоду з Політикою конфіденційності, опублікованою на сайті.
+                    </p>
+                  </div>
                 </div>
 
                 {/* Section 2 */}
                 <div className="animate-fade-in">
                   <h2 className="text-2xl font-bold mb-4 flex items-center gap-3">
-                    <CheckCircle size={28} className="text-primary" strokeWidth={1.5} />
+                    <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-purple-500/20 border border-primary/30 flex items-center justify-center text-sm font-bold text-primary">
+                      2
+                    </span>
                     Опис послуг
                   </h2>
-                  <p className="text-muted leading-relaxed mb-4">
-                    GoodsXP надає послуги з продажу електроніки та гаджетів через інтернет-магазин. Ми залишаємо за собою право:
-                  </p>
-                  <ul className="space-y-2 text-muted">
-                    <li className="flex items-start gap-3">
-                      <span className="text-primary font-bold mt-1">•</span>
-                      <span>Змінювати асортимент товарів без попереднього повідомлення;</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <span className="text-primary font-bold mt-1">•</span>
-                      <span>Коригувати ціни в будь-який час;</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <span className="text-primary font-bold mt-1">•</span>
-                      <span>Відмовити в обслуговуванні у випадках, передбачених законодавством.</span>
-                    </li>
-                  </ul>
+                  <div className="space-y-4 text-muted leading-relaxed">
+                    <p>
+                      GoodsXP надає інформаційний сервіс для ознайомлення користувачів з асортиментом електроніки та гаджетів, а також можливість оформлення замовлення товарів через інтернет-сайт.
+                    </p>
+                    <p className="font-medium text-white">
+                      Ми залишаємо за собою право:
+                    </p>
+                    <ul className="space-y-2 text-muted ml-4">
+                      <li className="flex items-start gap-3">
+                        <span className="text-primary font-bold mt-1">•</span>
+                        <span>змінювати асортимент товарів без попереднього повідомлення;</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <span className="text-primary font-bold mt-1">•</span>
+                        <span>змінювати ціни на товари;</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <span className="text-primary font-bold mt-1">•</span>
+                        <span>тимчасово обмежувати доступ до сайту для проведення технічного обслуговування;</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <span className="text-primary font-bold mt-1">•</span>
+                        <span>відмовити в обслуговуванні у випадках, передбачених законодавством України.</span>
+                      </li>
+                    </ul>
+                  </div>
                 </div>
 
                 {/* Section 3 */}
                 <div className="animate-fade-in">
                   <h2 className="text-2xl font-bold mb-4 flex items-center gap-3">
-                    <Shield size={28} className="text-primary" strokeWidth={1.5} />
+                    <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-purple-500/20 border border-primary/30 flex items-center justify-center text-sm font-bold text-primary">
+                      3
+                    </span>
                     Замовлення та оплата
                   </h2>
-                  <div className="space-y-4 text-muted">
-                    <p>
-                      Оформлюючи замовлення на сайті, ви підтверджуєте, що:
+                  <div className="space-y-4 text-muted leading-relaxed">
+                    <p className="font-medium text-white">
+                      Оформлюючи замовлення на сайті, користувач підтверджує, що:
                     </p>
-                    <ul className="space-y-2">
+                    <ul className="space-y-2 text-muted ml-4">
                       <li className="flex items-start gap-3">
                         <span className="text-primary font-bold mt-1">•</span>
-                        <span>Надали правдиву та повну інформацію;</span>
+                        <span>надав правдиву та повну інформацію;</span>
                       </li>
                       <li className="flex items-start gap-3">
                         <span className="text-primary font-bold mt-1">•</span>
-                        <span>Ознайомлені з умовами доставки та оплати;</span>
+                        <span>ознайомлений з умовами доставки та оплати;</span>
                       </li>
                       <li className="flex items-start gap-3">
                         <span className="text-primary font-bold mt-1">•</span>
-                        <span>Згодні з вартістю замовлення, включаючи доставку.</span>
+                        <span>погоджується з вартістю замовлення.</span>
                       </li>
                     </ul>
+                    <p className="font-medium text-white">
+                      Оплата товарів може здійснюватися наступними способами:
+                    </p>
+                    <ul className="space-y-2 text-muted ml-4">
+                      <li className="flex items-start gap-3">
+                        <span className="text-primary font-bold mt-1">•</span>
+                        <span>післяплата (накладений платіж) при отриманні товару у службі доставки;</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <span className="text-primary font-bold mt-1">•</span>
+                        <span>повна передоплата за домовленістю з покупцем.</span>
+                      </li>
+                    </ul>
+                    <p>
+                      Детальна інформація про способи оплати та доставки доступна у відповідному розділі сайту.
+                    </p>
                   </div>
                 </div>
 
                 {/* Section 4 */}
                 <div className="animate-fade-in">
                   <h2 className="text-2xl font-bold mb-4 flex items-center gap-3">
-                    <CheckCircle size={28} className="text-primary" strokeWidth={1.5} />
-                    Доставка та повернення
+                    <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-purple-500/20 border border-primary/30 flex items-center justify-center text-sm font-bold text-primary">
+                      4
+                    </span>
+                    Доставка
                   </h2>
-                  <p className="text-muted leading-relaxed">
-                    Доставка здійснюється згідно з умовами, вказаними на сайті. Повернення та обмін товару можливі протягом 14 днів з моменту отримання за умови збереження товарного вигляду та упаковки. Детальна інформація доступна в розділі "Гарантія".
-                  </p>
+                  <div className="space-y-4 text-muted leading-relaxed">
+                    <p>
+                      Доставка товарів здійснюється через служби доставки, зокрема Нова Пошта.
+                    </p>
+                    <p>
+                      Терміни та вартість доставки можуть залежати від регіону доставки, служби перевізника та умов конкретного замовлення.
+                    </p>
+                  </div>
                 </div>
 
                 {/* Section 5 */}
                 <div className="animate-fade-in">
                   <h2 className="text-2xl font-bold mb-4 flex items-center gap-3">
-                    <Shield size={28} className="text-primary" strokeWidth={1.5} />
-                    Інтелектуальна власність
+                    <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-purple-500/20 border border-primary/30 flex items-center justify-center text-sm font-bold text-primary">
+                      5
+                    </span>
+                    Повернення та обмін
                   </h2>
-                  <p className="text-muted leading-relaxed">
-                    Всі матеріали сайту (тексти, зображення, логотипи, дизайн) є власністю GoodsXP та захищені законом про авторське право. Будь-яке використання без письмового дозволу заборонено.
-                  </p>
+                  <div className="space-y-4 text-muted leading-relaxed">
+                    <p>
+                      Повернення або обмін товару можливі протягом 14 календарних днів з моменту отримання товару відповідно до Закону України "Про захист прав споживачів".
+                    </p>
+                    <p className="font-medium text-white">
+                      Повернення або обмін можливі за умови:
+                    </p>
+                    <ul className="space-y-2 text-muted ml-4">
+                      <li className="flex items-start gap-3">
+                        <span className="text-primary font-bold mt-1">•</span>
+                        <span>збереження товарного вигляду товару;</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <span className="text-primary font-bold mt-1">•</span>
+                        <span>відсутності слідів використання;</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <span className="text-primary font-bold mt-1">•</span>
+                        <span>наявності оригінальної упаковки та комплектуючих.</span>
+                      </li>
+                    </ul>
+                    <p>
+                      Детальна інформація щодо гарантії та повернення може бути розміщена у відповідному розділі сайту.
+                    </p>
+                  </div>
                 </div>
 
                 {/* Section 6 */}
                 <div className="animate-fade-in">
                   <h2 className="text-2xl font-bold mb-4 flex items-center gap-3">
-                    <CheckCircle size={28} className="text-primary" strokeWidth={1.5} />
-                    Обмеження відповідальності
+                    <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-purple-500/20 border border-primary/30 flex items-center justify-center text-sm font-bold text-primary">
+                      6
+                    </span>
+                    Інтелектуальна власність
                   </h2>
-                  <p className="text-muted leading-relaxed">
-                    GoodsXP не несе відповідальності за:
-                  </p>
-                  <ul className="space-y-2 text-muted">
-                    <li className="flex items-start gap-3">
-                      <span className="text-primary font-bold mt-1">•</span>
-                      <span>Тимчасові перебої в роботі сайту;</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <span className="text-primary font-bold mt-1">•</span>
-                      <span>Втрату даних через дії третіх осіб;</span>
-                    </li>
-                    <li className="flex items-start gap-3">
-                      <span className="text-primary font-bold mt-1">•</span>
-                      <span>Непрямі збитки, пов'язані з використанням сайту.</span>
-                    </li>
-                  </ul>
+                  <div className="space-y-4 text-muted leading-relaxed">
+                    <p>
+                      Усі матеріали, розміщені на сайті goodsxp.store, включаючи тексти, зображення, логотипи, дизайн та інші елементи, є власністю GoodsXP або використовуються на законних підставах.
+                    </p>
+                    <p className="font-medium text-white">
+                      Будь-яке копіювання, поширення або використання матеріалів сайту без письмового дозволу заборонено.
+                    </p>
+                  </div>
                 </div>
 
                 {/* Section 7 */}
                 <div className="animate-fade-in">
                   <h2 className="text-2xl font-bold mb-4 flex items-center gap-3">
-                    <Shield size={28} className="text-primary" strokeWidth={1.5} />
-                    Зміна умов
+                    <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-purple-500/20 border border-primary/30 flex items-center justify-center text-sm font-bold text-primary">
+                      7
+                    </span>
+                    Обмеження відповідальності
                   </h2>
-                  <p className="text-muted leading-relaxed">
-                    Ми залишаємо за собою право змінювати ці Умови використання в будь-який час. Оновлення набирають чинності з моменту публікації на сайті. Рекомендуємо періодично перевіряти цю сторінку.
-                  </p>
+                  <div className="space-y-4 text-muted leading-relaxed">
+                    <p className="font-medium text-white">
+                      GoodsXP не несе відповідальності за:
+                    </p>
+                    <ul className="space-y-2 text-muted ml-4">
+                      <li className="flex items-start gap-3">
+                        <span className="text-primary font-bold mt-1">•</span>
+                        <span>тимчасові перебої або технічні збої в роботі сайту;</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <span className="text-primary font-bold mt-1">•</span>
+                        <span>перебої в роботі мережі Інтернет;</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <span className="text-primary font-bold mt-1">•</span>
+                        <span>дії третіх осіб, що можуть впливати на доступність сайту;</span>
+                      </li>
+                      <li className="flex items-start gap-3">
+                        <span className="text-primary font-bold mt-1">•</span>
+                        <span>можливі непрямі збитки, пов'язані з використанням сайту.</span>
+                      </li>
+                    </ul>
+                  </div>
                 </div>
 
                 {/* Section 8 */}
                 <div className="animate-fade-in">
                   <h2 className="text-2xl font-bold mb-4 flex items-center gap-3">
-                    <CheckCircle size={28} className="text-primary" strokeWidth={1.5} />
+                    <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-purple-500/20 border border-primary/30 flex items-center justify-center text-sm font-bold text-primary">
+                      8
+                    </span>
+                    Зміна умов
+                  </h2>
+                  <div className="space-y-4 text-muted leading-relaxed">
+                    <p>
+                      Ми залишаємо за собою право змінювати ці Умови використання у будь-який час.
+                    </p>
+                    <p className="font-medium text-white">
+                      Оновлена версія умов набирає чинності з моменту її публікації на сайті.
+                    </p>
+                    <p>
+                      Рекомендуємо періодично переглядати цю сторінку.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Section 9 */}
+                <div className="animate-fade-in">
+                  <h2 className="text-2xl font-bold mb-4 flex items-center gap-3">
+                    <span className="w-8 h-8 rounded-lg bg-gradient-to-br from-primary/20 to-purple-500/20 border border-primary/30 flex items-center justify-center text-sm font-bold text-primary">
+                      9
+                    </span>
                     Контакти
                   </h2>
-                  <p className="text-muted leading-relaxed mb-4">
-                    З питаннями щодо Умов використання звертайтесь:
-                  </p>
-                  <div className="space-y-3">
-                    <Link 
-                      href="mailto:support@goodsxp.store"
-                      className="block text-primary hover:text-secondary transition-colors"
-                    >
-                      Email: support@goodsxp.store
-                    </Link>
-                    <Link 
-                      href="https://t.me/goodsxp"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="block text-primary hover:text-secondary transition-colors"
-                    >
-                      Telegram: @goodsxp
-                    </Link>
+                  <div className="space-y-4 text-muted leading-relaxed">
+                    <p>
+                      З усіх питань щодо Умов використання ви можете звернутися до нас:
+                    </p>
+                    <div className="space-y-3">
+                      <Link
+                        href="mailto:support@goodsxp.store"
+                        className="flex items-center gap-3 text-muted hover:text-primary transition-colors group"
+                      >
+                        <Mail size={20} className="text-primary group-hover:scale-110 transition-transform" />
+                        <span>Email: support@goodsxp.store</span>
+                      </Link>
+                      <Link
+                        href="https://t.me/goodsxp"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-3 text-muted hover:text-primary transition-colors group"
+                      >
+                        <MessageCircle size={20} className="text-primary group-hover:scale-110 transition-transform" />
+                        <span>Telegram: @goodsxp</span>
+                      </Link>
+                    </div>
                   </div>
                 </div>
 
