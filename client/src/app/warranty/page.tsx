@@ -313,9 +313,9 @@ export default function WarrantyPage() {
                 description="Поверніть або обміняйте товар протягом 14 днів без зайвих запитань."
               />
               <AdvantageCard
-                icon={Package}
-                title="Офіційні постачальники"
-                description="Тільки оригінальна продукція від офіційних дистриб'юторів."
+                icon={Shield}
+                title="Гарантія якості"
+                description="Ми пропонуємо тільки нові та перевірені товари. Перед відправкою кожне замовлення перевіряється, щоб ви отримали якісний продукт."
               />
               <AdvantageCard
                 icon={Headphones}
