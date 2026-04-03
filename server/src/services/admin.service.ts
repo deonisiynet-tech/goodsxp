@@ -157,133 +157,156 @@ export class AdminService {
     const todayEnd = new Date();
     todayEnd.setHours(23, 59, 59, 999);
 
-    const [
-      totalUsers,
-      totalOrders,
-      totalRevenue,
-      totalProducts,
-      ordersToday,
-      newOrdersCount,
-      processingOrdersCount,
-      deliveredOrdersCount,
-      ordersByStatus,
-      dailyRevenue,
-      dailyOrders,
-      topProducts,
-      recentOrders,
-    ] = await Promise.all([
-      prisma.user.count(),
-      prisma.order.count(),
-      prisma.order.aggregate({
-        _sum: { totalPrice: true },
-      }),
-      prisma.product.count(),
-      prisma.order.count({
-        where: {
-          createdAt: {
-            gte: todayStart,
-            lte: todayEnd,
+    try {
+      const [
+        totalUsers,
+        totalOrders,
+        totalRevenue,
+        totalProducts,
+        ordersToday,
+        newOrdersCount,
+        processingOrdersCount,
+        deliveredOrdersCount,
+        ordersByStatus,
+      ] = await Promise.all([
+        prisma.user.count(),
+        prisma.order.count(),
+        prisma.order.aggregate({
+          _sum: { totalPrice: true },
+        }),
+        prisma.product.count(),
+        prisma.order.count({
+          where: {
+            createdAt: {
+              gte: todayStart,
+              lte: todayEnd,
+            },
           },
-        },
-      }),
-      prisma.order.count({ where: { status: 'NEW' } }),
-      prisma.order.count({ where: { status: 'PROCESSING' } }),
-      prisma.order.count({ where: { status: 'DELIVERED' } }),
-      prisma.order.groupBy({
-        by: ['status'],
-        _count: true,
-      }),
-      prisma.$queryRaw`
-        SELECT
-          DATE("createdAt") as date,
-          SUM("totalPrice") as revenue
-        FROM "Order"
-        WHERE "createdAt" >= ${startDate}
-        GROUP BY DATE("createdAt")
-        ORDER BY date DESC
-        LIMIT ${days}
-      `,
-      prisma.$queryRaw`
-        SELECT
-          DATE("createdAt") as date,
-          COUNT(*) as orders
-        FROM "Order"
-        WHERE "createdAt" >= ${startDate}
-        GROUP BY DATE("createdAt")
-        ORDER BY date DESC
-        LIMIT ${days}
-      `,
-      prisma.orderItem.groupBy({
-        by: ['productId'],
-        _sum: { quantity: true },
-        _count: true,
-        orderBy: { _sum: { quantity: 'desc' } },
-        take: 10,
-      }),
-      // Get recent orders with items
-      prisma.order.findMany({
-        take: 5,
-        orderBy: { createdAt: 'desc' },
-        include: {
-          items: {
-            include: {
-              product: {
-                select: {
-                  id: true,
-                  title: true,
-                  imageUrl: true,
+        }),
+        prisma.order.count({ where: { status: 'NEW' } }),
+        prisma.order.count({ where: { status: 'PROCESSING' } }),
+        prisma.order.count({ where: { status: 'DELIVERED' } }),
+        prisma.order.groupBy({
+          by: ['status'],
+          _count: true,
+        }),
+      ]);
+
+      // Raw SQL queries отдельно (могут падать из-за SQL синтаксиса)
+      let dailyRevenue: any[] = [];
+      let dailyOrders: any[] = [];
+      try {
+        dailyRevenue = await prisma.$queryRaw`
+          SELECT DATE("createdAt") as date, SUM("totalPrice") as revenue
+          FROM "Order"
+          WHERE "createdAt" >= ${startDate}
+          GROUP BY DATE("createdAt")
+          ORDER BY date DESC
+          LIMIT ${days}
+        `;
+      } catch (e) {
+        console.error('❌ dailyRevenue query failed:', e);
+      }
+
+      try {
+        dailyOrders = await prisma.$queryRaw`
+          SELECT DATE("createdAt") as date, COUNT(*) as orders
+          FROM "Order"
+          WHERE "createdAt" >= ${startDate}
+          GROUP BY DATE("createdAt")
+          ORDER BY date DESC
+          LIMIT ${days}
+        `;
+      } catch (e) {
+        console.error('❌ dailyOrders query failed:', e);
+      }
+
+      // Top products
+      let topProducts: any[] = [];
+      let topProductsWithDetails: any[] = [];
+      try {
+        topProducts = await prisma.orderItem.groupBy({
+          by: ['productId'],
+          _sum: { quantity: true },
+          _count: true,
+          orderBy: { _sum: { quantity: 'desc' } },
+          take: 10,
+        });
+
+        const topProductIds = topProducts.map((p: any) => p.productId);
+        const topProductsDetails = await prisma.product.findMany({
+          where: { id: { in: topProductIds } },
+          select: { id: true, title: true, price: true, imageUrl: true },
+        });
+
+        topProductsWithDetails = topProducts.map((tp: any) => ({
+          ...tp,
+          product: topProductsDetails.find((p: any) => p.id === tp.productId),
+        }));
+      } catch (e) {
+        console.error('❌ topProducts query failed:', e);
+      }
+
+      // Recent orders
+      let recentOrders: any[] = [];
+      try {
+        recentOrders = await prisma.order.findMany({
+          take: 5,
+          orderBy: { createdAt: 'desc' },
+          include: {
+            items: {
+              include: {
+                product: {
+                  select: {
+                    id: true,
+                    title: true,
+                    imageUrl: true,
+                  },
                 },
               },
             },
           },
-        },
-      }),
-    ]);
+        });
+      } catch (e) {
+        console.error('❌ recentOrders query failed:', e);
+      }
 
-    // Get information about top products
-    const topProductIds = topProducts.map((p: { productId: string }) => p.productId);
-    const topProductsDetails = await prisma.product.findMany({
-      where: { id: { in: topProductIds } },
-      select: { id: true, title: true, price: true, imageUrl: true },
-    });
-
-    const topProductsWithDetails = topProducts.map((tp: { productId: string; _sum: { quantity: number | null }; _count: number }) => ({
-      ...tp,
-      product: topProductsDetails.find((p: { id: string }) => p.id === tp.productId),
-    }));
-
-    return {
-      totalUsers,
-      totalOrders,
-      totalRevenue: Number(totalRevenue._sum.totalPrice || 0),
-      totalProducts,
-      ordersToday,
-      new: newOrdersCount,
-      processing: processingOrdersCount,
-      delivered: deliveredOrdersCount,
-      ordersByStatus: ordersByStatus.map((s: { status: string; _count: number }) => ({
-        status: s.status,
-        count: s._count,
-      })),
-      dailyRevenue,
-      dailyOrders,
-      topProducts: topProductsWithDetails,
-      recentOrders: recentOrders.map((order: any) => ({
-        id: order.id,
-        name: order.name,
-        email: order.email,
-        totalPrice: Number(order.totalPrice),
-        status: order.status,
-        createdAt: order.createdAt.toISOString(),
-        items: order.items.map((item: any) => ({
-          quantity: item.quantity,
-          product: {
-            title: item.product.title,
-            imageUrl: item.product.imageUrl,
-          },
+      return {
+        totalUsers,
+        totalOrders,
+        totalRevenue: Number(totalRevenue._sum.totalPrice || 0),
+        totalProducts,
+        ordersToday,
+        new: newOrdersCount,
+        processing: processingOrdersCount,
+        delivered: deliveredOrdersCount,
+        ordersByStatus: ordersByStatus.map((s: any) => ({
+          status: s.status,
+          count: s._count,
         })),
-      })),
-    };
+        dailyRevenue,
+        dailyOrders,
+        topProducts: topProductsWithDetails,
+        recentOrders: recentOrders.map((order: any) => ({
+          id: order.id,
+          name: order.name,
+          email: order.email,
+          totalPrice: Number(order.totalPrice),
+          status: order.status,
+          createdAt: order.createdAt.toISOString(),
+          items: order.items.map((item: any) => ({
+            quantity: item.quantity,
+            product: {
+              title: item.product?.title || 'Удалённый товар',
+              imageUrl: item.product?.imageUrl || null,
+            },
+          })),
+        })),
+      };
+    } catch (error: any) {
+      console.error('❌ getDashboardStats error:', error.message);
+      throw error;
+    }
   }
 
   // ==================== SALES STATS ====================
