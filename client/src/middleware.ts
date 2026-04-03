@@ -71,8 +71,9 @@ export async function middleware(request: NextRequest) {
 
   // ✅ ОТРИМУЄМО статус магазину через внутрішній API
   const port = process.env.PORT || '8080';
+  const adminPanelPath = process.env.ADMIN_PANEL_PATH || '/admin-x8k2p9-panel';
   const internalUrl = `http://127.0.0.1:${port}`;
-  const storeStatusUrl = `${internalUrl}/api/admin/settings/storeEnabled`;
+  const storeStatusUrl = `${internalUrl}/api${adminPanelPath}/settings/storeEnabled`;
 
   console.log('[Middleware] fetching from:', storeStatusUrl);
 
