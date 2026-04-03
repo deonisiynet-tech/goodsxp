@@ -211,37 +211,6 @@ export default function WarrantyPage() {
         </div>
       ),
     },
-    {
-      title: 'Термін гарантії по категоріях',
-      content: (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-          <div className="flex justify-between p-3 bg-surface rounded-lg">
-            <span>Смартфони</span>
-            <span className="text-primary font-medium">12 місяців</span>
-          </div>
-          <div className="flex justify-between p-3 bg-surface rounded-lg">
-            <span>Ноутбуки</span>
-            <span className="text-primary font-medium">12-24 місяці</span>
-          </div>
-          <div className="flex justify-between p-3 bg-surface rounded-lg">
-            <span>Планшети</span>
-            <span className="text-primary font-medium">12 місяців</span>
-          </div>
-          <div className="flex justify-between p-3 bg-surface rounded-lg">
-            <span>Навушники</span>
-            <span className="text-primary font-medium">12 місяців</span>
-          </div>
-          <div className="flex justify-between p-3 bg-surface rounded-lg">
-            <span>Годинники</span>
-            <span className="text-primary font-medium">12 місяців</span>
-          </div>
-          <div className="flex justify-between p-3 bg-surface rounded-lg">
-            <span>Аксесуари</span>
-            <span className="text-primary font-medium">6-12 місяців</span>
-          </div>
-        </div>
-      ),
-    },
   ];
 
   const timelineSteps = [
