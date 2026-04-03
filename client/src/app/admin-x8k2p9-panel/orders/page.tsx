@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import AdminLayout from '@/components/admin/AdminLayout'
 import OrderModal from '@/components/admin/OrderModal'
-import { getAdminApiPath } from '@/lib/admin-paths'
+import { getAdminApiFullPath } from '@/lib/admin-paths'
 import toast from 'react-hot-toast'
 import { ShoppingCart, Search, Filter, Eye, Trash2, RefreshCw } from 'lucide-react'
 
@@ -49,7 +49,7 @@ export default function OrdersPage() {
       if (searchEmail) params.append('email', searchEmail)
       if (searchId) params.append('searchId', searchId)
 
-      const response = await fetch(getAdminApiPath(`/orders?${params.toString()}`), {
+      const response = await fetch(getAdminApiFullPath(`/orders?${params.toString()}`), {
         credentials: 'include',
       })
 
@@ -83,7 +83,7 @@ export default function OrdersPage() {
     if (!confirm('Ви впевнені, що хочете видалити це замовлення?')) return
 
     try {
-      const response = await fetch(getAdminApiPath(`/orders/${id}`), {
+      const response = await fetch(getAdminApiFullPath(`/orders/${id}`), {
         method: 'DELETE',
         credentials: 'include',
       })
@@ -108,7 +108,7 @@ export default function OrdersPage() {
 
   const handleStatusChange = async (orderId: string, status: string) => {
     try {
-      const response = await fetch(getAdminApiPath(`/orders/${orderId}/status`), {
+      const response = await fetch(getAdminApiFullPath(`/orders/${orderId}/status`), {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

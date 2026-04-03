@@ -11,7 +11,7 @@ import TopProducts from '@/components/admin/TopProducts'
 import VisitorStats from '@/components/admin/VisitorStats'
 import toast from 'react-hot-toast'
 import { Plus } from 'lucide-react'
-import { getAdminApiPath, getAdminPagePath } from '@/lib/admin-paths'
+import { getAdminApiFullPath, getAdminPagePath } from '@/lib/admin-paths'
 
 interface DashboardStats {
   totalUsers: number
@@ -107,7 +107,7 @@ export default function DashboardView() {
       try {
         // Check authentication first
         console.log('📡 Fetching auth me...')
-        const authRes = await fetch(getAdminApiPath('/auth/me'), {
+        const authRes = await fetch(getAdminApiFullPath('/auth/me'), {
           credentials: 'include',
           headers: {
             'Accept': 'application/json',
@@ -137,7 +137,7 @@ export default function DashboardView() {
 
         // Fetch main stats
         console.log('📡 Fetching stats...')
-        const statsRes = await fetch(getAdminApiPath('/stats'), {
+        const statsRes = await fetch(getAdminApiFullPath('/stats'), {
           credentials: 'include',
           headers: {
             'Accept': 'application/json',
@@ -158,7 +158,7 @@ export default function DashboardView() {
 
         // Fetch sales data for chart (last 30 days)
         console.log('📡 Fetching sales data...')
-        const salesRes = await fetch(getAdminApiPath('/stats/sales?days=30'), {
+        const salesRes = await fetch(getAdminApiFullPath('/stats/sales?days=30'), {
           credentials: 'include',
           headers: {
             'Accept': 'application/json',
@@ -178,7 +178,7 @@ export default function DashboardView() {
 
         // Fetch latest orders
         console.log('📡 Fetching latest orders...')
-        const ordersRes = await fetch(getAdminApiPath('/orders?limit=10'), {
+        const ordersRes = await fetch(getAdminApiFullPath('/orders?limit=10'), {
           credentials: 'include',
           headers: {
             'Accept': 'application/json',
@@ -198,7 +198,7 @@ export default function DashboardView() {
 
         // Fetch top products
         console.log('📡 Fetching top products...')
-        const productsRes = await fetch(getAdminApiPath('/products/top?limit=5'), {
+        const productsRes = await fetch(getAdminApiFullPath('/products/top?limit=5'), {
           credentials: 'include',
           headers: {
             'Accept': 'application/json',
@@ -237,7 +237,7 @@ export default function DashboardView() {
     const interval = setInterval(() => {
       if (!loading && authenticated) {
         // Refresh stats silently
-        fetch(getAdminApiPath('/stats'), {
+        fetch(getAdminApiFullPath('/stats'), {
           credentials: 'include',
           headers: { 'Accept': 'application/json' },
         })
@@ -309,7 +309,7 @@ export default function DashboardView() {
     if (!confirm('Ви впевнені, що хочете видалити цей товар?')) return
 
     try {
-      const res = await fetch(getAdminApiPath(`/products/${id}`), {
+      const res = await fetch(getAdminApiFullPath(`/products/${id}`), {
         method: 'DELETE',
         credentials: 'include',
       })

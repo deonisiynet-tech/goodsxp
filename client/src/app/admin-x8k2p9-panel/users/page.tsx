@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import AdminLayout from '@/components/admin/AdminLayout'
-import { getAdminApiPath } from '@/lib/admin-paths'
+import { getAdminApiFullPath } from '@/lib/admin-paths'
 import toast from 'react-hot-toast'
 import { Users, Search, Shield, UserIcon, RefreshCw } from 'lucide-react'
 
@@ -29,7 +29,7 @@ export default function UsersPage() {
       if (roleFilter) params.append('role', roleFilter)
       if (search) params.append('search', search)
 
-      const response = await fetch(getAdminApiPath(`/users?${params.toString()}`), {
+      const response = await fetch(getAdminApiFullPath(`/users?${params.toString()}`), {
         credentials: 'include',
       })
 
@@ -59,7 +59,7 @@ export default function UsersPage() {
       return
 
     try {
-      const response = await fetch(getAdminApiPath(`/users/${userId}/role`), {
+      const response = await fetch(getAdminApiFullPath(`/users/${userId}/role`), {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

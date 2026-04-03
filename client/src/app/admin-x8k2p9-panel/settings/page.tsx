@@ -19,7 +19,7 @@ import {
   Check,
 } from 'lucide-react'
 import StoreDisableConfirmModal from '@/components/admin/StoreDisableConfirmModal'
-import { getAdminApiPath, getAdminPagePath } from '@/lib/admin-paths'
+import { getAdminApiFullPath, getAdminPagePath } from '@/lib/admin-paths'
 
 interface Settings {
   storeName: string
@@ -66,7 +66,7 @@ export default function SettingsPage() {
   const loadSettings = async () => {
     try {
       setLoading(true)
-      const response = await fetch(getAdminApiPath('/settings'), {
+      const response = await fetch(getAdminApiFullPath('/settings'), {
         credentials: 'include',
       })
 
@@ -91,7 +91,7 @@ export default function SettingsPage() {
 
   const load2FAStatus = async () => {
     try {
-      const response = await fetch(getAdminApiPath('/auth/2fa/status'), {
+      const response = await fetch(getAdminApiFullPath('/auth/2fa/status'), {
         credentials: 'include',
       })
 
@@ -121,7 +121,7 @@ export default function SettingsPage() {
           throw new Error(`Значення для ${setting.key} не може бути пустим`)
         }
 
-        const response = await fetch(getAdminApiPath(`/settings/${setting.key}`), {
+        const response = await fetch(getAdminApiFullPath(`/settings/${setting.key}`), {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -150,7 +150,7 @@ export default function SettingsPage() {
   const handleGenerate2FA = async () => {
     try {
       setTwoFALoading(true)
-      const response = await fetch(getAdminApiPath('/auth/2fa/generate'), {
+      const response = await fetch(getAdminApiFullPath('/auth/2fa/generate'), {
         method: 'POST',
         credentials: 'include',
       })
@@ -180,7 +180,7 @@ export default function SettingsPage() {
 
     try {
       setTwoFALoading(true)
-      const response = await fetch(getAdminApiPath('/auth/2fa/enable'), {
+      const response = await fetch(getAdminApiFullPath('/auth/2fa/enable'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -213,7 +213,7 @@ export default function SettingsPage() {
 
     try {
       setTwoFALoading(true)
-      const response = await fetch(getAdminApiPath('/auth/2fa/disable'), {
+      const response = await fetch(getAdminApiFullPath('/auth/2fa/disable'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -250,7 +250,7 @@ export default function SettingsPage() {
   const handleStoreEnabledToggle = async (enable: boolean) => {
     try {
       if (enable) {
-        const response = await fetch(getAdminApiPath('/settings/storeEnabled'), {
+        const response = await fetch(getAdminApiFullPath('/settings/storeEnabled'), {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -277,7 +277,7 @@ export default function SettingsPage() {
 
   const handleDisableConfirm = async () => {
     try {
-      const response = await fetch(getAdminApiPath('/settings/storeEnabled'), {
+      const response = await fetch(getAdminApiFullPath('/settings/storeEnabled'), {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
