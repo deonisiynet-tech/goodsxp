@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { getAdminApiPath } from './admin-paths.js';
+import { getAdminApiPath } from './admin-paths';
 
 // Використовуємо відносний шлях '/api' для інтеграції з Express
 // На Railway всі запити до /api/* проксіруються на Express API
