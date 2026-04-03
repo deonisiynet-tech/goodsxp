@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getAdminApiPath } from './admin-paths.js';
 
 // Використовуємо відносний шлях '/api' для інтеграції з Express
 // На Railway всі запити до /api/* проксіруються на Express API
@@ -54,33 +55,33 @@ export const productsApi = {
     api.get('/products', { params }),
   getById: (id: string) => api.get(`/products/${id}`),
   getAllAdmin: (params?: { page?: number; limit?: number; search?: string }) =>
-    api.get('/admin/products', { params }),
+    api.get(getAdminApiPath('/products'), { params }),
   create: (data: FormData) =>
-    api.post('/admin/products', data, {
+    api.post(getAdminApiPath('/products'), data, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
   update: (id: string, data: FormData) =>
-    api.put(`/admin/products/${id}`, data, {
+    api.put(getAdminApiPath(`/products/${id}`), data, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
-  delete: (id: string) => api.delete(`/admin/products/${id}`),
+  delete: (id: string) => api.delete(getAdminApiPath(`/products/${id}`)),
 };
 
 // Categories API
 export const categoriesApi = {
   getAll: (params?: { parentId?: string }) =>
-    api.get('/admin/categories', { params }),
-  getAllTree: () => api.get('/admin/categories/tree'),
-  getById: (id: string) => api.get(`/admin/categories/${id}`),
+    api.get(getAdminApiPath('/categories'), { params }),
+  getAllTree: () => api.get(getAdminApiPath('/categories/tree')),
+  getById: (id: string) => api.get(getAdminApiPath(`/categories/${id}`)),
   create: (data: FormData) =>
-    api.post('/admin/categories', data, {
+    api.post(getAdminApiPath('/categories'), data, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
   update: (id: string, data: FormData) =>
-    api.put(`/admin/categories/${id}`, data, {
+    api.put(getAdminApiPath(`/categories/${id}`), data, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }),
-  delete: (id: string) => api.delete(`/admin/categories/${id}`),
+  delete: (id: string) => api.delete(getAdminApiPath(`/categories/${id}`)),
 };
 
 // Orders API
@@ -90,40 +91,40 @@ export const ordersApi = {
   getAll: (params?: { page?: number; limit?: number; status?: string }) =>
     api.get('/orders', { params }),
   getAllAdmin: (params?: { page?: number; limit?: number; status?: string }) =>
-    api.get('/admin/orders', { params }),
+    api.get(getAdminApiPath('/orders'), { params }),
   updateStatus: (id: string, status: string) =>
-    api.patch(`/admin/orders/${id}/status`, { status }),
-  delete: (id: string) => api.delete(`/admin/orders/${id}`),
-  getStats: () => api.get('/admin/orders/stats'),
+    api.patch(getAdminApiPath(`/orders/${id}/status`), { status }),
+  delete: (id: string) => api.delete(getAdminApiPath(`/orders/${id}`)),
+  getStats: () => api.get(getAdminApiPath('/orders/stats')),
 };
 
 // Admin API
 export const adminApi = {
   // Dashboard Stats
   getDashboardStats: (days?: number) =>
-    api.get('/admin/stats', { params: { days } }),
+    api.get(getAdminApiPath('/stats'), { params: { days } }),
 
   // Users
   getUsers: (params?: { page?: number; limit?: number; role?: string; search?: string }) =>
-    api.get('/admin/users', { params }),
-  getUserById: (id: string) => api.get(`/admin/users/${id}`),
+    api.get(getAdminApiPath('/users'), { params }),
+  getUserById: (id: string) => api.get(getAdminApiPath(`/users/${id}`)),
   updateUserRole: (id: string, role: 'USER' | 'ADMIN') =>
-    api.patch(`/admin/users/${id}/role`, { role }),
+    api.patch(getAdminApiPath(`/users/${id}/role`), { role }),
   resetUserPassword: (id: string, password: string) =>
-    api.post(`/admin/users/${id}/reset-password`, { password }),
-  deleteUser: (id: string) => api.delete(`/admin/users/${id}`),
+    api.post(getAdminApiPath(`/users/${id}/reset-password`), { password }),
+  deleteUser: (id: string) => api.delete(getAdminApiPath(`/users/${id}`)),
 
   // Logs
   getLogs: (params?: { page?: number; limit?: number; adminId?: string; action?: string }) =>
-    api.get('/admin/logs', { 
+    api.get(getAdminApiPath('/logs'), {
       params,
       // Для адмін-запитів використовуємо cookie для автентифікації
       ...(typeof window !== 'undefined' ? { credentials: 'include' as const } : {}),
     }),
 
   // Settings
-  getSettings: () => api.get('/admin/settings'),
-  getSetting: (key: string) => api.get(`/admin/settings/${key}`),
+  getSettings: () => api.get(getAdminApiPath('/settings')),
+  getSetting: (key: string) => api.get(getAdminApiPath(`/settings/${key}`)),
   updateSetting: (key: string, value: string, description?: string) =>
-    api.put(`/admin/settings/${key}`, { value, description }),
+    api.put(getAdminApiPath(`/settings/${key}`), { value, description }),
 };

@@ -16,6 +16,7 @@ import {
   Home,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { getAdminPagePath, getAdminApiPath, getAdminBasePath } from '@/lib/admin-paths';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -27,18 +28,21 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
+  // Отримуємо базовий шлях адмінки
+  const adminPath = getAdminBasePath();
+
   const menuItems = [
-    { href: '/admin', icon: Home, label: 'Dashboard' },
-    { href: '/admin/products', icon: Package, label: 'Товари' },
-    { href: '/admin/orders', icon: ShoppingCart, label: 'Замовлення' },
-    { href: '/admin/users', icon: Users, label: 'Користувачі' },
-    { href: '/admin/logs', icon: FileText, label: 'Логи' },
-    { href: '/admin/settings', icon: Settings, label: 'Налаштування' },
+    { href: getAdminPagePath(''), icon: Home, label: 'Dashboard' },
+    { href: getAdminPagePath('/products'), icon: Package, label: 'Товари' },
+    { href: getAdminPagePath('/orders'), icon: ShoppingCart, label: 'Замовлення' },
+    { href: getAdminPagePath('/users'), icon: Users, label: 'Користувачі' },
+    { href: getAdminPagePath('/logs'), icon: FileText, label: 'Логи' },
+    { href: getAdminPagePath('/settings'), icon: Settings, label: 'Налаштування' },
   ];
 
   const isActive = (href: string) => {
-    if (href === '/admin') {
-      return pathname === '/admin';
+    if (href === adminPath) {
+      return pathname === adminPath;
     }
     return pathname?.startsWith(href);
   };
@@ -48,8 +52,8 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
     try {
       setLoggingOut(true);
-      
-      const response = await fetch('/api/admin/auth/logout', {
+
+      const response = await fetch(getAdminApiPath('/auth/logout'), {
         method: 'POST',
         credentials: 'include',
       });
@@ -59,7 +63,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
       }
 
       toast.success('Вихід виконано успішно');
-      router.push('/admin/login');
+      router.push(getAdminPagePath('/login'));
     } catch (error: any) {
       toast.error(error.message || 'Помилка виходу');
     } finally {

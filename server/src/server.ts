@@ -83,6 +83,8 @@ import novaPoshtaRoutes from './routes/nova-poshta.routes.js';
 import analyticsRoutes from './routes/analytics.routes.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 import { adminRateLimiter } from './middleware/rateLimiter.js';
+import { blockAdminScanning } from './middleware/adminPanelPath.js';
+import { getAdminApiPrefix } from './utils/adminPaths.js';
 import { initializeAdmin } from './utils/initAdmin.js';
 import { runMigrations } from './prisma/migrate.js';
 console.log('✅ All imports completed successfully');
@@ -158,6 +160,9 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Cookie parsing
 app.use(cookieParser());
 
+// Block admin scanning attempts
+app.use(blockAdminScanning);
+
 // ==================================
 // Static Files
 // ==================================
@@ -206,15 +211,19 @@ app.get('/healthz', (_req: Request, res: Response) => {
 });
 
 // API routes - these handle /api/* paths
-// IMPORTANT: /api/admin/auth must be BEFORE /api/admin (which requires auth)
+// IMPORTANT: Admin API routes use dynamic path from ADMIN_PANEL_PATH env variable
+const adminApiPrefix = getAdminApiPrefix();
+
 app.use('/api/auth', authRoutes);
-app.use('/api/admin/auth', adminRateLimiter, adminAuthRoutes);  // Login/logout with rate limiting
+app.use(`${adminApiPrefix}/auth`, adminRateLimiter, adminAuthRoutes);  // Admin auth with hidden path
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
-app.use('/api/admin', adminRoutes);           // Admin only - requires auth
+app.use(`${adminApiPrefix}`, adminRoutes);           // Admin only - requires auth
 app.use('/api/upload', uploadRoutes);
 app.use('/api/nova-poshta', novaPoshtaRoutes);
 app.use('/api/analytics', analyticsRoutes);   // Analytics endpoints
+
+console.log(`🔒 Admin API prefix: ${adminApiPrefix}`);
 
 // ==================================
 // Next.js Handler - MUST be last

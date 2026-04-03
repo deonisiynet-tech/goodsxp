@@ -11,6 +11,7 @@ import TopProducts from '@/components/admin/TopProducts'
 import VisitorStats from '@/components/admin/VisitorStats'
 import toast from 'react-hot-toast'
 import { Plus } from 'lucide-react'
+import { getAdminApiPath, getAdminPagePath } from '@/lib/admin-paths'
 
 interface DashboardStats {
   totalUsers: number
@@ -105,8 +106,8 @@ export default function DashboardView() {
     const loadDashboardData = async () => {
       try {
         // Check authentication first
-        console.log('📡 Fetching /api/admin/auth/me...')
-        const authRes = await fetch('/api/admin/auth/me', {
+        console.log('📡 Fetching auth me...')
+        const authRes = await fetch(getAdminApiPath('/auth/me'), {
           credentials: 'include',
           headers: {
             'Accept': 'application/json',
@@ -118,7 +119,7 @@ export default function DashboardView() {
         if (authRes.status === 401) {
           console.log('⚠️ Dashboard: Not authenticated, redirecting to login')
           setAuthenticated(false)
-          router.push('/admin/login?from=/admin')
+          router.push(getAdminPagePath('/login') + '?from=' + encodeURIComponent(pathname || getAdminPagePath('')))
           return
         }
 
@@ -128,15 +129,15 @@ export default function DashboardView() {
         if (!authData.authenticated) {
           console.log('⚠️ Dashboard: Not authenticated (no user data)')
           setAuthenticated(false)
-          router.push('/admin/login?from=/admin')
+          router.push(getAdminPagePath('/login') + '?from=' + encodeURIComponent(pathname || getAdminPagePath('')))
           return
         }
 
         console.log('✅ Dashboard: Authenticated, fetching stats...')
 
         // Fetch main stats
-        console.log('📡 Fetching /api/admin/stats...')
-        const statsRes = await fetch('/api/admin/stats', {
+        console.log('📡 Fetching stats...')
+        const statsRes = await fetch(getAdminApiPath('/stats'), {
           credentials: 'include',
           headers: {
             'Accept': 'application/json',
@@ -156,8 +157,8 @@ export default function DashboardView() {
         setStats(data)
 
         // Fetch sales data for chart (last 30 days)
-        console.log('📡 Fetching /api/admin/stats/sales?days=30...')
-        const salesRes = await fetch('/api/admin/stats/sales?days=30', {
+        console.log('📡 Fetching sales data...')
+        const salesRes = await fetch(getAdminApiPath('/stats/sales?days=30'), {
           credentials: 'include',
           headers: {
             'Accept': 'application/json',
@@ -176,8 +177,8 @@ export default function DashboardView() {
         setChartLoading(false)
 
         // Fetch latest orders
-        console.log('📡 Fetching /api/admin/orders?limit=10...')
-        const ordersRes = await fetch('/api/admin/orders?limit=10', {
+        console.log('📡 Fetching latest orders...')
+        const ordersRes = await fetch(getAdminApiPath('/orders?limit=10'), {
           credentials: 'include',
           headers: {
             'Accept': 'application/json',
@@ -196,8 +197,8 @@ export default function DashboardView() {
         setOrdersLoading(false)
 
         // Fetch top products
-        console.log('📡 Fetching /api/admin/products/top?limit=5...')
-        const productsRes = await fetch('/api/admin/products/top?limit=5', {
+        console.log('📡 Fetching top products...')
+        const productsRes = await fetch(getAdminApiPath('/products/top?limit=5'), {
           credentials: 'include',
           headers: {
             'Accept': 'application/json',
@@ -236,7 +237,7 @@ export default function DashboardView() {
     const interval = setInterval(() => {
       if (!loading && authenticated) {
         // Refresh stats silently
-        fetch('/api/admin/stats', {
+        fetch(getAdminApiPath('/stats'), {
           credentials: 'include',
           headers: { 'Accept': 'application/json' },
         })
@@ -308,7 +309,7 @@ export default function DashboardView() {
     if (!confirm('Ви впевнені, що хочете видалити цей товар?')) return
 
     try {
-      const res = await fetch(`/api/admin/products/${id}`, {
+      const res = await fetch(getAdminApiPath(`/products/${id}`), {
         method: 'DELETE',
         credentials: 'include',
       })

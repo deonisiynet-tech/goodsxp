@@ -1,11 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
 import prisma from '../prisma/client.js';
+import { getAdminApiPrefix } from '../utils/adminPaths.js';
 
 /**
  * Middleware для перевірки статусу магазину
  * Якщо магазин вимкнений (storeEnabled = false):
  * - Блокує публічні API маршрути
- * - Дозволяє адмінські маршрути (/api/admin/*)
+ * - Дозволяє адмінські маршрути (з динамічним префіксом)
  * - Дозволяє auth маршрути
  * - Додає заголовок X-Store-Status для клієнта
  */
@@ -32,14 +33,17 @@ export async function checkStoreStatus(
 
     // ✅ ЯКЩО МАГАЗИН ВИМКНЕНИЙ - ПЕРЕВІРЯЄМО МАРШРУТ
 
-    // Адмінські маршрути - завжди дозволені
-    const isAdminRoute = req.path.startsWith('/api/admin');
+    // Отримуємо динамічний префікс адмінки
+    const adminApiPrefix = getAdminApiPrefix();
+
+    // Адмінські маршрути - завжди дозволені (з динамічним префіксом)
+    const isAdminRoute = req.path.startsWith(adminApiPrefix);
     if (isAdminRoute) {
       return next();
     }
 
     // Auth маршрути - завжди дозволені (для перевірки ролі)
-    const isAuthRoute = req.path.startsWith('/api/auth') || req.path.startsWith('/api/admin/auth');
+    const isAuthRoute = req.path.startsWith('/api/auth') || req.path.startsWith(`${adminApiPrefix}/auth`);
     if (isAuthRoute) {
       return next();
     }

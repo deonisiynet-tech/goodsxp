@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { ShoppingCart, User, Menu, X } from 'lucide-react';
 import { useCartStore } from '@/lib/store';
 import { useState, useEffect } from 'react';
+import { getAdminPagePath } from '@/lib/admin-paths';
 
 const navLinks = [
   { href: '/', label: 'Головна' },
@@ -93,7 +94,7 @@ export default function Header() {
               <div className="flex items-center gap-4">
                 {user.role === 'ADMIN' && (
                   <Link
-                    href="/admin"
+                    href={getAdminPagePath('')}
                     className="text-sm font-light text-white/90 hover:text-purple-400 transition-colors duration-200"
                   >
                     Адмінка

@@ -2,21 +2,65 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
 /**
- * Next.js Middleware для перевірки статусу магазину
- * Працює на сервері до завантаження сторінки
+ * Next.js Middleware для перевірки статусу магазину та захисту адмінки
  *
  * Якщо storeEnabled = false:
  * - Показує сторінку maintenance для всіх користувачів
- * - Крім адмінів (/admin, /api/admin)
+ * - Крім адмінів (/admin-x8k2p9-panel, /api/admin)
+ *
+ * Блокує доступ до стандартних шляхів адмінки (/admin, /wp-admin і т.д.)
  */
+
+// Отримуємо прихований шлях адмінки зі змінних оточення
+const ADMIN_PANEL_PATH = process.env.ADMIN_PANEL_PATH || '/admin-x8k2p9-panel';
+
+// Стандартні шляхи, які блокуються (для запобігання скануванню)
+const BLOCKED_PATHS = [
+  '/admin',
+  '/wp-admin',
+  '/administrator',
+  '/dashboard',
+  '/admin-panel',
+  '/adminpanel',
+  '/cpanel',
+  '/manager',
+  '/backend',
+  '/control',
+  '/console',
+];
+
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const pathnameLower = pathname.toLowerCase();
 
-  // ✅ НЕ ПЕРЕВІРЯЄМО технічні маршрути та maintenance
+  // ✅ БЛОКУВАННЯ стандартних шляхів адмінки (повертаємо 404)
+  for (const blockedPath of BLOCKED_PATHS) {
+    if (
+      pathnameLower === blockedPath ||
+      pathnameLower === blockedPath + '/' ||
+      pathnameLower.startsWith(blockedPath + '/')
+    ) {
+      console.warn(`🚨 Admin scanning attempt blocked: ${pathname} from ${request.ip}`);
+
+      // Повертаємо 404 - наче такої сторінки не існує
+      return new NextResponse(
+        JSON.stringify({
+          error: 'Not found',
+          message: 'The page you are looking for does not exist.',
+        }),
+        {
+          status: 404,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
+    }
+  }
+
+  // ✅ НЕ ПЕРЕВІРЯЄМО технічні маршрути та приховану адмінку
   if (
     pathname.startsWith('/_next') ||
     pathname.startsWith('/api') ||
-    pathname.startsWith('/admin') ||
+    pathname.startsWith(ADMIN_PANEL_PATH) ||
     pathname.startsWith('/favicon.ico') ||
     pathname.startsWith('/sitemap.xml') ||
     pathname.startsWith('/robots.txt') ||
@@ -26,7 +70,6 @@ export async function middleware(request: NextRequest) {
   }
 
   // ✅ ОТРИМУЄМО статус магазину через внутрішній API
-  // Використовуємо http://127.0.0.1 замість localhost для уникнення DNS проблем
   const port = process.env.PORT || '8080';
   const internalUrl = `http://127.0.0.1:${port}`;
   const storeStatusUrl = `${internalUrl}/api/admin/settings/storeEnabled`;
@@ -41,7 +84,6 @@ export async function middleware(request: NextRequest) {
       headers: {
         'Content-Type': 'application/json',
       },
-      // ✅ NO CACHE - завжди актуальне значення
       cache: 'no-store',
     });
 
@@ -56,7 +98,6 @@ export async function middleware(request: NextRequest) {
     }
   } catch (error) {
     console.error('[Middleware] Store status check failed:', error instanceof Error ? error.message : error);
-    // fail-safe: якщо API недоступний, вважаємо що магазин включений
     storeEnabled = true;
   }
 
@@ -72,6 +113,9 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!api|admin|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|maintenance).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|maintenance).*)',
   ],
 };
+
+// Експортуємо константу для використання в інших місцях
+export { ADMIN_PANEL_PATH };

@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { Lock, Mail, AlertCircle, CheckCircle, Shield } from 'lucide-react'
+import { getAdminApiPath, getAdminPagePath } from '@/lib/admin-paths'
 
 interface LoginForm {
   email: string
@@ -14,7 +15,7 @@ interface LoginForm {
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const from = searchParams.get('from') || '/admin'
+  const from = searchParams.get('from') || getAdminPagePath('')
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
@@ -31,7 +32,7 @@ function LoginForm() {
       setBlockedInfo(null)
       setLoading(true)
 
-      const response = await fetch('/api/admin/auth/login', {
+      const response = await fetch(getAdminApiPath('/auth/login'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -75,14 +76,14 @@ function LoginForm() {
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await fetch('/api/admin/auth/me', {
+        const response = await fetch(getAdminApiPath('/auth/me'), {
           credentials: 'include',
         })
 
         if (response.ok) {
           const data = await response.json()
           if (data.authenticated) {
-            router.push('/admin')
+            router.push(getAdminPagePath(''))
           }
         }
       } catch (error) {
