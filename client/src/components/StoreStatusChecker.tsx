@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import { getAdminApiPath, getAdminBasePath } from '@/lib/admin-paths';
+import { getAdminApiFullPath, getAdminBasePath } from '@/lib/admin-paths';
 
 /**
  * Глобальний компонент для перевірки статусу магазину
@@ -29,7 +29,7 @@ export default function StoreStatusChecker() {
     // ✅ Функція перевірки статусу
     const checkStoreStatus = async () => {
       try {
-        const response = await fetch(getAdminApiPath('/settings/storeEnabled'), {
+        const response = await fetch(getAdminApiFullPath('/settings/storeEnabled'), {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',

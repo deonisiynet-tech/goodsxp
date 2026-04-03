@@ -1,16 +1,28 @@
 /**
  * Утиліта для отримання правильних шляхів до API адмінки
- * Всі API виклики повинні використовувати цю утилиту
+ *
+ * УВАГА: api.ts вже має baseURL: '/api', тому getAdminApiPath повертає
+ * шлях БЕЗ /api — axios підставить його автоматично.
+ * Для прямого fetch використовуйте getAdminApiFullPath.
  */
 
 const ADMIN_PANEL_PATH = process.env.NEXT_PUBLIC_ADMIN_PANEL_PATH || '/admin-x8k2p9-panel';
 
 /**
- * Отримати повний шлях до API адмінки
- * Наприклад: getAdminApiPath('/products') => '/api/admin-x8k2p9-panel/products'
+ * Шлях для axios (БЕЗ /api — axios baseURL підставить його сам)
+ * Наприклад: getAdminApiPath('/products') => '/admin-x8k2p9-panel/products'
+ * axios baseURL='/api' → фактичний URL: /api/admin-x8k2p9-panel/products
  */
 export function getAdminApiPath(path: string): string {
-  // Видаляємо leading slash якщо є
+  const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+  return `${ADMIN_PANEL_PATH}/${cleanPath}`;
+}
+
+/**
+ * Повний шлях для прямого fetch (З /api)
+ * Наприклад: getAdminApiFullPath('/settings/storeEnabled') => '/api/admin-x8k2p9-panel/settings/storeEnabled'
+ */
+export function getAdminApiFullPath(path: string): string {
   const cleanPath = path.startsWith('/') ? path.slice(1) : path;
   return `/api${ADMIN_PANEL_PATH}/${cleanPath}`;
 }
