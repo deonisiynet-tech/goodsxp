@@ -3,21 +3,24 @@
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useForm } from 'react-hook-form'
-import { Lock, Mail, AlertCircle, CheckCircle } from 'lucide-react'
+import { Lock, Mail, AlertCircle, CheckCircle, Shield } from 'lucide-react'
 
 interface LoginForm {
   email: string
   password: string
+  twoFAToken?: string
 }
 
 function LoginForm() {
   const router = useRouter()
   const searchParams = useSearchParams()
   const from = searchParams.get('from') || '/admin'
-  
+
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
+  const [requiresTwoFA, setRequiresTwoFA] = useState(false)
+  const [blockedInfo, setBlockedInfo] = useState<{ minutes: number } | null>(null)
 
   const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>()
 
@@ -25,6 +28,7 @@ function LoginForm() {
     try {
       setError('')
       setSuccess('')
+      setBlockedInfo(null)
       setLoading(true)
 
       const response = await fetch('/api/admin/auth/login', {
@@ -39,11 +43,23 @@ function LoginForm() {
       const result = await response.json()
 
       if (!response.ok) {
+        // Check if IP is blocked
+        if (result.blocked) {
+          setBlockedInfo({ minutes: result.retryAfterMinutes || 10 })
+          throw new Error(`Занадто багато спроб входу. IP заблоковано на ${result.retryAfterMinutes || 10} хвилин.`)
+        }
         throw new Error(result.error || 'Помилка входу')
       }
 
+      // Check if 2FA is required
+      if (result.requiresTwoFA) {
+        setRequiresTwoFA(true)
+        setError('')
+        return
+      }
+
       setSuccess('Успішний вхід! Перенаправлення...')
-      
+
       // Redirect after short delay
       setTimeout(() => {
         router.push(from)
@@ -62,7 +78,7 @@ function LoginForm() {
         const response = await fetch('/api/admin/auth/me', {
           credentials: 'include',
         })
-        
+
         if (response.ok) {
           const data = await response.json()
           if (data.authenticated) {
@@ -73,7 +89,7 @@ function LoginForm() {
         // Ignore errors, stay on login page
       }
     }
-    
+
     checkAuth()
   }, [router])
 
@@ -90,11 +106,31 @@ function LoginForm() {
         <div className="bg-slate-800/50 backdrop-blur-sm rounded-2xl shadow-2xl p-8 border border-slate-700">
           <div className="text-center mb-6">
             <div className="w-16 h-16 bg-primary/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Lock className="text-primary" size={32} />
+              {requiresTwoFA ? (
+                <Shield className="text-primary" size={32} />
+              ) : (
+                <Lock className="text-primary" size={32} />
+              )}
             </div>
-            <h2 className="text-2xl font-bold text-white">Вхід для адміністраторів</h2>
-            <p className="text-slate-400 mt-2">Введіть свої дані для входу</p>
+            <h2 className="text-2xl font-bold text-white">
+              {requiresTwoFA ? 'Двофакторна автентифікація' : 'Вхід для адміністраторів'}
+            </h2>
+            <p className="text-slate-400 mt-2">
+              {requiresTwoFA
+                ? 'Введіть код з Google Authenticator'
+                : 'Введіть свої дані для входу'}
+            </p>
           </div>
+
+          {/* Blocked Warning */}
+          {blockedInfo && (
+            <div className="mb-6 p-4 bg-orange-500/10 border border-orange-500/20 rounded-xl flex items-center gap-3">
+              <AlertCircle className="text-orange-500" size={20} />
+              <span className="text-orange-400">
+                IP заблоковано на {blockedInfo.minutes} хвилин через занадто багато спроб входу
+              </span>
+            </div>
+          )}
 
           {/* Success Message */}
           {success && (
@@ -114,61 +150,98 @@ function LoginForm() {
 
           {/* Login Form */}
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-            {/* Email Field */}
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Email
-              </label>
-              <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
-                  <Mail size={20} />
+            {!requiresTwoFA ? (
+              <>
+                {/* Email Field */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Email
+                  </label>
+                  <div className="relative">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
+                      <Mail size={20} />
+                    </div>
+                    <input
+                      type="email"
+                      {...register('email', {
+                        required: 'Email обов\'язковий',
+                        pattern: {
+                          value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                          message: 'Невірний формат email',
+                        },
+                      })}
+                      className="w-full pl-12 pr-4 py-3 bg-slate-900/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent transition-all"
+                      placeholder="admin@example.com"
+                      disabled={loading}
+                    />
+                  </div>
+                  {errors.email && (
+                    <p className="mt-2 text-sm text-red-400">{errors.email.message}</p>
+                  )}
                 </div>
-                <input
-                  type="email"
-                  {...register('email', {
-                    required: 'Email обов\'язковий',
-                    pattern: {
-                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                      message: 'Невірний формат email',
-                    },
-                  })}
-                  className="w-full pl-12 pr-4 py-3 bg-slate-900/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent transition-all"
-                  placeholder="admin@example.com"
-                  disabled={loading}
-                />
-              </div>
-              {errors.email && (
-                <p className="mt-2 text-sm text-red-400">{errors.email.message}</p>
-              )}
-            </div>
 
-            {/* Password Field */}
-            <div>
-              <label className="block text-sm font-medium text-slate-300 mb-2">
-                Пароль
-              </label>
-              <div className="relative">
-                <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
-                  <Lock size={20} />
+                {/* Password Field */}
+                <div>
+                  <label className="block text-sm font-medium text-slate-300 mb-2">
+                    Пароль
+                  </label>
+                  <div className="relative">
+                    <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
+                      <Lock size={20} />
+                    </div>
+                    <input
+                      type="password"
+                      {...register('password', {
+                        required: 'Пароль обов\'язковий',
+                        minLength: {
+                          value: 6,
+                          message: 'Пароль має містити щонайменше 6 символів',
+                        },
+                      })}
+                      className="w-full pl-12 pr-4 py-3 bg-slate-900/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent transition-all"
+                      placeholder="••••••••"
+                      disabled={loading}
+                    />
+                  </div>
+                  {errors.password && (
+                    <p className="mt-2 text-sm text-red-400">{errors.password.message}</p>
+                  )}
                 </div>
-                <input
-                  type="password"
-                  {...register('password', {
-                    required: 'Пароль обов\'язковий',
-                    minLength: {
-                      value: 6,
-                      message: 'Пароль має містити щонайменше 6 символів',
-                    },
-                  })}
-                  className="w-full pl-12 pr-4 py-3 bg-slate-900/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent transition-all"
-                  placeholder="••••••••"
-                  disabled={loading}
-                />
+              </>
+            ) : (
+              /* 2FA Token Field */
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-2">
+                  Код з Google Authenticator
+                </label>
+                <div className="relative">
+                  <div className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500">
+                    <Shield size={20} />
+                  </div>
+                  <input
+                    type="text"
+                    {...register('twoFAToken', {
+                      required: 'Потрібен код 2FA',
+                      pattern: {
+                        value: /^[0-9]{6}$/,
+                        message: 'Код має містити 6 цифр',
+                      },
+                    })}
+                    className="w-full pl-12 pr-4 py-3 bg-slate-900/50 border border-slate-600 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-transparent transition-all text-center text-2xl tracking-widest"
+                    placeholder="000000"
+                    maxLength={6}
+                    autoFocus
+                    disabled={loading}
+                  />
+                </div>
+                {errors.twoFAToken && (
+                  <p className="mt-2 text-sm text-red-400">{errors.twoFAToken.message}</p>
+                )}
+                <p className="mt-2 text-xs text-slate-500">
+                  Відкрийте Google Authenticator та введіть 6-значний код
+                </p>
               </div>
-              {errors.password && (
-                <p className="mt-2 text-sm text-red-400">{errors.password.message}</p>
-              )}
-            </div>
+            )}
 
             {/* Submit Button */}
             <button
@@ -179,12 +252,24 @@ function LoginForm() {
               {loading ? (
                 <>
                   <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>Вхід...</span>
+                  <span>{requiresTwoFA ? 'Перевірка...' : 'Вхід...'}</span>
                 </>
               ) : (
-                <span>Увійти</span>
+                <span>{requiresTwoFA ? 'Перевірити' : 'Увійти'}</span>
               )}
             </button>
+
+            {/* Back button when 2FA is required */}
+            {requiresTwoFA && (
+              <button
+                type="button"
+                onClick={() => setRequiresTwoFA(false)}
+                className="w-full py-3 px-4 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-xl transition-all duration-200"
+                disabled={loading}
+              >
+                ← Повернутися до форми входу
+              </button>
+            )}
           </form>
 
           {/* Security Notice */}

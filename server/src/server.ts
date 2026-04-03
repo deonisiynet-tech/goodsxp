@@ -82,6 +82,7 @@ import adminAuthRoutes from './routes/admin.auth.routes.js';
 import novaPoshtaRoutes from './routes/nova-poshta.routes.js';
 import analyticsRoutes from './routes/analytics.routes.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
+import { adminRateLimiter } from './middleware/rateLimiter.js';
 import { initializeAdmin } from './utils/initAdmin.js';
 import { runMigrations } from './prisma/migrate.js';
 console.log('✅ All imports completed successfully');
@@ -207,7 +208,7 @@ app.get('/healthz', (_req: Request, res: Response) => {
 // API routes - these handle /api/* paths
 // IMPORTANT: /api/admin/auth must be BEFORE /api/admin (which requires auth)
 app.use('/api/auth', authRoutes);
-app.use('/api/admin/auth', adminAuthRoutes);  // Login/logout - NO auth required
+app.use('/api/admin/auth', adminRateLimiter, adminAuthRoutes);  // Login/logout with rate limiting
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/admin', adminRoutes);           // Admin only - requires auth
