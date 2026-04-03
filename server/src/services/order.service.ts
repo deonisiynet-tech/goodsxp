@@ -1,6 +1,7 @@
 import prisma from '../prisma/client.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { orderSchema, orderStatusSchema } from '../utils/validators.js';
+import { notifyNewOrder, notifyOrderStatusChanged } from './telegram.service.js';
 
 interface OrderFilters {
   page?: number;
@@ -102,6 +103,24 @@ export class OrderService {
       return newOrder;
     });
 
+    // Відправляємо повідомлення в Telegram (не блокуюче)
+    // Помилка Telegram не впливає на створення замовлення
+    notifyNewOrder({
+      id: order.id,
+      orderNumber: order.id.slice(0, 8).toUpperCase(),
+      items: order.items,
+      totalPrice: order.totalPrice,
+      name: order.name,
+      phone: order.phone,
+      email: order.email,
+      city: order.city,
+      warehouse: order.warehouse,
+      status: order.status,
+      createdAt: order.createdAt,
+    }).catch((error) => {
+      console.error('❌ Failed to send Telegram notification:', error);
+    });
+
     return order;
   }
 
@@ -180,6 +199,8 @@ export class OrderService {
       throw new AppError('Замовлення не знайдено', 404);
     }
 
+    const oldStatus = existing.status;
+
     const order = await prisma.order.update({
       where: { id },
       data: { status: validated.status },
@@ -197,6 +218,29 @@ export class OrderService {
         },
       },
     });
+
+    // Відправляємо повідомлення про зміну статусу (не блокуюче)
+    if (oldStatus !== validated.status) {
+      notifyOrderStatusChanged(
+        {
+          id: order.id,
+          orderNumber: order.id.slice(0, 8).toUpperCase(),
+          items: order.items,
+          totalPrice: order.totalPrice,
+          name: order.name,
+          phone: order.phone,
+          email: order.email,
+          city: order.city,
+          warehouse: order.warehouse,
+          status: order.status,
+          createdAt: order.createdAt,
+        },
+        oldStatus,
+        validated.status
+      ).catch((error) => {
+        console.error('❌ Failed to send Telegram status notification:', error);
+      });
+    }
 
     return order;
   }
