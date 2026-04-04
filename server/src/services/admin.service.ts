@@ -273,21 +273,25 @@ export class AdminService {
       }
 
       return {
-        totalUsers,
-        totalOrders,
+        totalUsers: Number(totalUsers),
+        totalOrders: Number(totalOrders),
         totalRevenue: Number(totalRevenue._sum.totalPrice || 0),
-        totalProducts,
-        ordersToday,
-        new: newOrdersCount,
-        processing: processingOrdersCount,
-        delivered: deliveredOrdersCount,
+        totalProducts: Number(totalProducts),
+        ordersToday: Number(ordersToday),
+        new: Number(newOrdersCount),
+        processing: Number(processingOrdersCount),
+        delivered: Number(deliveredOrdersCount),
         ordersByStatus: ordersByStatus.map((s: any) => ({
           status: s.status,
-          count: s._count,
+          count: Number(s._count),
         })),
         dailyRevenue,
         dailyOrders,
-        topProducts: topProductsWithDetails,
+        topProducts: topProductsWithDetails.map((tp: any) => ({
+          ...tp,
+          _count: tp._count ? Number(tp._count) : 0,
+          _sum: tp._sum ? { quantity: Number(tp._sum.quantity || 0) } : { quantity: 0 },
+        })),
         recentOrders: recentOrders.map((order: any) => ({
           id: order.id,
           name: order.name,
@@ -296,7 +300,8 @@ export class AdminService {
           status: order.status,
           createdAt: order.createdAt.toISOString(),
           items: order.items.map((item: any) => ({
-            quantity: item.quantity,
+            quantity: Number(item.quantity),
+            price: Number(item.price),
             product: {
               title: item.product?.title || 'Удалённый товар',
               imageUrl: item.product?.imageUrl || null,
