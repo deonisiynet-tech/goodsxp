@@ -36,7 +36,8 @@ export default function SalesChart({ data = [], loading = false, days = 30 }: Sa
 
   // Format currency
   const formatCurrency = (value: number) => {
-    return `${value.toLocaleString('uk-UA')} ₴`;
+    const numValue = typeof value === 'bigint' ? Number(value) : Number(value) || 0;
+    return `${numValue.toLocaleString('uk-UA')} ₴`;
   };
 
   // Custom tooltip
@@ -53,7 +54,10 @@ export default function SalesChart({ data = [], loading = false, days = 30 }: Sa
   };
 
   // Prepare chart data - reverse to show oldest to newest
-  const chartData = Array.isArray(data) ? [...data].reverse() : [];
+  const chartData = Array.isArray(data) ? data.map(d => ({
+    ...d,
+    revenue: typeof d.revenue === 'bigint' ? Number(d.revenue) : Number(d.revenue) || 0,
+  })).reverse() : [];
 
   return (
     <div className="card p-6">
@@ -74,37 +78,35 @@ export default function SalesChart({ data = [], loading = false, days = 30 }: Sa
       </div>
 
       {chartData.length > 0 ? (
-        <div className="h-64">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.5} />
-              <XAxis
-                dataKey="date"
-                tickFormatter={formatDate}
-                stroke="#9CA3AF"
-                fontSize={12}
-                tickLine={false}
-                axisLine={false}
-              />
-              <YAxis
-                stroke="#9CA3AF"
-                fontSize={12}
-                tickLine={false}
-                axisLine={false}
-                tickFormatter={(value) => `${value}₴`}
-              />
-              <Tooltip content={<CustomTooltip />} />
-              <Line
-                type="monotone"
-                dataKey="revenue"
-                stroke="#3B82F6"
-                strokeWidth={2}
-                dot={{ fill: '#3B82F6', strokeWidth: 2, r: 4 }}
-                activeDot={{ r: 6, fill: '#60A5FA' }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+        <ResponsiveContainer width="100%" height={300}>
+          <LineChart data={chartData}>
+            <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.5} />
+            <XAxis
+              dataKey="date"
+              tickFormatter={formatDate}
+              stroke="#9CA3AF"
+              fontSize={12}
+              tickLine={false}
+              axisLine={false}
+            />
+            <YAxis
+              stroke="#9CA3AF"
+              fontSize={12}
+              tickLine={false}
+              axisLine={false}
+              tickFormatter={(value) => `${value}₴`}
+            />
+            <Tooltip content={<CustomTooltip />} />
+            <Line
+              type="monotone"
+              dataKey="revenue"
+              stroke="#3B82F6"
+              strokeWidth={2}
+              dot={{ fill: '#3B82F6', strokeWidth: 2, r: 4 }}
+              activeDot={{ r: 6, fill: '#60A5FA' }}
+            />
+          </LineChart>
+        </ResponsiveContainer>
       ) : (
         <div className="h-64 flex items-center justify-center text-muted">
           <div className="text-center">

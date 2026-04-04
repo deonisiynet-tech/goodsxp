@@ -291,16 +291,16 @@ export default function DashboardView() {
     )
   }
 
-  // Safe data access with defaults
+  // Safe data access with defaults — гарантируем Number, не BigInt или строка
   const safeStats = {
-    totalUsers: stats.totalUsers ?? 0,
-    totalOrders: stats.totalOrders ?? 0,
-    totalRevenue: stats.totalRevenue ?? 0,
-    totalProducts: stats.totalProducts ?? 0,
-    ordersToday: stats.ordersToday ?? 0,
-    new: stats.new ?? 0,
-    processing: stats.processing ?? 0,
-    delivered: stats.delivered ?? 0,
+    totalUsers: Number(stats.totalUsers ?? 0),
+    totalOrders: Number(stats.totalOrders ?? 0),
+    totalRevenue: Number(stats.totalRevenue ?? 0),
+    totalProducts: Number(stats.totalProducts ?? 0),
+    ordersToday: Number(stats.ordersToday ?? 0),
+    new: Number(stats.new ?? 0),
+    processing: Number(stats.processing ?? 0),
+    delivered: Number(stats.delivered ?? 0),
     dailyOrders: Array.isArray(stats.dailyOrders) ? stats.dailyOrders : [],
     recentOrders: Array.isArray(stats.recentOrders) ? stats.recentOrders : [],
   }
