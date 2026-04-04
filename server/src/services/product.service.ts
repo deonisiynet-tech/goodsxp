@@ -15,6 +15,7 @@ interface ProductCreateInput {
   title: string;
   description: string;
   price: number;
+  margin?: number;
   categoryId?: string | null;
   rating?: number | null;
   originalPrice?: number | null;
@@ -31,6 +32,7 @@ interface ProductUpdateInput {
   title?: string;
   description?: string;
   price?: number;
+  margin?: number;
   categoryId?: string | null;
   rating?: number | null;
   originalPrice?: number | null;
@@ -199,6 +201,7 @@ export class ProductService {
         slug,
         description: data.description,
         price: data.price,
+        margin: data.margin ?? 0,
         categoryId: data.categoryId,
         rating: data.rating ?? null,
         originalPrice: data.originalPrice ?? null,
@@ -235,6 +238,7 @@ export class ProductService {
     }
     if (data.description !== undefined) updateData.description = data.description;
     if (data.price !== undefined) updateData.price = data.price;
+    if (data.margin !== undefined) updateData.margin = data.margin;
     if (data.categoryId !== undefined) updateData.categoryId = data.categoryId;
     if (data.rating !== undefined) updateData.rating = data.rating;
     if (data.originalPrice !== undefined) updateData.originalPrice = data.originalPrice;
@@ -290,6 +294,7 @@ export class ProductService {
           title: true,
           description: true,
           price: true,
+          margin: true,
           categoryId: true,
           rating: true,
           originalPrice: true,

@@ -159,7 +159,6 @@ export class AdminService {
 
     try {
       const [
-        totalUsers,
         totalOrders,
         totalRevenue,
         totalProducts,
@@ -169,7 +168,6 @@ export class AdminService {
         deliveredOrdersCount,
         ordersByStatus,
       ] = await Promise.all([
-        prisma.user.count(),
         prisma.order.count(),
         prisma.order.aggregate({
           _sum: { totalPrice: true },
@@ -192,9 +190,10 @@ export class AdminService {
         }),
       ]);
 
-      // Raw SQL queries отдельно (могут падать из-за SQL синтаксиса)
+      // Raw SQL queries separately (могут падать из-за SQL синтаксиса)
       let dailyRevenue: any[] = [];
       let dailyOrders: any[] = [];
+      let dailyProfit: any[] = [];
       try {
         dailyRevenue = await prisma.$queryRaw`
           SELECT DATE("createdAt") as date, SUM("totalPrice") as revenue
@@ -219,6 +218,33 @@ export class AdminService {
         `;
       } catch (e) {
         console.error('❌ dailyOrders query failed:', e);
+      }
+
+      // Прибуток по дняях: SUM(margin * quantity) grouped by order date
+      try {
+        dailyProfit = await prisma.$queryRaw`
+          SELECT DATE(o."createdAt") as date, SUM(oi."margin" * oi."quantity") as profit
+          FROM "OrderItem" oi
+          JOIN "Order" o ON oi."orderId" = o."id"
+          WHERE o."createdAt" >= ${startDate}
+          GROUP BY DATE(o."createdAt")
+          ORDER BY date DESC
+          LIMIT ${days}
+        `;
+      } catch (e) {
+        console.error('❌ dailyProfit query failed:', e);
+      }
+
+      // Загальний прибуток
+      let totalProfit = 0;
+      try {
+        const profitResult = await prisma.$queryRaw`
+          SELECT SUM(oi."margin" * oi."quantity") as "totalProfit"
+          FROM "OrderItem" oi
+        `;
+        totalProfit = Number((profitResult as any[])?.[0]?.totalProfit || 0);
+      } catch (e) {
+        console.error('❌ totalProfit query failed:', e);
       }
 
       // Top products
@@ -273,9 +299,9 @@ export class AdminService {
       }
 
       return {
-        totalUsers: Number(totalUsers),
         totalOrders: Number(totalOrders),
         totalRevenue: Number(totalRevenue._sum.totalPrice || 0),
+        totalProfit,
         totalProducts: Number(totalProducts),
         ordersToday: Number(ordersToday),
         new: Number(newOrdersCount),
@@ -287,6 +313,7 @@ export class AdminService {
         })),
         dailyRevenue,
         dailyOrders,
+        dailyProfit,
         topProducts: topProductsWithDetails.map((tp: any) => ({
           ...tp,
           _count: tp._count ? Number(tp._count) : 0,
@@ -321,6 +348,24 @@ export class AdminService {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
+    let dailyProfit: any[] = [];
+    try {
+      dailyProfit = await prisma.$queryRaw`
+        SELECT
+          DATE(o."createdAt") as date,
+          SUM(oi."margin" * oi."quantity") as profit
+        FROM "OrderItem" oi
+        JOIN "Order" o ON oi."orderId" = o."id"
+        WHERE o."createdAt" >= ${startDate}
+        GROUP BY DATE(o."createdAt")
+        ORDER BY date DESC
+        LIMIT ${days}
+      `;
+    } catch (e) {
+      console.error('❌ getSalesStats (profit) query failed:', e);
+    }
+
+    // Також повертаємо оборот для повноти
     let dailyRevenue: any[] = [];
     try {
       dailyRevenue = await prisma.$queryRaw`
@@ -334,10 +379,11 @@ export class AdminService {
         LIMIT ${days}
       `;
     } catch (e) {
-      console.error('❌ getSalesStats query failed:', e);
+      console.error('❌ getSalesStats (revenue) query failed:', e);
     }
 
     return {
+      dailyProfit,
       dailyRevenue,
     };
   }

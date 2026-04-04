@@ -63,7 +63,7 @@ export class ProductController {
 
   async create(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { title, description, price, originalPrice, discountPrice, stock, isActive, images, isFeatured, isPopular, categoryId } = req.body;
+      const { title, description, price, margin, originalPrice, discountPrice, stock, isActive, images, isFeatured, isPopular, categoryId } = req.body;
 
       let imageUrl: string | undefined = undefined;
       let imagesArray: string[] = [];
@@ -99,6 +99,7 @@ export class ProductController {
         title,
         description,
         price: Number(price),
+        margin: margin !== undefined ? Number(margin) : 0,
         categoryId: categoryId || null,
         originalPrice: originalPrice ? Number(originalPrice) : null,
         discountPrice: discountPrice ? Number(discountPrice) : null,
@@ -130,12 +131,13 @@ export class ProductController {
   async update(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const { title, description, price, stock, isActive, images, categoryId, isFeatured, isPopular, originalPrice, discountPrice } = req.body;
+      const { title, description, price, margin, stock, isActive, images, categoryId, isFeatured, isPopular, originalPrice, discountPrice } = req.body;
 
       const updateData: any = {};
       if (title) updateData.title = title;
       if (description) updateData.description = description;
       if (price) updateData.price = Number(price);
+      if (margin !== undefined) updateData.margin = Number(margin);
       if (categoryId !== undefined) updateData.categoryId = categoryId;
       if (stock !== undefined) updateData.stock = Number(stock);
       if (isActive !== undefined) updateData.isActive = isActive === 'true' || isActive === true;

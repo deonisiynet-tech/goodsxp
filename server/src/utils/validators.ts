@@ -14,6 +14,7 @@ export const productSchema = z.object({
   title: z.string().min(1, 'Назва обов\'язкова').max(200),
   description: z.string().min(1, 'Опис обов\'язковий').max(5000),
   price: z.coerce.number().positive('Ціна має бути додатною'),
+  margin: z.coerce.number().min(0, 'Маржа не може бути менше 0').optional().default(0),
   categoryId: z.string().uuid().optional().nullable(),
   rating: z.coerce.number().min(0).max(5).optional().nullable(),
   originalPrice: z.coerce.number().positive().optional().nullable(),

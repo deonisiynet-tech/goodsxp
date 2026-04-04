@@ -8,13 +8,19 @@ interface DailyRevenue {
   revenue: number;
 }
 
+interface DailyProfit {
+  date: string;
+  profit: number;
+}
+
 interface SalesChartProps {
   data?: DailyRevenue[];
+  profitData?: DailyProfit[];
   loading?: boolean;
   days?: number;
 }
 
-export default function SalesChart({ data = [], loading = false, days = 30 }: SalesChartProps) {
+export default function SalesChart({ data = [], profitData = [], loading = false, days = 30 }: SalesChartProps) {
   if (loading) {
     return (
       <div className="card p-6">
@@ -46,7 +52,11 @@ export default function SalesChart({ data = [], loading = false, days = 30 }: Sa
       return (
         <div className="bg-surfaceLight border border-border rounded-lg p-3 shadow-lg">
           <p className="text-sm text-muted mb-1">{label}</p>
-          <p className="text-lg font-bold text-white">{formatCurrency(payload[0].value)}</p>
+          {payload.map((entry: any, index: number) => (
+            <p key={index} className="text-lg font-bold" style={{ color: entry.color }}>
+              {entry.name === 'Прибуток' ? 'Прибуток' : 'Оборот'}: {formatCurrency(entry.value)}
+            </p>
+          ))}
         </div>
       );
     }
@@ -54,23 +64,46 @@ export default function SalesChart({ data = [], loading = false, days = 30 }: Sa
   };
 
   // Prepare chart data - reverse to show oldest to newest
-  const chartData = Array.isArray(data) ? data.map(d => ({
+  const revenueChartData = Array.isArray(data) ? data.map(d => ({
     ...d,
     revenue: typeof d.revenue === 'bigint' ? Number(d.revenue) : Number(d.revenue) || 0,
   })).reverse() : [];
+
+  const profitChartData = Array.isArray(profitData) ? profitData.map(d => ({
+    ...d,
+    profit: typeof d.profit === 'bigint' ? Number(d.profit) : Number(d.profit) || 0,
+  })).reverse() : [];
+
+  // Merge by date
+  const allDates = new Set([
+    ...revenueChartData.map(d => d.date),
+    ...profitChartData.map(d => d.date),
+  ]);
+
+  const chartData = Array.from(allDates).map(date => {
+    const revenueEntry = revenueChartData.find(d => d.date === date);
+    const profitEntry = profitChartData.find(d => d.date === date);
+    return {
+      date,
+      revenue: revenueEntry?.revenue || 0,
+      profit: profitEntry?.profit || 0,
+    };
+  });
+
+  const totalProfit = profitChartData.reduce((sum, d) => sum + d.profit, 0);
 
   return (
     <div className="card p-6">
       <div className="flex items-center justify-between mb-6">
         <div>
-          <h2 className="text-lg font-semibold text-white">Графік продажів</h2>
-          <p className="text-sm text-muted mt-1">Дохід за останні {days} днів</p>
+          <h2 className="text-lg font-semibold text-white">Графік прибутку</h2>
+          <p className="text-sm text-muted mt-1">Прибуток за останні {days} днів</p>
         </div>
         <div className="flex items-center gap-2 text-green-400">
           <TrendingUp size={20} />
           <span className="text-sm font-medium">
-            {chartData.length > 0 
-              ? formatCurrency(chartData.reduce((sum, d) => sum + d.revenue, 0))
+            {chartData.length > 0
+              ? formatCurrency(totalProfit)
               : '0 ₴'
             }
           </span>
@@ -99,11 +132,12 @@ export default function SalesChart({ data = [], loading = false, days = 30 }: Sa
             <Tooltip content={<CustomTooltip />} />
             <Line
               type="monotone"
-              dataKey="revenue"
-              stroke="#3B82F6"
+              dataKey="profit"
+              name="Прибуток"
+              stroke="#22C55E"
               strokeWidth={2}
-              dot={{ fill: '#3B82F6', strokeWidth: 2, r: 4 }}
-              activeDot={{ r: 6, fill: '#60A5FA' }}
+              dot={{ fill: '#22C55E', strokeWidth: 2, r: 4 }}
+              activeDot={{ r: 6, fill: '#4ADE80' }}
             />
           </LineChart>
         </ResponsiveContainer>
@@ -111,7 +145,7 @@ export default function SalesChart({ data = [], loading = false, days = 30 }: Sa
         <div className="h-64 flex items-center justify-center text-muted">
           <div className="text-center">
             <TrendingUp size={48} className="mx-auto mb-4 opacity-50" />
-            <p>Немає даних про продажі</p>
+            <p>Немає даних про прибуток</p>
           </div>
         </div>
       )}

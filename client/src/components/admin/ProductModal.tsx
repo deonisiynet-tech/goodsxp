@@ -11,6 +11,7 @@ interface Product {
   title: string
   description: string
   price: number
+  margin: number
   originalPrice: number | null
   discountPrice: number | null
   isFeatured: boolean
@@ -53,6 +54,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
       title: product?.title || '',
       description: product?.description || '',
       price: product?.price || 0,
+      margin: product?.margin ?? 0,
       originalPrice: product?.originalPrice || 0,
       discountPrice: product?.discountPrice || 0,
       stock: product?.stock || 0,
@@ -68,6 +70,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
       title: product?.title || '',
       description: product?.description || '',
       price: product?.price || 0,
+      margin: product?.margin ?? 0,
       originalPrice: product?.originalPrice || 0,
       discountPrice: product?.discountPrice || 0,
       stock: product?.stock || 0,
@@ -104,6 +107,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
           title: data.title,
           description: data.description,
           price: data.price,
+          margin: data.margin,
           originalPrice: data.originalPrice || null,
           discountPrice: data.discountPrice || null,
           stock: data.stock,
@@ -120,6 +124,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
           title: data.title,
           description: data.description,
           price: data.price,
+          margin: data.margin,
           originalPrice: data.originalPrice || null,
           discountPrice: data.discountPrice || null,
           stock: data.stock,
@@ -301,6 +306,26 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
 
             <div>
               <label className="block text-sm font-medium mb-1">
+                <span className="text-green-400">Прибуток (маржа) *</span>
+              </label>
+              <input
+                {...register('margin', {
+                  required: 'Маржа обов\'язкова',
+                  min: { value: 0, message: 'Маржа не може бути менше 0' },
+                })}
+                type="number"
+                step="0.01"
+                className="input-field"
+                placeholder="0"
+              />
+              <p className="text-xs text-muted mt-1">Прибуток з 1 одиниці (₴)</p>
+              {errors.margin && (
+                <p className="text-red-400 text-sm mt-1">{errors.margin.message as string}</p>
+              )}
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium mb-1">
                 <span className="text-purple-400">Ціна (оригінальна)</span>
               </label>
               <input
@@ -313,22 +338,6 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
                 placeholder="999"
               />
               <p className="text-xs text-muted mt-1">Для знижки</p>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                <span className="text-pink-400">Ціна зі знижкою</span>
-              </label>
-              <input
-                {...register('discountPrice', {
-                  min: { value: 0, message: 'Ціна має бути додатною' },
-                })}
-                type="number"
-                step="0.01"
-                className="input-field"
-                placeholder="699"
-              />
-              <p className="text-xs text-muted mt-1">Необов'язково</p>
             </div>
           </div>
 

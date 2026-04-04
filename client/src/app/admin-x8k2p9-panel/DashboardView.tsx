@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
-import { ShoppingCart, Users, Package, DollarSign, CheckCircle, Clock, Tag } from 'lucide-react'
+import { ShoppingCart, Package, DollarSign, TrendingUp, Tag, BarChart3 } from 'lucide-react'
 import AdminLayout from '@/components/admin/AdminLayout'
 import ProductModal from '@/components/admin/ProductModal'
 import SalesChart from '@/components/admin/SalesChart'
@@ -14,9 +14,9 @@ import { Plus } from 'lucide-react'
 import { getAdminApiFullPath, getAdminPagePath } from '@/lib/admin-paths'
 
 interface DashboardStats {
-  totalUsers: number
   totalOrders: number
   totalRevenue: number
+  totalProfit: number
   totalProducts: number
   ordersToday: number
   new: number
@@ -25,6 +25,7 @@ interface DashboardStats {
   dailyOrders: { date: string; orders: number }[]
   ordersByStatus?: { status: string; count: number }[]
   dailyRevenue?: { date: string; revenue: number }[]
+  dailyProfit?: { date: string; profit: number }[]
   recentOrders?: {
     id: string
     name: string
@@ -88,6 +89,7 @@ export default function DashboardView() {
   const router = useRouter()
   const [stats, setStats] = useState<DashboardStats | null>(null)
   const [salesData, setSalesData] = useState<{ date: string; revenue: number }[]>([])
+  const [profitData, setProfitData] = useState<{ date: string; profit: number }[]>([])
   const [latestOrders, setLatestOrders] = useState<any[]>([])
   const [topProducts, setTopProducts] = useState<any[]>([])
   const [modalOpen, setModalOpen] = useState(false)
@@ -166,13 +168,15 @@ export default function DashboardView() {
         })
 
         if (salesRes.ok) {
-          const salesData = await salesRes.json()
-          console.log('✅ Dashboard: Sales data loaded:', salesData)
-          setSalesData(salesData.dailyRevenue || [])
+          const salesDataResp = await salesRes.json()
+          console.log('✅ Dashboard: Sales data loaded:', salesDataResp)
+          setSalesData(salesDataResp.dailyRevenue || [])
+          setProfitData(salesDataResp.dailyProfit || [])
         } else {
           console.warn('⚠️ Dashboard: Could not fetch sales data, using fallback')
-          // Fallback to dailyRevenue from main stats
-          setSalesData(data.dailyRevenue || [])
+          // Fallback to dailyRevenue/dailyProfit from main stats
+          setSalesData(stats.dailyRevenue || [])
+          setProfitData(stats.dailyProfit || [])
         }
         setChartLoading(false)
 
@@ -293,9 +297,9 @@ export default function DashboardView() {
 
   // Safe data access with defaults — гарантируем Number, не BigInt или строка
   const safeStats = {
-    totalUsers: Number(stats.totalUsers ?? 0),
     totalOrders: Number(stats.totalOrders ?? 0),
     totalRevenue: Number(stats.totalRevenue ?? 0),
+    totalProfit: Number(stats.totalProfit ?? 0),
     totalProducts: Number(stats.totalProducts ?? 0),
     ordersToday: Number(stats.ordersToday ?? 0),
     new: Number(stats.new ?? 0),
@@ -350,14 +354,8 @@ export default function DashboardView() {
           <p className="text-muted">Огляд статистики магазину</p>
         </div>
 
-        {/* Top Row: Revenue, Orders, Users */}
+        {/* Top Row: Products, Orders, Revenue, Profit */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <StatCard
-            title="Всього користувачів"
-            value={safeStats.totalUsers}
-            icon={Users}
-            color="blue"
-          />
           <StatCard
             title="Всього товарів"
             value={safeStats.totalProducts}
@@ -371,18 +369,24 @@ export default function DashboardView() {
             color="green"
           />
           <StatCard
-            title="Дохід"
+            title="Оборот"
             value={safeStats.totalRevenue}
             icon={DollarSign}
-            color="purple"
+            color="blue"
+          />
+          <StatCard
+            title="Прибуток"
+            value={safeStats.totalProfit}
+            icon={TrendingUp}
+            color="yellow"
           />
         </div>
 
         {/* Visitor Analytics: Online now, Visitors */}
         <VisitorStats period="7days" />
 
-        {/* Middle: Sales Chart */}
-        <SalesChart data={salesData} loading={chartLoading} days={30} />
+        {/* Middle: Sales Chart — Profit */}
+        <SalesChart data={salesData} profitData={profitData} loading={chartLoading} days={30} />
 
         {/* Bottom Row: Top Products, Latest Orders */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

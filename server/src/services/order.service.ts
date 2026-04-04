@@ -44,11 +44,13 @@ export class OrderService {
       }
     }
 
-    // Calculate total price
+    // Calculate total price and total profit
     let totalPrice = 0;
+    let totalProfit = 0;
     for (const item of validated.items) {
-      const product = products.find((p: { id: string; price: any }) => p.id === item.productId)!;
+      const product = products.find((p: { id: string; price: any; margin?: number }) => p.id === item.productId)!;
       totalPrice += Number(product.price) * item.quantity;
+      totalProfit += Number(product.margin ?? 0) * item.quantity;
     }
 
     // Create order with transaction
@@ -70,6 +72,7 @@ export class OrderService {
               productId: item.productId,
               quantity: item.quantity,
               price: products.find((p) => p.id === item.productId)!.price,
+              margin: products.find((p) => p.id === item.productId)!.margin ?? 0,
             })),
           },
         },
@@ -296,6 +299,33 @@ export class OrderService {
       shipped: stats[3],
       delivered: stats[4],
       revenue: Number(stats[5]._sum.totalPrice || 0),
+    };
+  }
+
+  /**
+   * Розрахунок прибутку через OrderItem.margin × quantity
+   */
+  async getProfitStats() {
+    // Загальний прибуток: SUM(margin * quantity) по всім OrderItem
+    const profitResult = await prisma.orderItem.aggregate({
+      _sum: {
+        margin: true,
+        quantity: true,
+      },
+    });
+
+    // Прибуток не можна просто рахувати як margin * quantity aggregate,
+    // треба рахувати для кожного item margin * quantity, потім SUM
+    // Простіше: сума всіх (margin × quantity) через raw SQL
+    const profitRaw = await prisma.$queryRaw`
+      SELECT SUM("margin"::FLOAT * "quantity"::FLOAT) as "totalProfit"
+      FROM "OrderItem"
+    `;
+
+    const totalProfit = (profitRaw as any[])?.[0]?.totalProfit || 0;
+
+    return {
+      totalProfit: Number(totalProfit),
     };
   }
 }
