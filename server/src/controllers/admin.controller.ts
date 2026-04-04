@@ -103,7 +103,15 @@ export class AdminController {
       const stats = await adminService.getDashboardStats({
         days: days ? Number(days) : 30,
       });
-      res.json(stats);
+
+      // Безопасная сериализация BigInt → Number
+      const safeData = JSON.parse(
+        JSON.stringify(stats, (_, value) =>
+          typeof value === 'bigint' ? Number(value) : value
+        )
+      );
+
+      res.json(safeData);
     } catch (error) {
       next(error);
     }
