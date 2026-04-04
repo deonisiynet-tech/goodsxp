@@ -321,16 +321,21 @@ export class AdminService {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    const dailyRevenue = await prisma.$queryRaw`
-      SELECT
-        DATE("createdAt") as date,
-        SUM("totalPrice") as revenue
-      FROM "Order"
-      WHERE "createdAt" >= ${startDate}
-      GROUP BY DATE("createdAt")
-      ORDER BY date DESC
-      LIMIT ${days}
-    `;
+    let dailyRevenue: any[] = [];
+    try {
+      dailyRevenue = await prisma.$queryRaw`
+        SELECT
+          DATE("createdAt") as date,
+          SUM("totalPrice") as revenue
+        FROM "Order"
+        WHERE "createdAt" >= ${startDate}
+        GROUP BY DATE("createdAt")
+        ORDER BY date DESC
+        LIMIT ${days}
+      `;
+    } catch (e) {
+      console.error('❌ getSalesStats query failed:', e);
+    }
 
     return {
       dailyRevenue,
@@ -341,27 +346,36 @@ export class AdminService {
   async getTopProducts(filters?: { limit?: number }) {
     const limit = filters?.limit || 5;
 
-    const topProducts = await prisma.orderItem.groupBy({
-      by: ['productId'],
-      _sum: { quantity: true },
-      _count: true,
-      orderBy: { _sum: { quantity: 'desc' } },
-      take: limit,
-    });
+    let topProducts: any[] = [];
+    try {
+      topProducts = await prisma.orderItem.groupBy({
+        by: ['productId'],
+        _sum: { quantity: true },
+        _count: true,
+        orderBy: { _sum: { quantity: 'desc' } },
+      }) as any;
 
-    // Get information about top products
-    const topProductIds = topProducts.map((p: { productId: string }) => p.productId);
-    const topProductsDetails = await prisma.product.findMany({
-      where: { id: { in: topProductIds } },
-      select: { id: true, title: true, price: true, imageUrl: true },
-    });
+      // Get information about top products
+      const topProductIds = topProducts.map((p: any) => p.productId);
+      const topProductsDetails = await prisma.product.findMany({
+        where: { id: { in: topProductIds } },
+        select: { id: true, title: true, price: true, imageUrl: true },
+      });
 
-    const topProductsWithDetails = topProducts.map((tp: { productId: string; _sum: { quantity: number | null }; _count: number }) => ({
-      ...tp,
-      product: topProductsDetails.find((p: { id: string }) => p.id === tp.productId),
-    }));
+      const topProductsWithDetails = topProducts
+        .slice(0, limit)
+        .map((tp: any) => ({
+          ...tp,
+          _count: tp._count ? Number(tp._count) : 0,
+          _sum: tp._sum ? { quantity: Number(tp._sum.quantity || 0) } : { quantity: 0 },
+          product: topProductsDetails.find((p: any) => p.id === tp.productId),
+        }));
 
-    return topProductsWithDetails;
+      return topProductsWithDetails;
+    } catch (e) {
+      console.error('❌ getTopProducts error:', e);
+      return [];
+    }
   }
 
   // ==================== ADMIN LOGS ====================
