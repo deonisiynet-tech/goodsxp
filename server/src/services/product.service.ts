@@ -3,6 +3,35 @@ import { AppError } from '../middleware/errorHandler.js';
 import { productSchema, productUpdateSchema, paginationSchema } from '../utils/validators.js';
 import { Prisma } from '@prisma/client';
 
+/**
+ * Обчислює відсоток знижки
+ * discountPercent = ((originalPrice - discountPrice) / originalPrice) * 100
+ * Повертає null якщо знижки немає
+ */
+function calculateDiscountPercent(
+  originalPrice: number | null | undefined,
+  discountPrice: number | null | undefined
+): number | null {
+  if (!originalPrice || !discountPrice || originalPrice <= 0 || discountPrice >= originalPrice) {
+    return null;
+  }
+  return Math.round(((originalPrice - discountPrice) / originalPrice) * 100);
+}
+
+/**
+ * Додає discountPercent до продукту
+ */
+function withDiscountPercent(product: any): any {
+  const discountPercent = calculateDiscountPercent(
+    product.originalPrice,
+    product.discountPrice
+  );
+  return {
+    ...product,
+    discountPercent,
+  };
+}
+
 interface ProductFilters {
   page?: number;
   limit?: number;
@@ -98,7 +127,7 @@ export class ProductService {
     });
 
     return {
-      products: productsWithRating,
+      products: productsWithRating.map(withDiscountPercent),
       pagination: {
         page,
         limit,
@@ -139,6 +168,7 @@ export class ProductService {
       ...productWithoutReviews,
       averageRating: Math.round(averageRating * 10) / 10,
       reviewCount,
+      ...withDiscountPercent(productWithoutReviews),
     };
   }
 
@@ -173,6 +203,7 @@ export class ProductService {
       ...productWithoutReviews,
       averageRating: Math.round(averageRating * 10) / 10,
       reviewCount,
+      ...withDiscountPercent(productWithoutReviews),
     };
   }
 
@@ -313,7 +344,7 @@ export class ProductService {
     ]);
 
     return {
-      products,
+      products: products.map(withDiscountPercent),
       pagination: {
         page,
         limit,

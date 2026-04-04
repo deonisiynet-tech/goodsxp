@@ -11,8 +11,10 @@ interface Product {
   title: string;
   description: string;
   price: number;
+  margin: number;
   originalPrice: number | null;
   discountPrice: number | null;
+  discountPercent?: number | null;
   stock: number;
   isActive: boolean;
   imageUrl: string | null;

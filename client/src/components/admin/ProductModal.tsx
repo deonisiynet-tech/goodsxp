@@ -287,57 +287,88 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
             )}
           </div>
 
-          <div className="grid grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Ціна (звичайна) *</label>
-              <input
-                {...register('price', {
-                  required: 'Ціна обов\'язкова',
-                  min: { value: 0, message: 'Ціна має бути додатною' },
-                })}
-                type="number"
-                step="0.01"
-                className="input-field"
-              />
-              {errors.price && (
-                <p className="text-red-400 text-sm mt-1">{errors.price.message as string}</p>
-              )}
-            </div>
+          <div>
+            <h3 className="text-sm font-semibold text-white mb-3">💰 Ціноутворення</h3>
+            <div className="grid grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Ціна продажу *</label>
+                <input
+                  {...register('price', {
+                    required: 'Ціна обов\'язкова',
+                    min: { value: 0, message: 'Ціна має бути додатною' },
+                  })}
+                  type="number"
+                  step="0.01"
+                  className="input-field"
+                  placeholder="1000"
+                />
+                {errors.price && (
+                  <p className="text-red-400 text-sm mt-1">{errors.price.message as string}</p>
+                )}
+                <p className="text-xs text-muted mt-1">Основна ціна товару</p>
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                <span className="text-green-400">Прибуток (маржа) *</span>
-              </label>
-              <input
-                {...register('margin', {
-                  required: 'Маржа обов\'язкова',
-                  min: { value: 0, message: 'Маржа не може бути менше 0' },
-                })}
-                type="number"
-                step="0.01"
-                className="input-field"
-                placeholder="0"
-              />
-              <p className="text-xs text-muted mt-1">Прибуток з 1 одиниці (₴)</p>
-              {errors.margin && (
-                <p className="text-red-400 text-sm mt-1">{errors.margin.message as string}</p>
-              )}
-            </div>
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  <span className="text-purple-400">Оригінальна ціна</span>
+                </label>
+                <input
+                  {...register('originalPrice', {
+                    min: { value: 0, message: 'Ціна має бути додатною' },
+                  })}
+                  type="number"
+                  step="0.01"
+                  className="input-field"
+                  placeholder="1500"
+                />
+                <p className="text-xs text-muted mt-1">Зачеркнута ціна (для знижки)</p>
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                <span className="text-purple-400">Ціна (оригінальна)</span>
-              </label>
-              <input
-                {...register('originalPrice', {
-                  min: { value: 0, message: 'Ціна має бути додатною' },
-                })}
-                type="number"
-                step="0.01"
-                className="input-field"
-                placeholder="999"
-              />
-              <p className="text-xs text-muted mt-1">Для знижки</p>
+              <div>
+                <label className="block text-sm font-medium mb-1">
+                  <span className="text-pink-400">Ціна зі знижкою</span>
+                </label>
+                <input
+                  {...register('discountPrice', {
+                    min: { value: 0, message: 'Ціна має бути додатною' },
+                  })}
+                  type="number"
+                  step="0.01"
+                  className="input-field"
+                  placeholder="1200"
+                />
+                <p className="text-xs text-muted mt-1">Якщо менше ціни продажу — застосовується знижка</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Margin Block — окремий блок, не змішаний з цінами */}
+          <div className="p-4 rounded-xl border border-green-500/20 bg-green-500/5">
+            <h3 className="text-sm font-semibold text-green-400 mb-3">📊 Прибуток (маржа)</h3>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-1">Маржа з 1 одиниці (₴)</label>
+                <input
+                  {...register('margin', {
+                    required: 'Маржа обов\'язкова',
+                    min: { value: 0, message: 'Маржа не може бути менше 0' },
+                  })}
+                  type="number"
+                  step="0.01"
+                  className="input-field"
+                  placeholder="0"
+                />
+                {errors.margin && (
+                  <p className="text-red-400 text-sm mt-1">{errors.margin.message as string}</p>
+                )}
+                <p className="text-xs text-muted mt-1">Чистий прибуток з однієї одиниці товару</p>
+              </div>
+              <div className="flex items-end">
+                <div className="text-xs text-muted space-y-1">
+                  <p>💡 <strong>Оборот</strong> = ціна продажу × кількість</p>
+                  <p>💡 <strong>Прибуток</strong> = маржа × кількість</p>
+                </div>
+              </div>
             </div>
           </div>
 

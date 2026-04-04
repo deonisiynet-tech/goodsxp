@@ -49,11 +49,16 @@ export default function ProductModal({ product, isOpen, onClose }: ProductModalP
   if (!isOpen) return null
 
   const handleAddToCart = () => {
+    // Використовуємо discountPrice якщо є і вона менша за price
+    const actualPrice = (product.discountPrice && product.discountPrice < product.price)
+      ? product.discountPrice
+      : product.price;
+
     const imageUrl = images.length > 0 ? images[0] : undefined
     addItem({
       productId: product.id,
       title: product.title,
-      price: Number(product.price),
+      price: Number(actualPrice),
       imageUrl,
     })
     toast.success('Товар додано до кошика')
@@ -181,9 +186,23 @@ export default function ProductModal({ product, isOpen, onClose }: ProductModalP
 
               {/* Price */}
               <div className="flex items-baseline gap-3 mb-6">
-                <p className="text-4xl font-light text-white">
-                  {Number(product.price).toLocaleString('uk-UA')} ₴
-                </p>
+                {product.discountPrice && product.discountPrice < product.price ? (
+                  <>
+                    <p className="text-4xl font-light text-white">
+                      {Number(product.discountPrice).toLocaleString('uk-UA')} ₴
+                    </p>
+                    <p className="text-lg text-muted line-through">
+                      {Number(product.price).toLocaleString('uk-UA')} ₴
+                    </p>
+                    <span className="px-2 py-1 bg-red-500/20 text-red-400 text-xs font-semibold rounded-lg">
+                      -{Math.round((1 - product.discountPrice / product.price) * 100)}%
+                    </span>
+                  </>
+                ) : (
+                  <p className="text-4xl font-light text-white">
+                    {Number(product.price).toLocaleString('uk-UA')} ₴
+                  </p>
+                )}
               </div>
 
               {/* Stock Status */}

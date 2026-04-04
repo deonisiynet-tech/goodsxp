@@ -115,13 +115,18 @@ export default function ProductPage() {
   const handleAddToCart = () => {
     if (!product) return;
 
+    // Використовуємо discountPrice якщо є і вона менша за price
+    const actualPrice = (product.discountPrice && product.discountPrice < product.price)
+      ? product.discountPrice
+      : product.price;
+
     const imageList = getImageList(product);
     const imageUrl = imageList.length > 0 ? imageList[0] : undefined;
 
     addItem({
       productId: product.id,
       title: product.title,
-      price: Number(product.price),
+      price: Number(actualPrice),
       imageUrl,
     });
 

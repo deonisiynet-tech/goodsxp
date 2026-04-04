@@ -45,11 +45,16 @@ export class OrderService {
     }
 
     // Calculate total price and total profit
+    // Якщо є discountPrice і вона менша за price — використовуємо її
     let totalPrice = 0;
     let totalProfit = 0;
     for (const item of validated.items) {
-      const product = products.find((p: { id: string; price: any; margin?: number }) => p.id === item.productId)!;
-      totalPrice += Number(product.price) * item.quantity;
+      const product = products.find((p: { id: string; price: any; margin?: number; discountPrice?: any }) => p.id === item.productId)!;
+      // Використовуємо discountPrice якщо вона є і менша за звичайну ціну
+      const effectivePrice = (product.discountPrice && Number(product.discountPrice) < Number(product.price))
+        ? Number(product.discountPrice)
+        : Number(product.price);
+      totalPrice += effectivePrice * item.quantity;
       totalProfit += Number(product.margin ?? 0) * item.quantity;
     }
 
@@ -68,12 +73,19 @@ export class OrderService {
           comment: validated.comment,
           totalPrice,
           items: {
-            create: validated.items.map((item) => ({
-              productId: item.productId,
-              quantity: item.quantity,
-              price: products.find((p) => p.id === item.productId)!.price,
-              margin: products.find((p) => p.id === item.productId)!.margin ?? 0,
-            })),
+            create: validated.items.map((item) => {
+              const product = products.find((p: { id: string; price: any; discountPrice?: any }) => p.id === item.productId)!;
+              // Зберігаємо фактичну ціну (зі знижкою якщо є)
+              const effectivePrice = (product.discountPrice && Number(product.discountPrice) < Number(product.price))
+                ? Number(product.discountPrice)
+                : Number(product.price);
+              return {
+                productId: item.productId,
+                quantity: item.quantity,
+                price: effectivePrice,
+                margin: (product as any).margin ?? 0,
+              };
+            }),
           },
         },
         include: {

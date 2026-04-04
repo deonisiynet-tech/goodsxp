@@ -168,12 +168,18 @@ export default function CatalogContent() {
   const handleAddToCart = (e: React.MouseEvent, product: SafeProduct) => {
     e.preventDefault();
     e.stopPropagation();
+
+    // Використовуємо discountPrice якщо є і вона менша за price
+    const actualPrice = (product.discountPrice && product.discountPrice < product.price)
+      ? product.discountPrice
+      : product.price;
+
     const imageUrl = getProductImage(product);
 
     addItem({
       productId: product.id,
       title: product.title,
-      price: Number(product.price),
+      price: Number(actualPrice),
       imageUrl: imageUrl !== '/placeholder.jpg' ? imageUrl : undefined,
     });
     toast.success('Товар додано до кошика');

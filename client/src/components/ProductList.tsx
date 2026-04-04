@@ -73,10 +73,15 @@ export default function ProductList({ title = 'Каталог товарів', l
   const handleAddToCart = (e: React.MouseEvent, product: Product) => {
     e.preventDefault();
 
+    // Використовуємо discountPrice якщо є і вона менша за price
+    const actualPrice = (product.discountPrice && product.discountPrice < product.price)
+      ? product.discountPrice
+      : product.price;
+
     addItem({
       productId: product.id,
       title: product.title,
-      price: Number(product.price),
+      price: Number(actualPrice),
       imageUrl: product.imageUrl,
     });
 

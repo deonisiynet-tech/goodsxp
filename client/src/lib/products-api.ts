@@ -179,6 +179,7 @@ export const productsApi = {
     title: string
     description: string
     price: number
+    margin?: number
     originalPrice?: number | null
     discountPrice?: number | null
     stock: number
@@ -191,8 +192,9 @@ export const productsApi = {
     formData.append('title', data.title)
     formData.append('description', data.description)
     formData.append('price', String(data.price))
-    if (data.originalPrice) formData.append('originalPrice', String(data.originalPrice))
-    if (data.discountPrice) formData.append('discountPrice', String(data.discountPrice))
+    formData.append('margin', String(data.margin ?? 0))
+    if (data.originalPrice !== undefined && data.originalPrice !== null) formData.append('originalPrice', String(data.originalPrice))
+    if (data.discountPrice !== undefined && data.discountPrice !== null) formData.append('discountPrice', String(data.discountPrice))
     formData.append('stock', String(data.stock))
     formData.append('isActive', String(data.isActive))
     formData.append('images', JSON.stringify(data.images))
@@ -210,6 +212,7 @@ export const productsApi = {
     title: string
     description: string
     price: number
+    margin?: number
     originalPrice?: number | null
     discountPrice?: number | null
     stock: number
@@ -222,8 +225,9 @@ export const productsApi = {
     formData.append('title', data.title)
     formData.append('description', data.description)
     formData.append('price', String(data.price))
-    if (data.originalPrice) formData.append('originalPrice', String(data.originalPrice))
-    if (data.discountPrice) formData.append('discountPrice', String(data.discountPrice))
+    formData.append('margin', String(data.margin ?? 0))
+    if (data.originalPrice !== undefined && data.originalPrice !== null) formData.append('originalPrice', String(data.originalPrice))
+    if (data.discountPrice !== undefined && data.discountPrice !== null) formData.append('discountPrice', String(data.discountPrice))
     formData.append('stock', String(data.stock))
     formData.append('isActive', String(data.isActive))
     formData.append('images', JSON.stringify(data.images))

@@ -7,12 +7,18 @@ export interface Product {
   title: string
   description: string
   price: number
+  margin?: number
+  originalPrice?: number | null
+  discountPrice?: number | null
+  discountPercent?: number | null
   imageUrl: string | null
   images: string[]
   stock: number
   isActive: boolean
   createdAt: string
   updatedAt: string
+  isFeatured?: boolean
+  isPopular?: boolean
 }
 
 export interface ProductsFilter {

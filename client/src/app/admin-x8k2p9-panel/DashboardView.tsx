@@ -121,7 +121,7 @@ export default function DashboardView() {
         if (authRes.status === 401) {
           console.log('⚠️ Dashboard: Not authenticated, redirecting to login')
           setAuthenticated(false)
-          router.push(getAdminPagePath('/login') + '?from=' + encodeURIComponent(pathname || getAdminPagePath('')))
+          router.push(getAdminPagePath('/login') + '?from=' + encodeURIComponent(window?.location?.pathname || getAdminPagePath('')))
           return
         }
 
@@ -131,7 +131,7 @@ export default function DashboardView() {
         if (!authData.authenticated) {
           console.log('⚠️ Dashboard: Not authenticated (no user data)')
           setAuthenticated(false)
-          router.push(getAdminPagePath('/login') + '?from=' + encodeURIComponent(pathname || getAdminPagePath('')))
+          router.push(getAdminPagePath('/login') + '?from=' + encodeURIComponent(window?.location?.pathname || getAdminPagePath('')))
           return
         }
 
