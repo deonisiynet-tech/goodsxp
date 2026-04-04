@@ -230,8 +230,7 @@ export class AdminService {
           _sum: { quantity: true },
           _count: true,
           orderBy: { _sum: { quantity: 'desc' } },
-          take: 10,
-        });
+        }) as any;
 
         const topProductIds = topProducts.map((p: any) => p.productId);
         const topProductsDetails = await prisma.product.findMany({
@@ -239,10 +238,12 @@ export class AdminService {
           select: { id: true, title: true, price: true, imageUrl: true },
         });
 
-        topProductsWithDetails = topProducts.map((tp: any) => ({
-          ...tp,
-          product: topProductsDetails.find((p: any) => p.id === tp.productId),
-        }));
+        topProductsWithDetails = topProducts
+          .slice(0, 10)
+          .map((tp: any) => ({
+            ...tp,
+            product: topProductsDetails.find((p: any) => p.id === tp.productId),
+          }));
       } catch (e) {
         console.error('❌ topProducts query failed:', e);
       }
