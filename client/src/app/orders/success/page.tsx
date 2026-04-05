@@ -1,15 +1,10 @@
-'use client';
-
-import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle, ArrowLeft } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import OrderNumber from '@/components/OrderNumber';
 
 export default function OrderSuccessPage() {
-  const searchParams = useSearchParams();
-  const orderNumber = searchParams?.get('order');
-
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -30,11 +25,7 @@ export default function OrderSuccessPage() {
             Ми вже отримали ваше замовлення. Найближчим часом наш менеджер зв&apos;яжеться з вами для підтвердження та підготовки до відправки.
           </p>
 
-          {orderNumber && (
-            <p className="text-lg font-medium text-white mt-6 mb-8">
-              Номер вашого замовлення: #{orderNumber}
-            </p>
-          )}
+          <OrderNumber />
 
           <div className="space-y-4 mt-8">
             <Link href="/catalog" className="btn-primary w-full inline-block">
