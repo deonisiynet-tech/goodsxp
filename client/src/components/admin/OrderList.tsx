@@ -14,6 +14,7 @@ interface Order {
   address: string;
   totalPrice: number;
   status: string;
+  paymentMethod: string;
   createdAt: string;
   items: any[];
   userId?: string | null;
@@ -99,6 +100,22 @@ export default function OrderList() {
     return labels[status] || status;
   };
 
+  const getPaymentMethodLabel = (method: string) => {
+    const labels: Record<string, string> = {
+      COD: 'Накладений платіж',
+      CARD: 'Передоплата',
+    };
+    return labels[method] || method;
+  };
+
+  const getPaymentMethodColor = (method: string) => {
+    const colors: Record<string, string> = {
+      COD: 'bg-yellow-500/10 text-yellow-500',
+      CARD: 'bg-green-500/10 text-green-500',
+    };
+    return colors[method] || 'bg-gray-500/10 text-gray-500';
+  };
+
   return (
     <div>
       <h1 className="text-3xl font-light mb-6">Керування замовленнями</h1>
@@ -142,6 +159,9 @@ export default function OrderList() {
                   Статус
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                  Оплата
+                </th>
+                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                   Дата
                 </th>
                 <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">
@@ -167,6 +187,11 @@ export default function OrderList() {
                   <td className="px-6 py-4">
                     <span className={`px-2 py-1 text-xs ${getStatusColor(order.status)}`}>
                       {getStatusLabel(order.status)}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`px-2 py-1 text-xs ${getPaymentMethodColor(order.paymentMethod)}`}>
+                      {getPaymentMethodLabel(order.paymentMethod)}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-sm text-muted">

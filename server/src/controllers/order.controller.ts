@@ -10,7 +10,7 @@ const adminService = new AdminService();
 export class OrderController {
   async create(req: Request, res: Response, next: NextFunction) {
     try {
-      const { name, phone, email, address, city, warehouse, warehouseAddress, comment, items } = req.body;
+      const { name, phone, email, address, city, warehouse, warehouseAddress, comment, paymentMethod, items } = req.body;
       const order = await orderService.create({
         name,
         phone,
@@ -20,6 +20,7 @@ export class OrderController {
         warehouse,
         warehouseAddress,
         comment,
+        paymentMethod,
         items,
       });
       res.status(201).json(order);

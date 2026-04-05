@@ -20,6 +20,7 @@ export class OrderService {
     warehouse?: string | null;
     warehouseAddress?: string | null;
     comment?: string;
+    paymentMethod?: 'COD' | 'CARD';
     items: { productId: string; quantity: number }[];
   }) {
     const validated = orderSchema.parse(data);
@@ -71,6 +72,7 @@ export class OrderService {
           warehouse: validated.warehouse,
           warehouseAddress: validated.warehouseAddress,
           comment: validated.comment,
+          paymentMethod: validated.paymentMethod || 'COD',
           totalPrice,
           items: {
             create: validated.items.map((item) => {
@@ -130,6 +132,7 @@ export class OrderService {
       email: order.email,
       city: order.city,
       warehouse: order.warehouse,
+      paymentMethod: order.paymentMethod,
       status: order.status,
       createdAt: order.createdAt,
     }).catch((error) => {

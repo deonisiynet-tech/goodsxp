@@ -38,6 +38,7 @@ export const orderSchema = z.object({
   warehouse: z.string().min(1, 'Відділення обов\'язкове').max(200).optional().nullable(),
   warehouseAddress: z.string().min(1, 'Адреса відділення обов\'язкова').max(500).optional().nullable(),
   comment: z.string().max(1000).optional(),
+  paymentMethod: z.enum(['COD', 'CARD']).optional().default('COD'),
   items: z.array(
     z.object({
       productId: z.string().uuid(),

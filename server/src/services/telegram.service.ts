@@ -118,13 +118,19 @@ interface OrderNotificationData {
   email?: string | null;
   city?: string | null;
   warehouse?: string | null;
+  paymentMethod?: string | null;
   status?: string;
   createdAt?: Date | string;
 }
 
 export async function notifyNewOrder(order: OrderNotificationData): Promise<boolean> {
   const orderNumber = order.orderNumber || order.id.slice(0, 8).toUpperCase();
-  
+
+  // Форматуємо спосіб оплати
+  const paymentMethodText = order.paymentMethod === 'CARD'
+    ? 'Передоплата на карту'
+    : 'Накладений платіж';
+
   // Формуємо список товарів
   const itemsList = order.items
     .map((item, index) => {
@@ -151,6 +157,8 @@ ${itemsList}
 📞 Телефон: ${order.phone}${order.city ? `
 📍 Місто: ${order.city}` : ''}${order.warehouse ? `
 🚚 Відділення: ${order.warehouse}` : ''}
+
+💳 <b>Спосіб оплати:</b> ${paymentMethodText}
 
 📊 Статус: ${order.status || 'NEW'}`;
 

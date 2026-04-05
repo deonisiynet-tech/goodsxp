@@ -90,7 +90,7 @@ model Review {
 }
 
 model Order {
-  id              String      @id @default(uuid())
+  id              String        @id @default(uuid())
   userId          String?
   name            String
   phone           String
@@ -99,12 +99,13 @@ model Order {
   city            String?
   warehouse       String?
   warehouseAddress String?
-  totalPrice      Decimal     @db.Decimal(10, 2)
-  status          OrderStatus @default(NEW)
+  totalPrice      Decimal       @db.Decimal(10, 2)
+  status          OrderStatus   @default(NEW)
+  paymentMethod   PaymentMethod @default(COD)
   comment         String?
-  createdAt       DateTime    @default(now()) @db.Timestamptz(6)
-  updatedAt       DateTime    @updatedAt @db.Timestamptz(6)
-  user            User?       @relation(fields: [userId], references: [id])
+  createdAt       DateTime      @default(now()) @db.Timestamptz(6)
+  updatedAt       DateTime      @updatedAt @db.Timestamptz(6)
+  user            User?         @relation(fields: [userId], references: [id])
   items           OrderItem[]
 
   @@index([status])
@@ -244,6 +245,11 @@ enum OrderStatus {
   SHIPPED
   DELIVERED
   CANCELLED
+}
+
+enum PaymentMethod {
+  COD
+  CARD
 }
 
 enum ActionType {

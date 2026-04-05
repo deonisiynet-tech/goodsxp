@@ -57,6 +57,7 @@ export default function CheckoutPage() {
   const [loading, setLoading] = useState(false);
   const [selectedCity, setSelectedCity] = useState<City | null>(null);
   const [selectedWarehouse, setSelectedWarehouse] = useState<Warehouse | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<'COD' | 'CARD'>('COD');
 
   const {
     register,
@@ -143,6 +144,7 @@ export default function CheckoutPage() {
         warehouse: `${selectedWarehouse.type} №${selectedWarehouse.number}`,
         warehouseAddress: selectedWarehouse.shortAddress,
         comment: data.comment,
+        paymentMethod,
         items: items.map((item) => ({
           productId: item.productId,
           quantity: item.quantity,
@@ -283,10 +285,51 @@ export default function CheckoutPage() {
                 />
               </div>
 
+              {/* Спосіб оплати */}
+              <div className="border-t border-purple-500/20 pt-4">
+                <h3 className="text-sm font-medium text-white mb-3">💳 Спосіб оплати</h3>
+                <div className="space-y-3">
+                  <label className="flex items-start gap-3 p-4 rounded-xl border border-purple-500/20 bg-purple-500/5 cursor-pointer transition-all hover:border-purple-500/40">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="COD"
+                      checked={paymentMethod === 'COD'}
+                      onChange={(e) => setPaymentMethod(e.target.value as 'COD' | 'CARD')}
+                      className="mt-1 w-4 h-4 accent-purple-500"
+                    />
+                    <div>
+                      <span className="font-medium text-white text-sm">Оплата при отриманні</span>
+                      <p className="text-xs text-muted mt-0.5">Накладений платіж при отриманні на Новій Пошті</p>
+                    </div>
+                  </label>
+
+                  <label className="flex items-start gap-3 p-4 rounded-xl border border-purple-500/20 bg-purple-500/5 cursor-pointer transition-all hover:border-purple-500/40">
+                    <input
+                      type="radio"
+                      name="paymentMethod"
+                      value="CARD"
+                      checked={paymentMethod === 'CARD'}
+                      onChange={(e) => setPaymentMethod(e.target.value as 'COD' | 'CARD')}
+                      className="mt-1 w-4 h-4 accent-purple-500"
+                    />
+                    <div>
+                      <span className="font-medium text-white text-sm">Повна передоплата на карту</span>
+                      <p className="text-xs text-muted mt-0.5">Переказ на банківську карту</p>
+                    </div>
+                  </label>
+                </div>
+              </div>
+
               {/* Кнопка відправки */}
               <button type="submit" disabled={loading} className="btn-primary w-full disabled:opacity-50">
                 {loading ? 'Оформлення...' : `Замовити на ${getTotal().toLocaleString('uk-UA')} ₴`}
               </button>
+
+              {/* Інформаційне повідомлення */}
+              <p className="text-xs text-muted text-center leading-relaxed">
+                Після оформлення замовлення менеджер зв&apos;яжеться з вами для підтвердження
+              </p>
             </form>
           </div>
 

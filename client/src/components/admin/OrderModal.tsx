@@ -20,13 +20,14 @@ interface Order {
   userId?: string | null
   name: string
   phone: string
-  email: string
+  email?: string | null
   address?: string | null
   city?: string | null
   warehouse?: string | null
   warehouseAddress?: string | null
   totalPrice: number
   status: string
+  paymentMethod?: string | null
   comment?: string | null
   createdAt: string
   updatedAt: string
@@ -66,6 +67,14 @@ export default function OrderModal({ order, onClose, onStatusChange }: OrderModa
     return labels[s] || s
   }
 
+  const getPaymentMethodLabel = (m: string) => {
+    const labels: Record<string, string> = {
+      COD: 'Накладений платіж',
+      CARD: 'Передоплата на карту',
+    }
+    return labels[m] || m
+  }
+
   return (
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
       <div className="bg-background border border-border max-w-2xl w-full max-h-[90vh] overflow-y-auto">
@@ -82,13 +91,10 @@ export default function OrderModal({ order, onClose, onStatusChange }: OrderModa
               <h3 className="font-medium mb-2">Клієнт</h3>
               <div className="space-y-1 text-sm text-muted">
                 <p>
-                  <span className="text-secondary">Ім'я:</span> {order.name}
+                  <span className="text-secondary">Ім&apos;я:</span> {order.name}
                 </p>
                 <p>
                   <span className="text-secondary">Телефон:</span> {order.phone}
-                </p>
-                <p>
-                  <span className="text-secondary">Email:</span> {order.email}
                 </p>
               </div>
             </div>
@@ -102,6 +108,9 @@ export default function OrderModal({ order, onClose, onStatusChange }: OrderModa
                 </p>
                 <p>
                   <span className="text-secondary">Статус:</span> {getStatusLabel(order.status)}
+                </p>
+                <p>
+                  <span className="text-secondary">Оплата:</span> {getPaymentMethodLabel(order.paymentMethod || 'COD')}
                 </p>
                 <p>
                   <span className="text-secondary">Сума:</span>{' '}
