@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { ArrowRight, Truck, Shield, RefreshCw, Star, Zap, CheckCircle, Headset, Package } from 'lucide-react';
+import { ArrowRight, Truck, Shield, RefreshCw, Star, Zap, CheckCircle, Headset, Package, Heart } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ProductList from '@/components/ProductList';
@@ -152,8 +152,7 @@ export default function Home() {
                 </h2>
                 <p className="text-muted text-lg mb-8 leading-relaxed">
                   Ми не просто магазин — ми ваш надійний партнер у світі технологій.
-                  Кожен товар проходить ретельну перевірку, а наша команда експертів
-                  готова допомогти з вибором у будь-який час.
+                  Кожен товар перевірено, а наша команда завжди готова допомогти з вибором.
                 </p>
 
                 <div className="space-y-4">
@@ -167,7 +166,7 @@ export default function Home() {
               <div className="grid grid-cols-2 gap-4">
                 <StatCard icon={Truck} label="Стабільні поставки" />
                 <StatCard icon={Shield} label="Гарантія безпеки" />
-                <StatCard icon={Star} label="Довіра клієнтів" />
+                <StatCard icon={Heart} label="Довіра клієнтів" />
                 <StatCard icon={Headset} label="Жива підтримка" />
               </div>
             </div>
