@@ -84,7 +84,7 @@ export default function Home() {
                   href="/about"
                   className="inline-flex items-center justify-center gap-2 px-8 py-4 border border-purple-500/30 text-white font-semibold rounded-2xl backdrop-blur-md bg-purple-500/10 transition-all duration-300 hover:bg-purple-500/20 hover:scale-105 hover:border-purple-500/50 hover:shadow-[0_0_30px_rgba(168,85,247,0.3)]"
                 >
-                  Дізнатися більше
+                  Про нас
                 </Link>
               </div>
 
@@ -157,7 +157,7 @@ export default function Home() {
                 </p>
 
                 <div className="space-y-4">
-                  <FeatureItem text="Офіційна гарантія на всі товари" />
+                  <FeatureItem text="Перевірена якість товарів" />
                   <FeatureItem text="Професійна консультація" />
                   <FeatureItem text="Швидка обробка замовлень" />
                   <FeatureItem text="Постійні оновлення асортименту" />
@@ -167,7 +167,7 @@ export default function Home() {
               <div className="grid grid-cols-2 gap-4">
                 <StatCard icon={Truck} label="Стабільні поставки" />
                 <StatCard icon={Shield} label="Гарантія безпеки" />
-                <StatCard icon={Star} label="Високий рейтинг" />
+                <StatCard icon={Star} label="Довіра клієнтів" />
                 <StatCard icon={Headset} label="Жива підтримка" />
               </div>
             </div>

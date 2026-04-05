@@ -124,7 +124,7 @@ export class OrderService {
     // Помилка Telegram не впливає на створення замовлення
     notifyNewOrder({
       id: order.id,
-      orderNumber: order.id.slice(0, 8).toUpperCase(),
+      orderNumber: order.orderNumber,
       items: order.items,
       totalPrice: order.totalPrice,
       name: order.name,

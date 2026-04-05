@@ -150,7 +150,7 @@ export default function CheckoutPage() {
           quantity: item.quantity,
         })),
       };
-      await ordersApi.create(orderData);
+      const response = await ordersApi.create(orderData);
       clearCart();
       saveData({
         surname: '', firstName: '', middleName: '',
@@ -158,7 +158,9 @@ export default function CheckoutPage() {
         city: null, cityRef: null, warehouse: null, warehouseAddress: null
       });
       toast.success('Замовлення успішно оформлено!');
-      router.push('/orders/success');
+      // Перенаправляємо на success page з номером замовлення
+      const orderNumber = response.data?.orderNumber || response.data?.id;
+      router.push(`/orders/success?order=${orderNumber}`);
     } catch (error: any) {
       toast.error(error.response?.data?.error || 'Помилка при оформленні замовлення');
     } finally {

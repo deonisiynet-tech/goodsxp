@@ -1,11 +1,15 @@
 'use client';
 
+import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle, ArrowLeft } from 'lucide-react';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 
 export default function OrderSuccessPage() {
+  const searchParams = useSearchParams();
+  const orderNumber = searchParams?.get('order');
+
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
@@ -15,14 +19,24 @@ export default function OrderSuccessPage() {
             <CheckCircle size={48} className="text-primary" />
           </div>
 
-          <h1 className="text-3xl font-light mb-4">Замовлення оформлено!</h1>
+          <h1 className="text-3xl font-light mb-4">
+            Замовлення успішно оформлено! 🎉
+          </h1>
 
-          <p className="text-muted mb-8">
-            Дякуємо за ваше замовлення. Наш менеджер зв'яжеться з вами 
-            найближчим часом для підтвердження деталей доставки.
+          <p className="text-muted mb-2">
+            Дякуємо, що обрали наш магазин.
+          </p>
+          <p className="text-muted mb-2">
+            Ми вже отримали ваше замовлення. Найближчим часом наш менеджер зв&apos;яжеться з вами для підтвердження та підготовки до відправки.
           </p>
 
-          <div className="space-y-4">
+          {orderNumber && (
+            <p className="text-lg font-medium text-white mt-6 mb-8">
+              Номер вашого замовлення: #{orderNumber}
+            </p>
+          )}
+
+          <div className="space-y-4 mt-8">
             <Link href="/catalog" className="btn-primary w-full inline-block">
               Продовжити покупки
             </Link>

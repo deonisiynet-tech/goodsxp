@@ -8,6 +8,7 @@ import OrderModal from './OrderModal';
 
 interface Order {
   id: string;
+  orderNumber: number;
   name: string;
   email: string;
   phone: string;
@@ -172,8 +173,8 @@ export default function OrderList() {
             <tbody className="divide-y divide-border">
               {orders.map((order) => (
                 <tr key={order.id} className="hover:bg-surfaceLight">
-                  <td className="px-6 py-4 font-mono text-sm">
-                    {order.id.slice(0, 8)}...
+                  <td className="px-6 py-4 font-mono text-sm font-medium text-primary">
+                    #{order.orderNumber}
                   </td>
                   <td className="px-6 py-4">
                     <div>

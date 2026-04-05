@@ -13,6 +13,7 @@ interface OrderItem {
 
 interface Order {
   id: string;
+  orderNumber: number;
   name: string;
   email: string;
   totalPrice: number;
@@ -141,7 +142,7 @@ export default function LatestOrdersTable({ orders = [], loading = false }: Late
                       href={`/admin/orders`}
                       className="font-mono text-sm text-white hover:underline"
                     >
-                      #{order.id.slice(0, 8).toUpperCase()}
+                      #{order.orderNumber}
                     </Link>
                   </td>
                   <td className="px-4 py-4">

@@ -124,12 +124,14 @@ interface OrderNotificationData {
 }
 
 export async function notifyNewOrder(order: OrderNotificationData): Promise<boolean> {
-  const orderNumber = order.orderNumber || order.id.slice(0, 8).toUpperCase();
-
   // Форматуємо спосіб оплати
   const paymentMethodText = order.paymentMethod === 'CARD'
-    ? 'Передоплата на карту'
+    ? 'Оплата на карту'
     : 'Накладений платіж';
+
+  // Форматуємо номер замовлення
+  const orderNum = order.orderNumber || order.id.slice(0, 8).toUpperCase();
+  const displayNumber = typeof orderNum === 'number' ? orderNum : orderNum;
 
   // Формуємо список товарів
   const itemsList = order.items
@@ -143,22 +145,19 @@ export async function notifyNewOrder(order: OrderNotificationData): Promise<bool
     })
     .join('\n\n');
 
-  const message = `📦 <b>Нове замовлення</b>
-
-🆔 Номер: #${orderNumber}
-📅 Дата: ${formatDate(order.createdAt || new Date())}
+  const message = `📦 <b>НОВЕ ЗАМОВЛЕННЯ #${displayNumber}</b>
 
 🛒 <b>Товари:</b>
 ${itemsList}
 
-💰 <b>Загальна сума:</b> ${formatPrice(order.totalPrice)}
+💰 <b>Сума:</b> ${formatPrice(order.totalPrice)}
+
+💳 <b>Оплата:</b> ${paymentMethodText}
 
 👤 Клієнт: ${order.name}
 📞 Телефон: ${order.phone}${order.city ? `
 📍 Місто: ${order.city}` : ''}${order.warehouse ? `
-🚚 Відділення: ${order.warehouse}` : ''}
-
-💳 <b>Спосіб оплати:</b> ${paymentMethodText}
+🚚 Доставка: ${order.warehouse}` : ''}
 
 📊 Статус: ${order.status || 'NEW'}`;
 

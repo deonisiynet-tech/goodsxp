@@ -9,6 +9,7 @@ import { ShoppingCart, Search, Filter, Eye, Trash2, RefreshCw } from 'lucide-rea
 
 interface Order {
   id: string
+  orderNumber: number
   userId: string | null
   name: string
   phone: string
@@ -227,8 +228,8 @@ export default function OrdersPage() {
               <tbody className="divide-y divide-border">
                 {orders.map((order) => (
                   <tr key={order.id} className="hover:bg-surfaceLight transition-colors">
-                    <td className="px-6 py-4 font-mono text-sm text-white">
-                      {order.id.slice(0, 8)}...
+                    <td className="px-6 py-4 font-mono text-sm font-medium text-primary">
+                      #{order.orderNumber}
                     </td>
                     <td className="px-6 py-4">
                       <div>

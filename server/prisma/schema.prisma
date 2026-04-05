@@ -91,6 +91,7 @@ model Review {
 
 model Order {
   id              String        @id @default(uuid())
+  orderNumber     Int           @unique @default(autoincrement())
   userId          String?
   name            String
   phone           String
