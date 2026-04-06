@@ -125,6 +125,11 @@ export const productsApi = {
     return fetchAPI(`/products?${queryParams.toString()}`)
   },
 
+  // Get related products (same category)
+  getRelated: async (productId: string, limit: number = 4) => {
+    return fetchAPI(`/products/related/${productId}?limit=${limit}`);
+  },
+
   // Get all products (admin)
   getAllAdmin: async (params?: {
     page?: number

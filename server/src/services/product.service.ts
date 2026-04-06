@@ -94,6 +94,20 @@ export class ProductService {
     });
   }
 
+  async getByCategory(categoryId: string, limit: number = 4, excludeId?: string) {
+    const products = await prisma.product.findMany({
+      where: {
+        isActive: true,
+        categoryId,
+        ...(excludeId && { id: { not: excludeId } }),
+      },
+      take: limit,
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return products;
+  }
+
   async getAll(filters: ProductFilters) {
     const validated = paginationSchema.parse(filters);
     const { page, limit, search, sortBy, sortOrder } = validated;

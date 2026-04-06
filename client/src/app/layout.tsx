@@ -4,6 +4,8 @@ import './globals.css';
 import { Providers } from '@/components/Providers';
 import AnalyticsTracker from '@/components/AnalyticsTracker';
 import StoreStatusChecker from '@/components/StoreStatusChecker';
+import ScrollToTop from '@/components/ScrollToTop';
+import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 
 const inter = Inter({
   subsets: ['latin', 'cyrillic'],
@@ -36,6 +38,12 @@ export const metadata: Metadata = {
   formatDetection: {
     telephone: true,
     email: true,
+  },
+  manifest: '/manifest.json',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'GoodsXP',
   },
   openGraph: {
     type: 'website',
@@ -130,6 +138,8 @@ export default function RootLayout({
           <AnalyticsTracker />
           <StoreStatusChecker />
           {children}
+          <ScrollToTop />
+          <PWAInstallPrompt />
         </Providers>
       </body>
     </html>

@@ -46,6 +46,7 @@ export default function ProductPage() {
   const [submittingReview, setSubmittingReview] = useState(false);
   const [sortBy, setSortBy] = useState<ReviewSortOption>('newest');
   const [activeTab, setActiveTab] = useState<'description' | 'specs' | 'reviews'>('description');
+  const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
   const addItem = useCartStore((state) => state.addItem);
   const wishlistToggle = useWishlistStore((state) => state.toggleItem);
   const isInWishlist = useWishlistStore((state) => state.isInWishlist);
@@ -59,8 +60,18 @@ export default function ProductPage() {
   useEffect(() => {
     if (product) {
       loadReviews(product.slug);
+      loadRelated(product.id);
     }
   }, [product, sortBy]);
+
+  const loadRelated = async (productId: string) => {
+    try {
+      const response = await productsApi.getRelated(productId, 4);
+      setRelatedProducts(response.products || []);
+    } catch {
+      setRelatedProducts([]);
+    }
+  };
 
   const loadProduct = async (slug: string) => {
     try {
@@ -721,6 +732,53 @@ export default function ProductPage() {
             )}
           </div>
         </div>
+
+        {/* ✅ Cross-sell: Вас може зацікавити */}
+        {relatedProducts.length > 0 && (
+          <section className="mt-16 border-t border-[#26262b] pt-12">
+            <h2 className="text-2xl font-light mb-8">Вас може зацікавити</h2>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {relatedProducts.map((rp) => (
+                <Link
+                  key={rp.id}
+                  href={`/catalog/${rp.slug}`}
+                  className="group card cursor-pointer"
+                >
+                  <div className="aspect-square overflow-hidden bg-[#1f1f23] rounded-xl">
+                    <img
+                      src={rp.imageUrl || '/placeholder.jpg'}
+                      alt={rp.title}
+                      className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      loading="lazy"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = 'https://via.placeholder.com/400?text=No+Image';
+                      }}
+                    />
+                  </div>
+                  <div className="p-3">
+                    <h3 className="text-sm font-medium text-white line-clamp-2 mb-2 group-hover:text-purple-400 transition-colors">
+                      {rp.title}
+                    </h3>
+                    {rp.discountPrice && rp.originalPrice ? (
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-base font-bold text-white">
+                          {Number(rp.discountPrice).toLocaleString('uk-UA')} ₴
+                        </span>
+                        <span className="text-xs text-[#9ca3af] line-through">
+                          {Number(rp.originalPrice).toLocaleString('uk-UA')} ₴
+                        </span>
+                      </div>
+                    ) : (
+                      <span className="text-base font-light text-white">
+                        {Number(rp.price).toLocaleString('uk-UA')} ₴
+                      </span>
+                    )}
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </section>
+        )}
       </main>
 
       {/* Review Form Modal */}

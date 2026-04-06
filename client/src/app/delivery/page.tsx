@@ -104,22 +104,22 @@ export default function DeliveryPage() {
           </div>
 
           {/* Additional Info */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
             {/* Як оформити доставку */}
             <div className="card p-8">
               <h2 className="text-xl font-light mb-6">Як оформити доставку?</h2>
               <ol className="space-y-4">
                 {[
-                  { num: 1, text: 'Оберіть товари та додайте їх до кошика' },
-                  { num: 2, text: 'Оформіть замовлення, вказавши спосіб доставки' },
-                  { num: 3, text: 'Очікуйте на підтвердження від менеджера' },
-                  { num: 4, text: "Отримайте замовлення у відділенні або кур'єром" },
+                  { num: 1, text: 'Оберіть товари та додайте їх до кошика', icon: '🛒' },
+                  { num: 2, text: 'Оформіть замовлення, вказавши відділення НП', icon: '📋' },
+                  { num: 3, text: 'Менеджер зв\'яжеться для підтвердження (~30 хв)', icon: '📞' },
+                  { num: 4, text: 'Отримайте та оплатіть на відділенні', icon: '📦' },
                 ].map((step) => (
                   <li key={step.num} className="flex gap-4">
-                    <span className="w-7 h-7 rounded-full bg-purple-500/10 flex items-center justify-center text-sm font-medium text-purple-400 shrink-0">
-                      {step.num}
+                    <span className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center text-lg shrink-0">
+                      {step.icon}
                     </span>
-                    <span className="text-muted pt-0.5">{step.text}</span>
+                    <span className="text-muted pt-2">{step.text}</span>
                   </li>
                 ))}
               </ol>
@@ -137,11 +137,49 @@ export default function DeliveryPage() {
                   'Можливість огляду товару перед отриманням',
                 ].map((item, index) => (
                   <li key={index} className="flex gap-3">
-                    <span className="text-purple-400 shrink-0 mt-1">•</span>
+                    <span className="text-green-400 shrink-0 mt-1">✓</span>
                     <span className="text-muted">{item}</span>
                   </li>
                 ))}
               </ul>
+            </div>
+          </div>
+
+          {/* ✅ FAQ */}
+          <div className="card p-8">
+            <h2 className="text-xl font-light mb-6">Часті запитання</h2>
+            <div className="space-y-4">
+              {[
+                {
+                  q: 'Скільки коштує доставка?',
+                  a: 'Вартість доставки розраховується за тарифами Нової Пошти і залежить від ваги посилки та відстані. Орієнтовна вартість — від 50 до 100 ₴.',
+                },
+                {
+                  q: 'Чи можу я перевірити товар перед оплатою?',
+                  a: 'Так! При отриманні на відділенні Нової Пошти ви можете оглянути товар перед тим, як оплатити накладений платіж.',
+                },
+                {
+                  q: 'Що якщо товар прийшов пошкодженим?',
+                  a: 'Не хвилюйтеся. Зв\'яжіться з нами через Telegram або email, і ми вирішимо проблему — замінимо товар або повернемо кошти.',
+                },
+                {
+                  q: 'Чи доставляєте ви в інші країни?',
+                  a: 'Наразі доставка здійснюється тільки по Україні через Нову Пошту.',
+                },
+                {
+                  q: 'Як відстежити посилку?',
+                  a: 'Після відправки менеджер надішле вам трек-номер. Відстежуйте посилку на сайті novoaposhta.ua.',
+                },
+              ].map((faq, i) => (
+                <details key={i} className="border border-[#26262b] rounded-xl overflow-hidden group">
+                  <summary className="p-4 cursor-pointer text-white font-medium hover:text-purple-400 transition-colors list-none">
+                    {faq.q}
+                  </summary>
+                  <div className="px-4 pb-4 text-muted text-sm leading-relaxed border-t border-[#26262b] pt-3">
+                    {faq.a}
+                  </div>
+                </details>
+              ))}
             </div>
           </div>
         </div>

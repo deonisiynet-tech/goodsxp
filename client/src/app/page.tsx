@@ -139,6 +139,47 @@ export default function Home() {
           </div>
         </section>
 
+        {/* ✅ ЯК ЗАМОВИТИ — 3 STEPS */}
+        <section className="py-24">
+          <div className="container mx-auto px-4">
+            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-center">
+              Як замовити?
+            </h2>
+            <p className="text-muted text-lg mb-16 text-center max-w-2xl mx-auto">
+              Всього 3 простих кроки — і товар у вас
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+              <div className="text-center">
+                <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 flex items-center justify-center text-4xl">
+                  🛒
+                </div>
+                <h3 className="text-xl font-semibold mb-3 text-white">1. Обери товар</h3>
+                <p className="text-muted text-sm leading-relaxed">
+                  Переглянь каталог та додай вподобані товари до кошика
+                </p>
+              </div>
+              <div className="text-center">
+                <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 flex items-center justify-center text-4xl">
+                  📋
+                </div>
+                <h3 className="text-xl font-semibold mb-3 text-white">2. Оформи замовлення</h3>
+                <p className="text-muted text-sm leading-relaxed">
+                  Вкажи дані та обери відділення Нової Пошти. Менеджер зв&apos;яжеться за 30 хвилин.
+                </p>
+              </div>
+              <div className="text-center">
+                <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 flex items-center justify-center text-4xl">
+                  📦
+                </div>
+                <h3 className="text-xl font-semibold mb-3 text-white">3. Отримай посилку</h3>
+                <p className="text-muted text-sm leading-relaxed">
+                  Забери на відділенні або кур&apos;єром. Оглянь товар перед оплатою.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
         {/* ===== POPULAR PRODUCTS ===== */}
         <ProductList title="Популярні товари" limit={5} showAllLink popular />
 

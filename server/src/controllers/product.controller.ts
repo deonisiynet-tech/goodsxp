@@ -19,6 +19,25 @@ export class ProductController {
     }
   }
 
+  async getRelated(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { productId } = req.params;
+      const { limit = 4 } = req.query;
+      const product = await productService.getById(productId);
+      if (!product.categoryId) {
+        return res.json({ products: [] });
+      }
+      const products = await productService.getByCategory(
+        product.categoryId,
+        Number(limit),
+        productId
+      );
+      res.json({ products });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async getAll(req: Request, res: Response, next: NextFunction) {
     try {
       const { page, limit, search, sortBy, sortOrder, category, minPrice, maxPrice } = req.query;

@@ -9,6 +9,7 @@ const controller = new ProductController();
 
 // Public routes
 router.get('/categories', controller.getAllCategories);
+router.get('/related/:productId', controller.getRelated);
 router.get('/', controller.getAll);
 router.get('/id/:id', controller.getById);
 router.get('/:slug', controller.getBySlug);

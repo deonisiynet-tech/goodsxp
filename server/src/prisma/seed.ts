@@ -25,6 +25,33 @@ function generateSlug(title: string): string {
 async function main() {
   console.log('🌱 Запуск seed (SQL)...');
 
+  // ===== КАТЕГОРІЇ =====
+  const categories = [
+    { name: 'Смарт-годинники', slug: 'smart-watches', description: 'Розумні годинники та фітнес-браслети' },
+    { name: 'Навушники', slug: 'headphones', description: 'Бездротові та дротові навушники' },
+    { name: 'Павербанки', slug: 'powerbanks', description: 'Портативні зарядні пристрої' },
+    { name: 'Аксесуари', slug: 'accessories', description: 'Чохли, кабелі, зарядки, тримачі' },
+    { name: 'Гаджети', slug: 'gadgets', description: 'Корисні електронні гаджети' },
+  ];
+
+  const categoryIds: Record<string, string> = {};
+
+  for (const cat of categories) {
+    const existing = await pool.query('SELECT id FROM "Category" WHERE slug = $1', [cat.slug]);
+    if (existing.rows.length === 0) {
+      const result = await pool.query(
+        `INSERT INTO "Category" (id, name, slug, description, "createdAt", "updatedAt")
+         VALUES (gen_random_uuid(), $1, $2, $3, NOW(), NOW()) RETURNING id`,
+        [cat.name, cat.slug, cat.description]
+      );
+      categoryIds[cat.slug] = result.rows[0].id;
+      console.log(`✅ Категорію створено: ${cat.name}`);
+    } else {
+      categoryIds[cat.slug] = existing.rows[0].id;
+      console.log(`ℹ️  Категорія вже існує: ${cat.name}`);
+    }
+  }
+
   const adminEmail = process.env.ADMIN_EMAIL || 'goodsxp.net@gmail.com';
   const adminPassword = process.env.ADMIN_PASSWORD || 'Admin123';
 
@@ -44,152 +71,179 @@ async function main() {
 
   const sampleProducts = [
     {
-      title: 'Смартфон Premium X1',
-      description: 'Флагманський смартфон з передовими технологіями. 6.7" AMOLED дисплей, процесор останнього покоління, 256GB пам\'яті, потрійна камера 108MP. Швидка зарядка 120W, бездротова зарядка, захист IP68.',
-      price: 32999,
-      imageUrl: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=500&h=500&fit=crop',
-      images: [
-        'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=500&h=500&fit=crop',
-        'https://images.unsplash.com/photo-1592899677712-a5a25450336c?w=500&h=500&fit=crop',
-      ],
-      stock: 50,
-    },
-    {
-      title: 'Ноутбук ProBook 15',
-      description: 'Потужний ноутбук для роботи та розваг. 15.6" IPS дисплей, Intel Core i7, 16GB RAM, 512GB SSD. Відеокарта NVIDIA GeForce RTX 4060. Легкий і тонкий корпус з алюмінію.',
-      price: 54999,
-      imageUrl: 'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=500&h=500&fit=crop',
-      images: [
-        'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=500&h=500&fit=crop',
-        'https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=500&h=500&fit=crop',
-      ],
-      stock: 30,
-    },
-    {
-      title: 'Бездротові навушники SoundMax',
-      description: 'Преміальні навушники з активним шумоподавленням. До 30 годин роботи, швидка зарядка, підтримка кодеків LDAC та aptX. Зручна посадка, м\'які амбушюри.',
-      price: 10499,
-      imageUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&h=500&fit=crop',
-      images: [
-        'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=500&h=500&fit=crop',
-        'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=500&h=500&fit=crop',
-      ],
-      stock: 100,
-    },
-    {
-      title: 'Розумний годинник FitWatch Pro',
+      title: 'FitWatch Pro — Розумний годинник',
       description: 'Фітнес-годинник з розширеним моніторингом здоров\'я. Вимірювання пульсу, SpO2, ЕКГ. GPS, NFC для безконтактної оплати. Водонепроникність 5ATM. До 14 днів роботи.',
-      price: 8499,
-      imageUrl: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&h=500&fit=crop',
+      price: 2499,
+      originalPrice: 3499,
+      discountPrice: 2499,
+      categorySlug: 'smart-watches',
+      imageUrl: 'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&h=800&fit=crop',
       images: [
-        'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=500&h=500&fit=crop',
-        'https://images.unsplash.com/photo-1579586337278-3befd40fd17a?w=500&h=500&fit=crop',
+        'https://images.unsplash.com/photo-1523275335684-37898b6baf30?w=800&h=800&fit=crop',
+        'https://images.unsplash.com/photo-1579586337278-3befd40fd17a?w=800&h=800&fit=crop',
       ],
       stock: 75,
+      isPopular: true,
     },
     {
-      title: 'Планшет TabUltra 11',
-      description: 'Універсальний планшет для роботи та розваг. 11" Liquid Retina дисплей, процесор M2, 128GB пам\'яті. Підтримка Apple Pencil та Magic Keyboard. Камера 12MP.',
-      price: 24999,
-      imageUrl: 'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=500&h=500&fit=crop',
+      title: 'SmartBand Lite — Фітнес-браслет',
+      description: 'Легкий фітнес-браслет для щоденного використання. Моніторинг сну, кроки, калорії. Сповіщення з телефону. До 20 днів роботи без підзарядки.',
+      price: 999,
+      originalPrice: null,
+      discountPrice: null,
+      categorySlug: 'smart-watches',
+      imageUrl: 'https://images.unsplash.com/photo-1575311373937-0d5e9e5f133f?w=800&h=800&fit=crop',
       images: [
-        'https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=500&h=500&fit=crop',
-        'https://images.unsplash.com/photo-1561154464-82e9adf32764?w=500&h=500&fit=crop',
-      ],
-      stock: 40,
-    },
-    {
-      title: 'Ігрова консоль GameBox X',
-      description: 'Консоль нового покоління для неймовірного геймінгу. 4K@120Hz, трасування променів, SSD 1TB. У комплекті бездротовий контролер та підписка на 3 місяці.',
-      price: 20999,
-      imageUrl: 'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?w=500&h=500&fit=crop',
-      images: [
-        'https://images.unsplash.com/photo-1606144042614-b2417e99c4e3?w=500&h=500&fit=crop',
-        'https://images.unsplash.com/photo-1486401899868-0e435ed85128?w=500&h=500&fit=crop',
-      ],
-      stock: 25,
-    },
-    {
-      title: 'Камера Mirrorless Z6',
-      description: 'Професійна бездзеркальна камера. 24.2MP повнокадрова матриця, 4K відео, стабілізація 5 осей. Швидкий автофокус, серійна зйомка 12 к/с.',
-      price: 62999,
-      imageUrl: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=500&h=500&fit=crop',
-      images: [
-        'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=500&h=500&fit=crop',
-        'https://images.unsplash.com/photo-1502920917128-1aa500764cbd?w=500&h=500&fit=crop',
-      ],
-      stock: 15,
-    },
-    {
-      title: 'Колонка SmartSound Mini',
-      description: 'Компактна розумна колонка з голосовим помічником. 360° звук, підтримка мультирум, управління розумним будинком. Стильний дизайн, 6 мікрофонів.',
-      price: 3399,
-      imageUrl: 'https://images.unsplash.com/photo-1543512214-318c77a07298?w=500&h=500&fit=crop',
-      images: [
-        'https://images.unsplash.com/photo-1543512214-318c77a07298?w=500&h=500&fit=crop',
-        'https://images.unsplash.com/photo-1589487391730-58f20eb2c308?w=500&h=500&fit=crop',
+        'https://images.unsplash.com/photo-1575311373937-0d5e9e5f133f?w=800&h=800&fit=crop',
       ],
       stock: 120,
+      isPopular: false,
     },
     {
-      title: 'Монітор UltraView 27"',
-      description: 'Професійний монітор для роботи та геймінгу. 27" IPS матриця, 4K роздільна здатність, 144Hz. HDR10, USB-C hub, вбудовані колонки. Ідеальна кольоропередача.',
-      price: 16999,
-      imageUrl: 'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=500&h=500&fit=crop',
+      title: 'SoundMax Pro — Бездротові навушники',
+      description: 'Преміальні навушники з активним шумоподавленням. До 30 годин роботи, швидка зарядка, підтримка кодеків LDAC та aptX. Зручна посадка, м\'які амбушюри.',
+      price: 1899,
+      originalPrice: 2499,
+      discountPrice: 1899,
+      categorySlug: 'headphones',
+      imageUrl: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&h=800&fit=crop',
       images: [
-        'https://images.unsplash.com/photo-1527443224154-c4a3942d3acf?w=500&h=500&fit=crop',
-        'https://images.unsplash.com/photo-1547394765-185e1e68f34e?w=500&h=500&fit=crop',
+        'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=800&h=800&fit=crop',
+        'https://images.unsplash.com/photo-1583394838336-acd977736f90?w=800&h=800&fit=crop',
       ],
-      stock: 35,
+      stock: 100,
+      isPopular: true,
+      isFeatured: true,
     },
     {
-      title: 'Клавіатура MechType Pro',
-      description: 'Механічна клавіатура для професіоналів. Перемикачі Cherry MX Blue, RGB підсвітка, алюмінієвий корпус. Програмовані клавіші, знімний кабель USB-C.',
-      price: 4999,
-      imageUrl: 'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=500&h=500&fit=crop',
+      title: 'TWS Mini — Бездротові навушники',
+      description: 'Компактні TWS навушники в стильному кейсі. Bluetooth 5.3, сенсорне управління, мікрофон. До 6 годин роботи + 24 години від кейсу.',
+      price: 699,
+      originalPrice: 999,
+      discountPrice: 699,
+      categorySlug: 'headphones',
+      imageUrl: 'https://images.unsplash.com/photo-1590658268037-6bf12f032f55?w=800&h=800&fit=crop',
       images: [
-        'https://images.unsplash.com/photo-1587829741301-dc798b83add3?w=500&h=500&fit=crop',
-        'https://images.unsplash.com/photo-1618384887929-16ec33fab9ef?w=500&h=500&fit=crop',
+        'https://images.unsplash.com/photo-1590658268037-6bf12f032f55?w=800&h=800&fit=crop',
       ],
-      stock: 60,
+      stock: 150,
+      isPopular: true,
     },
     {
-      title: 'Миша GamePro Wireless',
-      description: 'Бездротова ігрова миша з точністю 25600 DPI. 70 годин роботи, 8 програмованих кнопок, RGB підсвітка. Ергономічний дизайн для правої руки.',
-      price: 2499,
-      imageUrl: 'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=500&h=500&fit=crop',
+      title: 'PowerCore 20000mAh — Павербанк',
+      description: 'Потужний павербанк на 20000mAh. Два USB-порти, швидка зарядка 22.5W. LED-індикатор рівня заряду. Компактний розмір для подорожей.',
+      price: 899,
+      originalPrice: 1199,
+      discountPrice: 899,
+      categorySlug: 'powerbanks',
+      imageUrl: 'https://images.unsplash.com/photo-1609091839311-d5365f9c1565?w=800&h=800&fit=crop',
       images: [
-        'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=500&h=500&fit=crop',
-        'https://images.unsplash.com/photo-1615663245857-acda5b2b1588?w=500&h=500&fit=crop',
+        'https://images.unsplash.com/photo-1609091839311-d5365f9c1565?w=800&h=800&fit=crop',
+      ],
+      stock: 200,
+      isPopular: true,
+    },
+    {
+      title: 'PowerSlim 10000mAh — Ультратонкий павербанк',
+      description: 'Найтонший павербанк з ємністю 10000mAh. Вага всього 180г. Бездротова зарядка Qi. Ідеально підходить для щоденного використання.',
+      price: 599,
+      originalPrice: null,
+      discountPrice: null,
+      categorySlug: 'powerbanks',
+      imageUrl: 'https://images.unsplash.com/photo-1617788138017-80ad40650899?w=800&h=800&fit=crop',
+      images: [
+        'https://images.unsplash.com/photo-1617788138017-80ad40650899?w=800&h=800&fit=crop',
       ],
       stock: 80,
+      isPopular: false,
     },
     {
-      title: 'Зовнішній SSD DriveMax 1TB',
-      description: 'Швидкий зовнішній SSD накопичувач. 1TB пам\'яті, швидкість читання до 1050 МБ/с. USB 3.2 Gen 2, ударостійкий корпус. Компактний розмір.',
-      price: 3799,
-      imageUrl: 'https://images.unsplash.com/photo-1597872250969-96695b6e6e92?w=500&h=500&fit=crop',
+      title: 'Бездротова зарядка 3-в-1',
+      description: 'Зарядна станція для телефону, годинника та навушників одночасно. Qi-сумісність, потужність 15W. Стильний дизайн для робочого столу.',
+      price: 799,
+      originalPrice: 1099,
+      discountPrice: 799,
+      categorySlug: 'accessories',
+      imageUrl: 'https://images.unsplash.com/photo-1615526675159-e248c3021d3f?w=800&h=800&fit=crop',
       images: [
-        'https://images.unsplash.com/photo-1597872250969-96695b6e6e92?w=500&h=500&fit=crop',
-        'https://images.unsplash.com/photo-1628135899446-1f6342479723?w=500&h=500&fit=crop',
+        'https://images.unsplash.com/photo-1615526675159-e248c3021d3f?w=800&h=800&fit=crop',
+      ],
+      stock: 60,
+      isPopular: false,
+    },
+    {
+      title: 'Автомобільний тримач MagSafe',
+      description: 'Магнітний тримач для телефону в авто. Сумісний з MagSafe. Міцне кріплення на вентиляційну решітку. Обертання на 360°.',
+      price: 399,
+      originalPrice: null,
+      discountPrice: null,
+      categorySlug: 'accessories',
+      imageUrl: 'https://images.unsplash.com/photo-1592899677712-a5a25450336c?w=800&h=800&fit=crop',
+      images: [
+        'https://images.unsplash.com/photo-1592899677712-a5a25450336c?w=800&h=800&fit=crop',
       ],
       stock: 90,
+      isPopular: false,
+    },
+    {
+      title: 'Bluetooth колонка SoundBox',
+      description: 'Портативна Bluetooth-колонка з потужним звуком. Водонепроникність IPX7, до 12 годин роботи. Вбудований мікрофон, RGB підсвітка.',
+      price: 1299,
+      originalPrice: 1699,
+      discountPrice: 1299,
+      categorySlug: 'gadgets',
+      imageUrl: 'https://images.unsplash.com/photo-1543512214-318c77a07298?w=800&h=800&fit=crop',
+      images: [
+        'https://images.unsplash.com/photo-1543512214-318c77a07298?w=800&h=800&fit=crop',
+        'https://images.unsplash.com/photo-1589487391730-58f20eb2c308?w=800&h=800&fit=crop',
+      ],
+      stock: 45,
+      isPopular: true,
+      isFeatured: true,
+    },
+    {
+      title: 'Розумна LED лампа',
+      description: 'Wi-Fi лампа з керуванням через додаток. 16 мільйонів кольорів, таймер, сумісність з Alexa/Google Home. Стандартний цоколь E27.',
+      price: 299,
+      originalPrice: null,
+      discountPrice: null,
+      categorySlug: 'gadgets',
+      imageUrl: 'https://images.unsplash.com/photo-1565849904461-04e7d6c5e65d?w=800&h=800&fit=crop',
+      images: [
+        'https://images.unsplash.com/photo-1565849904461-04e7d6c5e65d?w=800&h=800&fit=crop',
+      ],
+      stock: 200,
+      isPopular: false,
     },
   ];
 
   for (const product of sampleProducts) {
     const existing = await pool.query('SELECT id FROM "Product" WHERE title = $1', [product.title]);
-    
+
     if (existing.rows.length === 0) {
       const slug = generateSlug(product.title);
-      const imagesPg = `{${product.images.map(img => `"${img.replace(/"/g, '\\"')}"`).join(',')}}`;
-      
+      const categoryId = categoryIds[product.categorySlug] || null;
+      const imagesPg = `{${product.images.map((img: string) => `"${img.replace(/"/g, '\\"')}"`).join(',')}}`;
+
       await pool.query(
-        `INSERT INTO "Product" (id, title, slug, description, price, "imageUrl", images, stock, "isActive", "createdAt", "updatedAt")
-         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, true, NOW(), NOW())`,
-        [product.title, slug, product.description, product.price, product.imageUrl, imagesPg, product.stock]
+        `INSERT INTO "Product" (id, title, slug, description, price, "originalPrice", "discountPrice", "categoryId", "imageUrl", images, stock, "isFeatured", "isPopular", "isActive", "createdAt", "updatedAt")
+         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, true, NOW(), NOW())`,
+        [
+          product.title,
+          slug,
+          product.description,
+          product.price,
+          product.originalPrice,
+          product.discountPrice,
+          categoryId,
+          product.imageUrl,
+          imagesPg,
+          product.stock,
+          product.isFeatured || false,
+          product.isPopular || false,
+        ]
       );
-      console.log(`✅ Товар створено: ${product.title}`);
+      console.log(`✅ Товар створено: ${product.title} (категорія: ${product.categorySlug})`);
     } else {
       console.log(`ℹ️  Товар вже існує: ${product.title}`);
     }
