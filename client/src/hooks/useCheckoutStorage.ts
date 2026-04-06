@@ -2,14 +2,15 @@
 
 import { useEffect, useState } from 'react';
 
-interface CheckoutData {
+export interface CheckoutData {
   surname?: string;
   firstName?: string;
   middleName?: string;
   name?: string;
   phone: string;
-  email: string;
+  email?: string;
   city?: string | null;
+  cityRef?: string | null;
   warehouse?: string | null;
   warehouseAddress?: string | null;
 }

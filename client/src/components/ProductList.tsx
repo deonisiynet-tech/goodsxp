@@ -9,6 +9,7 @@ import { ShoppingCart, Star } from 'lucide-react';
 
 interface Product {
   id: string;
+  slug: string;
   title: string;
   description: string;
   price: number;
@@ -141,7 +142,7 @@ export default function ProductList({ title = 'Каталог товарів', l
             {products.map((product) => (
               <Link
                 key={product.id}
-                href={`/catalog/${product.id}`}
+                href={`/catalog/${product.slug}`}
                 className="group card animate-fade-in"
               >
                 <div className="aspect-square overflow-hidden bg-surfaceLight relative">

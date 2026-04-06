@@ -38,6 +38,9 @@ interface ProductFilters {
   search?: string;
   sortBy?: 'createdAt' | 'price' | 'title';
   sortOrder?: 'asc' | 'desc';
+  category?: string;
+  minPrice?: number;
+  maxPrice?: number;
 }
 
 interface ProductCreateInput {
@@ -79,13 +82,25 @@ interface ReviewSortOptions {
 }
 
 export class ProductService {
+  async getAllCategories() {
+    return prisma.category.findMany({
+      where: { parentId: null },
+      orderBy: { name: 'asc' },
+      include: {
+        _count: {
+          select: { products: true },
+        },
+      },
+    });
+  }
+
   async getAll(filters: ProductFilters) {
     const validated = paginationSchema.parse(filters);
     const { page, limit, search, sortBy, sortOrder } = validated;
 
     const skip = (page - 1) * limit;
 
-    const where = {
+    const where: any = {
       isActive: true,
       ...(search && {
         OR: [
@@ -93,6 +108,9 @@ export class ProductService {
           { description: { contains: search, mode: 'insensitive' as const } },
         ],
       }),
+      ...(filters.category && { categoryId: filters.category }),
+      ...(filters.minPrice && { price: { gte: filters.minPrice } }),
+      ...(filters.maxPrice && filters.maxPrice < 100000 && { price: { lte: filters.maxPrice } }),
     };
 
     const [products, total] = await Promise.all([

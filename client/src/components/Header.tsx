@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ShoppingCart, User, Menu, X } from 'lucide-react';
+import { ShoppingCart, User, Menu, X, Phone } from 'lucide-react';
 import { useCartStore } from '@/lib/store';
 import { useState, useEffect } from 'react';
 import { getAdminPagePath } from '@/lib/admin-paths';
@@ -75,6 +75,16 @@ export default function Header() {
 
           {/* Right Section */}
           <div className="flex items-center gap-4 md:gap-6 shrink-0">
+            {/* ✅ Phone — visible on desktop */}
+            <a
+              href="tel:+380XXXXXXXXX"
+              className="hidden xl:flex items-center gap-2 text-white/90 hover:text-purple-400 transition-colors duration-200"
+              title="Зателефонувати"
+            >
+              <Phone size={18} strokeWidth={1.5} />
+              <span className="text-sm font-light">+380 (XX) XXX-XX-XX</span>
+            </a>
+
             {/* Cart */}
             <Link
               href="/cart"

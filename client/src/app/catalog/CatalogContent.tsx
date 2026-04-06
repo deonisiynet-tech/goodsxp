@@ -1,11 +1,11 @@
 'use client';
 
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { productsApi } from '@/lib/products-api';
 import { useCartStore } from '@/lib/store';
 import toast from 'react-hot-toast';
-import { ShoppingCart, Search, SlidersHorizontal, Star } from 'lucide-react';
+import { ShoppingCart, Search, SlidersHorizontal, Star, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 
 interface Product {
   id: string;
@@ -27,49 +27,68 @@ interface Product {
   reviewCount?: number;
 }
 
-interface SafeProduct extends Omit<Product, 'images'> {
-  images: string[] | null;
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  _count?: { products: number };
 }
 
 const SORT_OPTIONS = [
   { value: 'createdAt', label: 'Новизна' },
-  { value: 'price', label: 'Ціна' },
+  { value: 'price', label: 'Ціна (дешевше)' },
   { value: 'title', label: 'Назва' },
-  { value: 'popularity', label: 'Популярність' },
 ];
 
-const ORDER_OPTIONS = [
-  { value: 'desc', label: 'За спаданням' },
-  { value: 'asc', label: 'За зростанням' },
-];
+const ITEMS_PER_PAGE = 12;
 
 export default function CatalogContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [products, setProducts] = useState<SafeProduct[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalProducts, setTotalProducts] = useState(0);
   const [search, setSearch] = useState(searchParams.get('search') || '');
+  const [debouncedSearch, setDebouncedSearch] = useState(searchParams.get('search') || '');
   const [sortBy, setSortBy] = useState(searchParams.get('sortBy') || 'createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>(
     (searchParams.get('sortOrder') as 'asc' | 'desc') || 'desc'
   );
-  const [priceRange, setPriceRange] = useState<[number, number]>([0, 100000]);
+  const [priceMax, setPriceMax] = useState<number>(100000);
   const [showFilters, setShowFilters] = useState(false);
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page') || '1'));
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const addItem = useCartStore((state) => state.addItem);
+  const gridRef = useRef<HTMLDivElement>(null);
 
   // Load categories
   useEffect(() => {
     const loadCategories = async () => {
       try {
-        setCategories([]);
+        const response = await productsApi.getCategories();
+        setCategories(response.categories || []);
       } catch (error) {
         console.error('Failed to load categories:', error);
       }
     };
     loadCategories();
   }, []);
+
+  // Debounce search (500ms)
+  useEffect(() => {
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    searchTimeoutRef.current = setTimeout(() => {
+      setDebouncedSearch(search);
+      setCurrentPage(1);
+    }, 500);
+    return () => {
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    };
+  }, [search]);
 
   // Update URL params
   const updateURL = useCallback((newParams: Record<string, string>) => {
@@ -87,95 +106,81 @@ export default function CatalogContent() {
   // Handle search param on mount
   useEffect(() => {
     const searchParam = searchParams.get('search');
-    if (searchParam) {
-      setSearch(searchParam);
-    }
+    if (searchParam) setSearch(searchParam);
+    const pageParam = searchParams.get('page');
+    if (pageParam) setCurrentPage(parseInt(pageParam));
   }, [searchParams]);
 
-  const loadProducts = async () => {
+  // Load products
+  const loadProducts = useCallback(async () => {
     try {
       setLoading(true);
-      
-      // Build params object only with meaningful values
       const params: Record<string, string | number | undefined> = {
-        limit: 50,
+        page: currentPage,
+        limit: ITEMS_PER_PAGE,
         sortBy,
         sortOrder,
       };
-      
-      if (search && search.trim()) {
-        params.search = search.trim();
+      if (debouncedSearch && debouncedSearch.trim()) {
+        params.search = debouncedSearch.trim();
       }
       if (selectedCategory) {
         params.category = selectedCategory;
       }
-      if (priceRange[0] > 0) {
-        params.minPrice = priceRange[0];
+      if (priceMax < 100000) {
+        params.maxPrice = priceMax;
       }
-      if (priceRange[1] > 0 && priceRange[1] < 100000) {
-        params.maxPrice = priceRange[1];
-      }
-      
+
       const response = await productsApi.getAll(params);
-      let filteredProducts = response.products || [];
-
-      // Additional client-side price filtering (backend already filters)
-      filteredProducts = filteredProducts.filter(
-        (p: SafeProduct) => p.price >= priceRange[0] && p.price <= priceRange[1]
-      );
-
-      setProducts(filteredProducts);
+      setProducts(response.products || []);
+      setTotalPages(response.pagination?.totalPages || 1);
+      setTotalProducts(response.pagination?.total || 0);
     } catch (error) {
       toast.error('Помилка завантаження товарів');
     } finally {
       setLoading(false);
     }
-  };
+  }, [currentPage, debouncedSearch, sortBy, sortOrder, selectedCategory, priceMax]);
 
   useEffect(() => {
     loadProducts();
-  }, [search, sortBy, sortOrder, selectedCategory, priceRange]);
+  }, [loadProducts]);
 
-  const handleProductClick = (product: SafeProduct) => {
+  // Scroll to top on page change
+  useEffect(() => {
+    if (gridRef.current) {
+      gridRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [currentPage]);
+
+  const handleProductClick = (product: Product) => {
     router.push(`/catalog/${product.slug}`);
   };
 
-  const getProductImage = (prod: SafeProduct | null): string => {
+  const getProductImage = (prod: Product | null): string => {
     if (!prod) return '/placeholder.jpg';
     if (prod.imageUrl) {
-      if (prod.imageUrl.startsWith('http://') || prod.imageUrl.startsWith('https://')) {
-        return prod.imageUrl;
-      }
-      if (prod.imageUrl.startsWith('/')) {
-        return prod.imageUrl;
-      }
+      if (prod.imageUrl.startsWith('http')) return prod.imageUrl;
+      if (prod.imageUrl.startsWith('/')) return prod.imageUrl;
       return `/${prod.imageUrl}`;
     }
     const images = Array.isArray(prod.images) ? prod.images : [];
     if (images.length > 0 && images[0]) {
       const firstImage = images[0];
-      if (firstImage.startsWith('http://') || firstImage.startsWith('https://')) {
-        return firstImage;
-      }
-      if (firstImage.startsWith('/')) {
-        return firstImage;
-      }
+      if (firstImage.startsWith('http')) return firstImage;
+      if (firstImage.startsWith('/')) return firstImage;
       return `/${firstImage}`;
     }
     return '/placeholder.jpg';
   };
 
-  const handleAddToCart = (e: React.MouseEvent, product: SafeProduct) => {
+  const handleAddToCart = (e: React.MouseEvent, product: Product) => {
     e.preventDefault();
     e.stopPropagation();
-
-    // Використовуємо discountPrice якщо є і вона менша за price
     const actualPrice = (product.discountPrice && product.discountPrice < product.price)
       ? product.discountPrice
       : product.price;
-
     const imageUrl = getProductImage(product);
-
     addItem({
       productId: product.id,
       title: product.title,
@@ -186,9 +191,26 @@ export default function CatalogContent() {
   };
 
   const handleSortChange = (field: string, value: string) => {
-    updateURL({ [field]: value });
+    setCurrentPage(1);
+    updateURL({ [field]: value, page: '' });
     if (field === 'sortBy') setSortBy(value);
     if (field === 'sortOrder') setSortOrder(value as 'asc' | 'desc');
+  };
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    updateURL({ page: String(page) });
+  };
+
+  const resetFilters = () => {
+    setSearch('');
+    setDebouncedSearch('');
+    setSortBy('createdAt');
+    setSortOrder('desc');
+    setSelectedCategory('');
+    setPriceMax(100000);
+    setCurrentPage(1);
+    updateURL({});
   };
 
   return (
@@ -202,7 +224,39 @@ export default function CatalogContent() {
           </div>
         </div>
 
-        <div className="container mx-auto px-4 py-8">
+        <div className="container mx-auto px-4 py-8" ref={gridRef}>
+          {/* Quick Category Chips */}
+          {categories.length > 0 && (
+            <div className="flex flex-wrap gap-2 mb-6">
+              <button
+                onClick={() => { setSelectedCategory(''); setCurrentPage(1); updateURL({ category: '', page: '' }); }}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  !selectedCategory
+                    ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30'
+                    : 'bg-[#1f1f23] text-[#9ca3af] border border-[#26262b] hover:border-purple-500/50'
+                }`}
+              >
+                Всі
+              </button>
+              {categories.map((cat) => (
+                <button
+                  key={cat.id}
+                  onClick={() => { setSelectedCategory(cat.id); setCurrentPage(1); updateURL({ category: cat.id, page: '' }); }}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                    selectedCategory === cat.id
+                      ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30'
+                      : 'bg-[#1f1f23] text-[#9ca3af] border border-[#26262b] hover:border-purple-500/50'
+                  }`}
+                >
+                  {cat.name}
+                  {cat._count?.products !== undefined && (
+                    <span className="ml-1 text-xs opacity-70">({cat._count.products})</span>
+                  )}
+                </button>
+              ))}
+            </div>
+          )}
+
           {/* Search and Filters Toggle */}
           <div className="flex flex-col md:flex-row gap-4 mb-8">
             <div className="relative flex-1">
@@ -211,18 +265,34 @@ export default function CatalogContent() {
                 type="text"
                 placeholder="Пошук товарів..."
                 value={search}
-                onChange={(e) => {
-                  setSearch(e.target.value);
-                  updateURL({ search: e.target.value });
+                onChange={(e) => setSearch(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') {
+                    updateURL({ search: debouncedSearch, page: '' });
+                    setCurrentPage(1);
+                  }
                 }}
                 className="input-field pl-12"
               />
+              {search && (
+                <button
+                  onClick={() => {
+                    setSearch('');
+                    setDebouncedSearch('');
+                    setCurrentPage(1);
+                    updateURL({ search: '', page: '' });
+                  }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9ca3af] hover:text-white"
+                >
+                  ✕
+                </button>
+              )}
             </div>
             <button
               onClick={() => setShowFilters(!showFilters)}
-              className="btn-dark flex items-center justify-center gap-2"
+              className={`btn-dark flex items-center justify-center gap-2 ${showFilters ? 'border-purple-500/50' : ''}`}
             >
-              <SlidersHorizontal size={20} />
+              <Filter size={20} />
               Фільтри
             </button>
           </div>
@@ -230,7 +300,7 @@ export default function CatalogContent() {
           {/* Filter Panel */}
           {showFilters && (
             <div className="card p-6 mb-8 animate-fade-in">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Sort By */}
                 <div>
                   <label className="block text-sm font-medium mb-2 text-[#9ca3af]">Сортування</label>
@@ -252,37 +322,24 @@ export default function CatalogContent() {
                     onChange={(e) => handleSortChange('sortOrder', e.target.value)}
                     className="input-field"
                   >
-                    {ORDER_OPTIONS.map((opt) => (
-                      <option key={opt.value} value={opt.value}>{opt.label}</option>
-                    ))}
-                  </select>
-                </div>
-                {/* Category Filter */}
-                <div>
-                  <label className="block text-sm font-medium mb-2 text-[#9ca3af]">Категорія</label>
-                  <select
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="input-field"
-                  >
-                    <option value="">Всі категорії</option>
-                    {categories.map((cat) => (
-                      <option key={cat.id} value={cat.id}>{cat.name}</option>
-                    ))}
+                    <option value="desc">За спаданням</option>
+                    <option value="asc">За зростанням</option>
                   </select>
                 </div>
                 {/* Price Range */}
                 <div>
                   <label className="block text-sm font-medium mb-2 text-[#9ca3af]">
-                    Макс. ціна: {priceRange[1].toLocaleString('uk-UA')} ₴
+                    Макс. ціна: {priceMax.toLocaleString('uk-UA')} ₴
                   </label>
                   <input
                     type="range"
                     min="0"
                     max="100000"
-                    step="5000"
-                    value={priceRange[1]}
-                    onChange={(e) => setPriceRange([0, parseInt(e.target.value)])}
+                    step="1000"
+                    value={priceMax}
+                    onChange={(e) => setPriceMax(parseInt(e.target.value))}
+                    onMouseUp={() => setCurrentPage(1)}
+                    onTouchEnd={() => setCurrentPage(1)}
                     className="w-full accent-[#6366f1]"
                   />
                 </div>
@@ -290,19 +347,21 @@ export default function CatalogContent() {
               {/* Reset Filters */}
               <div className="mt-4 flex justify-end">
                 <button
-                  onClick={() => {
-                    setSearch('');
-                    setSortBy('createdAt');
-                    setSortOrder('desc');
-                    setSelectedCategory('');
-                    setPriceRange([0, 100000]);
-                    updateURL({});
-                  }}
-                  className="text-sm text-[#9ca3af] hover:text-primary transition-colors"
+                  onClick={resetFilters}
+                  className="text-sm text-[#9ca3af] hover:text-purple-400 transition-colors"
                 >
                   Скинути фільтри
                 </button>
               </div>
+            </div>
+          )}
+
+          {/* Products count */}
+          {!loading && (
+            <div className="flex justify-between items-center mb-6">
+              <p className="text-[#9ca3af] text-sm">
+                Знайдено товарів: <span className="text-white font-medium">{totalProducts}</span>
+              </p>
             </div>
           )}
 
@@ -311,21 +370,21 @@ export default function CatalogContent() {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
               {Array.from({ length: 8 }).map((_, i) => (
                 <div key={i} className="animate-pulse">
-                  <div className="aspect-square bg-[#1f1f23] rounded mb-2" />
+                  <div className="aspect-square bg-[#1f1f23] rounded-xl mb-3" />
                   <div className="h-4 bg-[#1f1f23] rounded mb-2" />
                   <div className="h-6 bg-[#1f1f23] rounded w-1/2" />
                 </div>
               ))}
             </div>
+          ) : products.length === 0 ? (
+            <div className="text-center py-20">
+              <div className="text-[#9ca3af] text-lg mb-4">Товари не знайдено</div>
+              <button onClick={resetFilters} className="btn-primary">
+                Скинути фільтри
+              </button>
+            </div>
           ) : (
             <>
-              <div className="flex justify-between items-center mb-6">
-                <p className="text-[#9ca3af] text-sm">
-                  Знайдено товарів: <span className="text-white font-medium">{products.length}</span>
-                </p>
-              </div>
-
-              {/* Modern Product Grid */}
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
                 {products.map((product) => (
                   <div
@@ -334,14 +393,14 @@ export default function CatalogContent() {
                     className="product-card group cursor-pointer"
                   >
                     {/* Image Container */}
-                    <div className="aspect-square overflow-hidden bg-[#1f1f23] relative">
+                    <div className="aspect-square overflow-hidden bg-[#1f1f23] relative rounded-xl">
                       <img
                         src={getProductImage(product)}
                         alt={product.title}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                        loading="lazy"
                         onError={(e) => {
-                          (e.target as HTMLImageElement).src =
-                            'https://via.placeholder.com/500?text=No+Image';
+                          (e.target as HTMLImageElement).src = 'https://via.placeholder.com/500?text=No+Image';
                         }}
                       />
 
@@ -349,12 +408,7 @@ export default function CatalogContent() {
                       <div className="absolute top-2 left-2 flex flex-col gap-1">
                         {product.isFeatured && (
                           <span className="px-2 py-1 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-bold rounded shadow-lg">
-                            🔥 Хіт-продаж
-                          </span>
-                        )}
-                        {product.isPopular && (
-                          <span className="px-2 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold rounded shadow-lg">
-                            ⭐ Популярний
+                            🔥 Хіт
                           </span>
                         )}
                         {product.discountPrice && product.originalPrice && (
@@ -371,14 +425,14 @@ export default function CatalogContent() {
                         </div>
                       )}
 
-                      {/* Quick Add Button */}
+                      {/* Quick Add Button — visible on mobile always, on desktop on hover */}
                       {product.stock > 0 && (
                         <button
                           onClick={(e) => handleAddToCart(e, product)}
                           className="absolute bottom-3 right-3 p-3 bg-[#6366f1] text-white rounded-full
-                                   opacity-0 group-hover:opacity-100 transition-all duration-300
+                                   opacity-100 md:opacity-0 group-hover:opacity-100 transition-all duration-300
                                    hover:bg-[#818cf8] hover:shadow-lg hover:shadow-[#6366f1]/50
-                                   transform group-hover:translate-y-0 translate-y-2"
+                                   transform md:translate-y-2 md:group-hover:translate-y-0"
                           aria-label="Додати до кошика"
                         >
                           <ShoppingCart size={18} strokeWidth={2} />
@@ -387,13 +441,13 @@ export default function CatalogContent() {
                     </div>
 
                     {/* Product Info */}
-                    <div className="p-4">
+                    <div className="p-3 md:p-4">
                       <h3 className="font-medium text-sm md:text-base mb-2 text-white line-clamp-2 min-h-[2.5rem]">
                         {product.title}
                       </h3>
 
                       {/* Rating */}
-                      {product.averageRating !== undefined && product.reviewCount !== undefined && (
+                      {product.averageRating !== undefined && product.reviewCount !== undefined && product.reviewCount > 0 && (
                         <div className="flex items-center gap-1 mb-2">
                           <Star size={14} className="fill-yellow-500 text-yellow-500" />
                           <span className="text-xs text-[#9ca3af]">
@@ -405,49 +459,61 @@ export default function CatalogContent() {
                       {/* Price with discount */}
                       {product.discountPrice && product.originalPrice ? (
                         <div className="flex items-baseline gap-2 mb-2">
-                          <span className="text-lg font-bold text-white">
+                          <span className="text-base md:text-lg font-bold text-white">
                             {Number(product.discountPrice).toLocaleString('uk-UA')} ₴
                           </span>
-                          <span className="text-sm text-[#9ca3af] line-through">
+                          <span className="text-xs md:text-sm text-[#9ca3af] line-through">
                             {Number(product.originalPrice).toLocaleString('uk-UA')} ₴
                           </span>
                         </div>
                       ) : (
-                        <span className="text-lg font-light text-white mb-2 block">
+                        <span className="text-base md:text-lg font-light text-white mb-2 block">
                           {Number(product.price).toLocaleString('uk-UA')} ₴
                         </span>
                       )}
 
-                      <div className="flex items-center justify-between">
-                        {product.stock > 0 ? (
-                          <span className="text-xs text-green-400 flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
-                            В наявності
-                          </span>
-                        ) : (
-                          <span className="text-xs text-[#9ca3af]">Недоступно</span>
-                        )}
-                      </div>
+                      {product.stock > 0 ? (
+                        <span className="text-xs text-green-400 flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 bg-green-400 rounded-full"></span>
+                          В наявності
+                        </span>
+                      ) : (
+                        <span className="text-xs text-[#9ca3af]">Недоступно</span>
+                      )}
                     </div>
                   </div>
                 ))}
               </div>
 
-              {products.length === 0 && (
-                <div className="text-center py-20">
-                  <div className="text-[#9ca3af] text-lg mb-4">Товари не знайдено</div>
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex justify-center items-center gap-2 mt-12">
                   <button
-                    onClick={() => {
-                      setSearch('');
-                      setSortBy('createdAt');
-                      setSortOrder('desc');
-                      setSelectedCategory('');
-                      setPriceRange([0, 100000]);
-                      updateURL({});
-                    }}
-                    className="btn-primary"
+                    onClick={() => handlePageChange(currentPage - 1)}
+                    disabled={currentPage === 1}
+                    className="p-2 rounded-lg bg-[#1f1f23] border border-[#26262b] text-[#9ca3af] hover:text-white hover:border-purple-500/50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                   >
-                    Скинути фільтри
+                    <ChevronLeft size={20} />
+                  </button>
+                  {Array.from({ length: totalPages }).map((_, i) => (
+                    <button
+                      key={i + 1}
+                      onClick={() => handlePageChange(i + 1)}
+                      className={`w-10 h-10 rounded-lg text-sm font-medium transition-all ${
+                        currentPage === i + 1
+                          ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30'
+                          : 'bg-[#1f1f23] border border-[#26262b] text-[#9ca3af] hover:border-purple-500/50 hover:text-white'
+                      }`}
+                    >
+                      {i + 1}
+                    </button>
+                  ))}
+                  <button
+                    onClick={() => handlePageChange(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                    className="p-2 rounded-lg bg-[#1f1f23] border border-[#26262b] text-[#9ca3af] hover:text-white hover:border-purple-500/50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                  >
+                    <ChevronRight size={20} />
                   </button>
                 </div>
               )}

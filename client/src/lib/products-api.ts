@@ -96,6 +96,11 @@ async function fetchAPI(endpoint: string, options: RequestInit = {}) {
 }
 
 export const productsApi = {
+  // Get all categories
+  getCategories: async () => {
+    return fetchAPI('/products/categories');
+  },
+
   // Get all products (public)
   getAll: async (params?: {
     page?: number
@@ -103,6 +108,9 @@ export const productsApi = {
     search?: string
     sortBy?: string
     sortOrder?: 'asc' | 'desc'
+    category?: string
+    minPrice?: number
+    maxPrice?: number
   }) => {
     const queryParams = new URLSearchParams()
     if (params?.page) queryParams.append('page', String(params.page))
@@ -110,6 +118,9 @@ export const productsApi = {
     if (params?.search) queryParams.append('search', params.search)
     if (params?.sortBy) queryParams.append('sortBy', params.sortBy)
     if (params?.sortOrder) queryParams.append('sortOrder', params.sortOrder)
+    if (params?.category) queryParams.append('category', params.category)
+    if (params?.minPrice) queryParams.append('minPrice', String(params.minPrice))
+    if (params?.maxPrice) queryParams.append('maxPrice', String(params.maxPrice))
 
     return fetchAPI(`/products?${queryParams.toString()}`)
   },

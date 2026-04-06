@@ -10,15 +10,27 @@ const adminService = new AdminService();
 
 export class ProductController {
   // Public routes
+  async getAllCategories(req: Request, res: Response, next: NextFunction) {
+    try {
+      const categories = await productService.getAllCategories();
+      res.json({ categories });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async getAll(req: Request, res: Response, next: NextFunction) {
     try {
-      const { page, limit, search, sortBy, sortOrder } = req.query;
+      const { page, limit, search, sortBy, sortOrder, category, minPrice, maxPrice } = req.query;
       const result = await productService.getAll({
         page: page ? Number(page) : 1,
         limit: limit ? Number(limit) : 20,
         search: search as string,
         sortBy: sortBy as 'createdAt' | 'price' | 'title',
         sortOrder: sortOrder as 'asc' | 'desc',
+        category: category as string,
+        minPrice: minPrice ? Number(minPrice) : undefined,
+        maxPrice: maxPrice ? Number(maxPrice) : undefined,
       });
       res.json(result);
     } catch (error) {

@@ -5,8 +5,23 @@ import { prisma } from '../prisma/config.js';
 const router = Router();
 
 /**
+ * Сесія вважається активною, якщо остання активність була менше 30 хв тому.
+ * Це запобігає дублюванню при оновленні сторінки або кількох вкладках.
+ */
+const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 хвилин
+
+/**
  * POST /api/analytics/heartbeat
  * Оновлення статусу відвідувача (heartbeat кожні 30 секунд)
+ *
+ * Логіка захисту від дублювання:
+ * - Visitor (онлайн) — upsert, оновлює lastSeenAt. Безпечно, один запис на visitorId.
+ * - SiteVisit (сесія) — створюється ТІЛЬКИ якщо немає активної сесії
+ *   (останній візит > 30 хв тому або взагалі немає візитів).
+ *   Це означає:
+ *     • Оновлення сторінки → НЕ створює новий візит
+ *     • Кілька вкладок → НЕ створює новий візит (той самий visitorId)
+ *     • Повернення через >30 хв → нова сесія (новий візит)
  */
 router.post('/heartbeat', async (req: Request, res: Response) => {
   try {
@@ -20,7 +35,7 @@ router.post('/heartbeat', async (req: Request, res: Response) => {
 
     console.log('[Analytics] Heartbeat from:', visitorId, 'page:', page);
 
-    // ✅ Оновлюємо або створюємо відвідувача
+    // ✅ Оновлюємо або створюємо відвідувача (upsert — безпечно)
     await prisma.visitor.upsert({
       where: { visitorId },
       update: {
@@ -38,14 +53,34 @@ router.post('/heartbeat', async (req: Request, res: Response) => {
       },
     });
 
-    // ✅ Створюємо новий візит (без foreign key)
-    await prisma.siteVisit.create({
-      data: {
-        visitorId,
-        page: page || undefined,
-        referrer: referrer || undefined,
-      },
+    // ✅ Перевіряємо, чи є активна сесія
+    const sessionThreshold = new Date(Date.now() - SESSION_TIMEOUT_MS);
+
+    const latestVisit = await prisma.siteVisit.findFirst({
+      where: { visitorId },
+      orderBy: { sessionStart: 'desc' },
+      select: { id: true, sessionStart: true },
     });
+
+    // Створюємо новий візит ТІЛЬКИ якщо:
+    // - немає жодного візиту, АБО
+    // - останній візит був > 30 хв тому (сесія закінчилась)
+    const shouldCreateVisit = !latestVisit || latestVisit.sessionStart < sessionThreshold;
+
+    if (shouldCreateVisit) {
+      await prisma.siteVisit.create({
+        data: {
+          visitorId,
+          page: page || undefined,
+          referrer: referrer || undefined,
+          sessionStart: new Date(),
+        },
+      });
+      console.log('[Analytics] New session created for:', visitorId);
+    } else {
+      // Оновлюємо існуючу сесію — не створюємо дублікат
+      console.log('[Analytics] Session continued for:', visitorId);
+    }
 
     res.json({ success: true, visitorId });
   } catch (error) {

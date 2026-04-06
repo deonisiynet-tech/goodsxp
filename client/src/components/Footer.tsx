@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { Phone, Mail, MapPin, Clock, ShieldCheck, Truck, RotateCcw } from 'lucide-react';
 
 const footerLinks = {
   shop: [
@@ -10,22 +11,76 @@ const footerLinks = {
   info: [
     { href: '/about', label: 'Про нас' },
     { href: '/contacts', label: 'Контакти' },
+    { href: '/privacy', label: 'Політика конфіденційності' },
+    { href: '/terms', label: 'Умови використання' },
   ],
 };
+
+// ✅ Довірчі елементи
+const trustBadges = [
+  { icon: ShieldCheck, text: 'Безпечна оплата' },
+  { icon: Truck, text: 'Доставка 1–3 дні' },
+  { icon: RotateCcw, text: 'Повернення 14 днів' },
+];
 
 export default function Footer() {
   return (
     <footer className="bg-gradient-to-b from-[#0d0d10] via-[#0a0a0e] to-[#08080c] border-t border-purple-500/20">
       <div className="container mx-auto px-4 py-12 md:py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 md:gap-12">
+        {/* Trust Badges */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12 pb-8 border-b border-purple-500/10">
+          {trustBadges.map(({ icon: Icon, text }) => (
+            <div key={text} className="flex items-center gap-3 justify-center">
+              <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
+                <Icon size={20} className="text-purple-400" />
+              </div>
+              <span className="text-white font-medium text-sm">{text}</span>
+            </div>
+          ))}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 md:gap-8">
           {/* Brand */}
-          <div>
+          <div className="lg:col-span-2">
             <Link href="/" className="text-xl font-bold tracking-wider text-white mb-4 block hover:text-purple-300 transition-colors">
               GoodsXP
             </Link>
-            <p className="text-muted text-sm leading-relaxed">
+            <p className="text-muted text-sm leading-relaxed mb-4">
               Сучасна електроніка для твого життя. Якість, якій довіряють.
             </p>
+
+            {/* ✅ Контакти з іконками */}
+            <div className="space-y-3">
+              <a
+                href="tel:+380XXXXXXXXX"
+                className="flex items-center gap-2 text-muted text-sm hover:text-purple-300 transition-colors"
+              >
+                <Phone size={16} className="text-purple-400 shrink-0" />
+                <span>+380 (XX) XXX-XX-XX</span>
+              </a>
+              <a
+                href="https://t.me/goodsxp"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-muted text-sm hover:text-purple-300 transition-colors"
+              >
+                <svg className="w-4 h-4 text-purple-400 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161l-1.97 9.293c-.145.658-.537.818-1.084.508l-3-2.211-1.447 1.394c-.16.16-.295.295-.605.295l.213-3.053 5.56-5.023c.242-.213-.054-.333-.373-.121l-6.871 4.326-2.962-.924c-.643-.204-.657-.643.136-.953l11.57-4.461c.537-.194 1.006.131.833.93z"/>
+                </svg>
+                <span>@goodsxp</span>
+              </a>
+              <a
+                href="mailto:support@goodsxp.store"
+                className="flex items-center gap-2 text-muted text-sm hover:text-purple-300 transition-colors"
+              >
+                <Mail size={16} className="text-purple-400 shrink-0" />
+                <span>support@goodsxp.store</span>
+              </a>
+              <div className="flex items-center gap-2 text-muted text-sm">
+                <Clock size={16} className="text-purple-400 shrink-0" />
+                <span>ПН – НД (9:00 – 20:00)</span>
+              </div>
+            </div>
           </div>
 
           {/* Shop Links */}
@@ -62,22 +117,39 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Contacts */}
+          {/* ✅ Оплата та Безпека */}
           <div>
-            <h4 className="text-sm font-medium tracking-wide mb-4 text-purple-400/80">Контакти</h4>
-            <ul className="space-y-3 text-muted text-sm">
-              <li>
-                <a href="https://t.me/goodsxp" target="_blank" rel="noopener noreferrer" className="hover:text-purple-300 transition-colors duration-200">
-                  Tg @goodsxp
-                </a>
-              </li>
-              <li>
-                <a href="mailto:support@goodsxp.store" className="hover:text-purple-300 transition-colors duration-200">
-                  support@goodsxp.store
-                </a>
-              </li>
-              <li>ПН – НД (9:00 – 20:00)</li>
-            </ul>
+            <h4 className="text-sm font-medium tracking-wide mb-4 text-purple-400/80">Оплата</h4>
+            <div className="space-y-3">
+              {/* ✅ Іконки платіжних систем */}
+              <div className="flex items-center gap-2">
+                <div className="px-2 py-1 bg-[#1f1f23] rounded text-xs text-white font-medium border border-[#26262b]">
+                  Visa
+                </div>
+                <div className="px-2 py-1 bg-[#1f1f23] rounded text-xs text-white font-medium border border-[#26262b]">
+                  Mastercard
+                </div>
+                <div className="px-2 py-1 bg-[#1f1f23] rounded text-xs text-white font-medium border border-[#26262b]">
+                  Apple Pay
+                </div>
+                <div className="px-2 py-1 bg-[#1f1f23] rounded text-xs text-white font-medium border border-[#26262b]">
+                  Google Pay
+                </div>
+              </div>
+              <p className="text-xs text-muted leading-relaxed">
+                Оплата при отриманні або онлайн через менеджера
+              </p>
+            </div>
+
+            {/* ✅ Юридична інформація */}
+            <div className="mt-6">
+              <h4 className="text-sm font-medium tracking-wide mb-2 text-purple-400/80">Реквізити</h4>
+              <p className="text-xs text-muted leading-relaxed">
+                ФОПXXXXXXXXXXXXXX<br />
+                Код ЄДРПОУ: XXXXXXXX<br />
+                м. Київ, Україна
+              </p>
+            </div>
           </div>
         </div>
 
@@ -86,14 +158,9 @@ export default function Footer() {
           <p className="text-muted text-sm">
             © {new Date().getFullYear()} GoodsXP. Всі права захищено.
           </p>
-          <div className="flex gap-6 text-sm text-muted">
-            <Link href="/privacy" className="hover:text-purple-300 transition-colors duration-200">
-              Політика конфіденційності
-            </Link>
-            <Link href="/terms" className="hover:text-purple-300 transition-colors duration-200">
-              Умови використання
-            </Link>
-          </div>
+          <p className="text-muted text-xs">
+            Зроблено з ❤️ в Україні
+          </p>
         </div>
       </div>
     </footer>
