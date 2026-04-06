@@ -46,10 +46,10 @@ export default function ProductModal({ product, isOpen, onClose }: ProductModalP
   const images = getImageList()
   const safeSelectedIndex = images.length > 0 ? Math.min(selectedImage, images.length - 1) : 0
 
-  if (!isOpen) return null
+  if (!isOpen || !product) return null
 
   const handleAddToCart = () => {
-    // Використовуємо discountPrice якщо є і вона менша за price
+    // ✅ Безпечний доступ до product
     const actualPrice = (product.discountPrice && product.discountPrice < product.price)
       ? product.discountPrice
       : product.price;

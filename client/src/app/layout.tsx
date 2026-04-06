@@ -4,7 +4,6 @@ import './globals.css';
 import { Providers } from '@/components/Providers';
 import AnalyticsTracker from '@/components/AnalyticsTracker';
 import StoreStatusChecker from '@/components/StoreStatusChecker';
-import RecentOrderToast from '@/components/RecentOrderToast';
 
 const inter = Inter({
   subsets: ['latin', 'cyrillic'],
@@ -131,7 +130,6 @@ export default function RootLayout({
           <AnalyticsTracker />
           <StoreStatusChecker />
           {children}
-          <RecentOrderToast />
         </Providers>
       </body>
     </html>

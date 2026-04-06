@@ -196,12 +196,44 @@ export default function ProductPage() {
     );
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 container mx-auto px-4 py-8">
+          <div className="flex justify-center items-center py-20">
+            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (!product) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Header />
+        <main className="flex-1 container mx-auto px-4 py-8">
+          <div className="text-center py-20">
+            <p className="text-[#9ca3af]">Товар не знайдено</p>
+            <Link href="/catalog" className="text-[#6366f1] hover:underline mt-4 inline-block">
+              До каталогу
+            </Link>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  // ✅ Тепер product гарантовано не null — обчислення БЕЗПЕЧНІ
   const images = getImageList(product);
   const safeSelectedIndex = images.length > 0
     ? Math.min(selectedImage, images.length - 1)
     : 0;
 
-  const discountPercent = product?.discountPrice && product?.originalPrice
+  const discountPercent = product.discountPrice && product.originalPrice
     ? Math.round((1 - product.discountPrice / product.originalPrice) * 100)
     : 0;
 
@@ -243,37 +275,6 @@ export default function ProductPage() {
         }
       : {}),
   };
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Header />
-        <main className="flex-1 container mx-auto px-4 py-8">
-          <div className="flex justify-center items-center py-20">
-            <div className="w-12 h-12 border-4 border-primary border-t-transparent rounded-full animate-spin" />
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
-
-  if (!product) {
-    return (
-      <div className="min-h-screen flex flex-col">
-        <Header />
-        <main className="flex-1 container mx-auto px-4 py-8">
-          <div className="text-center py-20">
-            <p className="text-[#9ca3af]">Товар не знайдено</p>
-            <Link href="/catalog" className="text-[#6366f1] hover:underline mt-4 inline-block">
-              До каталогу
-            </Link>
-          </div>
-        </main>
-        <Footer />
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen flex flex-col">

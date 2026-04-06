@@ -77,12 +77,12 @@ export default function Header() {
           <div className="flex items-center gap-4 md:gap-6 shrink-0">
             {/* ✅ Phone — visible on desktop */}
             <a
-              href="tel:+380XXXXXXXXX"
+              href="tel:+380634010552"
               className="hidden xl:flex items-center gap-2 text-white/90 hover:text-purple-400 transition-colors duration-200"
               title="Зателефонувати"
             >
               <Phone size={18} strokeWidth={1.5} />
-              <span className="text-sm font-light">+380 (XX) XXX-XX-XX</span>
+              <span className="text-sm font-light">+380 (63) 401-05-52</span>
             </a>
 
             {/* Cart */}

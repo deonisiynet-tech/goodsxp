@@ -52,11 +52,11 @@ export default function Footer() {
             {/* ✅ Контакти з іконками */}
             <div className="space-y-3">
               <a
-                href="tel:+380XXXXXXXXX"
+                href="tel:+380634010552"
                 className="flex items-center gap-2 text-muted text-sm hover:text-purple-300 transition-colors"
               >
                 <Phone size={16} className="text-purple-400 shrink-0" />
-                <span>+380 (XX) XXX-XX-XX</span>
+                <span>+380 (63) 401-05-52</span>
               </a>
               <a
                 href="https://t.me/goodsxp"
@@ -121,33 +121,8 @@ export default function Footer() {
           <div>
             <h4 className="text-sm font-medium tracking-wide mb-4 text-purple-400/80">Оплата</h4>
             <div className="space-y-3">
-              {/* ✅ Іконки платіжних систем */}
-              <div className="flex items-center gap-2">
-                <div className="px-2 py-1 bg-[#1f1f23] rounded text-xs text-white font-medium border border-[#26262b]">
-                  Visa
-                </div>
-                <div className="px-2 py-1 bg-[#1f1f23] rounded text-xs text-white font-medium border border-[#26262b]">
-                  Mastercard
-                </div>
-                <div className="px-2 py-1 bg-[#1f1f23] rounded text-xs text-white font-medium border border-[#26262b]">
-                  Apple Pay
-                </div>
-                <div className="px-2 py-1 bg-[#1f1f23] rounded text-xs text-white font-medium border border-[#26262b]">
-                  Google Pay
-                </div>
-              </div>
               <p className="text-xs text-muted leading-relaxed">
                 Оплата при отриманні або онлайн через менеджера
-              </p>
-            </div>
-
-            {/* ✅ Юридична інформація */}
-            <div className="mt-6">
-              <h4 className="text-sm font-medium tracking-wide mb-2 text-purple-400/80">Реквізити</h4>
-              <p className="text-xs text-muted leading-relaxed">
-                ФОПXXXXXXXXXXXXXX<br />
-                Код ЄДРПОУ: XXXXXXXX<br />
-                м. Київ, Україна
               </p>
             </div>
           </div>

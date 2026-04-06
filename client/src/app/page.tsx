@@ -5,7 +5,6 @@ import { ArrowRight, Truck, Shield, RefreshCw, Star, Zap, CheckCircle, Headset, 
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ProductList from '@/components/ProductList';
-import OnlineBadge from '@/components/OnlineBadge';
 
 // ===== SUBCOMPONENTS =====
 
@@ -50,12 +49,9 @@ export default function Home() {
           <div className="relative z-10 container mx-auto px-4 text-center">
             <div className="max-w-4xl mx-auto space-y-8">
               {/* Badge */}
-              <div className="flex flex-col sm:flex-row items-center justify-center gap-3 animate-fade-in">
-                <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-sm backdrop-blur-md shadow-[0_0_20px_rgba(168,85,247,0.2)]">
-                  <Zap size={16} className="text-purple-400" />
-                  <span className="font-medium">Нові надходження 2026</span>
-                </div>
-                <OnlineBadge />
+              <div className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-purple-500/10 border border-purple-500/20 text-sm animate-fade-in backdrop-blur-md shadow-[0_0_20px_rgba(168,85,247,0.2)]">
+                <Zap size={16} className="text-purple-400" />
+                <span className="font-medium">Нові надходження 2026</span>
               </div>
 
               {/* Main Heading - top white, bottom gradient */}
