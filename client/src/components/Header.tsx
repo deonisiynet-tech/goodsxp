@@ -2,10 +2,12 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ShoppingCart, User, Menu, X, Phone } from 'lucide-react';
+import { ShoppingCart, User, Menu, X, Phone, Heart } from 'lucide-react';
 import { useCartStore } from '@/lib/store';
+import { useWishlistStore } from '@/lib/wishlist';
 import { useState, useEffect } from 'react';
 import { getAdminPagePath } from '@/lib/admin-paths';
+import FlyToCartAnimation from '@/components/FlyToCartAnimation';
 
 const navLinks = [
   { href: '/', label: 'Головна' },
@@ -19,6 +21,10 @@ const navLinks = [
 export default function Header() {
   const router = useRouter();
   const itemCount = useCartStore((state) => state.getItemCount());
+  const wishlistCount = useWishlistStore((state) => state.items.length);
+  const lastAddedPosition = useCartStore((state) => state.lastAddedPosition);
+  const setLastAddedPosition = useCartStore((state) => state.setLastAddedPosition);
+  const [showFlyAnimation, setShowFlyAnimation] = useState(false);
   const [user, setUser] = useState<any>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -36,6 +42,18 @@ export default function Header() {
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // ✅ Анімація додавання в кошик
+  useEffect(() => {
+    if (lastAddedPosition) {
+      setShowFlyAnimation(true);
+      const timer = setTimeout(() => {
+        setShowFlyAnimation(false);
+        setLastAddedPosition(null);
+      }, 700);
+      return () => clearTimeout(timer);
+    }
+  }, [lastAddedPosition, setLastAddedPosition]);
 
   const handleLogout = () => {
     // Тільки на клієнті працюємо з localStorage і location
@@ -84,6 +102,20 @@ export default function Header() {
               <Phone size={18} strokeWidth={1.5} />
               <span className="text-sm font-light">+380 (63) 401-05-52</span>
             </a>
+
+            {/* ✅ Wishlist */}
+            <Link
+              href="/wishlist"
+              className="relative flex items-center gap-2 text-white/90 hover:text-purple-400 transition-colors duration-200"
+            >
+              <Heart size={22} strokeWidth={1.5} />
+              <span className="hidden md:inline text-sm font-light">Обране</span>
+              {wishlistCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-medium shadow-lg shadow-red-500/30">
+                  {wishlistCount}
+                </span>
+              )}
+            </Link>
 
             {/* Cart */}
             <Link
@@ -152,8 +184,36 @@ export default function Header() {
                 {link.label}
               </Link>
             ))}
+            {/* Mobile quick links */}
+            <div className="flex gap-4 pt-4 border-t border-purple-500/10">
+              <Link
+                href="/wishlist"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2 text-muted hover:text-purple-400 transition-colors"
+              >
+                <Heart size={18} />
+                <span>Обране{wishlistCount > 0 ? ` (${wishlistCount})` : ''}</span>
+              </Link>
+              <Link
+                href="/cart"
+                onClick={() => setMobileMenuOpen(false)}
+                className="flex items-center gap-2 text-muted hover:text-purple-400 transition-colors"
+              >
+                <ShoppingCart size={18} />
+                <span>Кошик{itemCount > 0 ? ` (${itemCount})` : ''}</span>
+              </Link>
+            </div>
           </nav>
         </div>
+      )}
+
+      {/* ✅ Fly to cart animation */}
+      {showFlyAnimation && lastAddedPosition && (
+        <FlyToCartAnimation
+          startX={lastAddedPosition.x}
+          startY={lastAddedPosition.y}
+          onComplete={() => setShowFlyAnimation(false)}
+        />
       )}
     </header>
   );

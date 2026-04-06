@@ -2,16 +2,17 @@
 
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
-import { 
-  MessageCircle, 
-  Mail, 
-  Clock, 
+import {
+  MessageCircle,
+  Mail,
+  Clock,
   Send,
   ArrowRight,
   CheckCircle,
   Zap,
   Headphones,
-  Shield
+  Shield,
+  Phone
 } from 'lucide-react';
 import Link from 'next/link';
 
@@ -112,13 +113,22 @@ export default function ContactsPage() {
 
   const contactCards = [
     {
+      icon: Phone,
+      title: 'Телефон',
+      value: '+380 (63) 401-05-52',
+      buttonText: 'Зателефонувати',
+      buttonHref: 'tel:+380634010552',
+      gradient: 'bg-gradient-to-br from-green-500/10 to-emerald-500/10',
+      delay: '',
+    },
+    {
       icon: MessageCircle,
       title: 'Telegram',
       value: '@goodsxp',
       buttonText: 'Написати в Telegram',
       buttonHref: 'https://t.me/goodsxp',
       gradient: 'bg-gradient-to-br from-blue-500/10 to-cyan-500/10',
-      delay: '',
+      delay: 'md:delay-100',
     },
     {
       icon: Mail,
@@ -136,7 +146,7 @@ export default function ContactsPage() {
       buttonText: 'Написати прямо зараз',
       buttonHref: 'https://t.me/goodsxp',
       gradient: 'bg-gradient-to-br from-orange-500/10 to-yellow-500/10',
-      delay: 'md:delay-400',
+      delay: 'md:delay-300',
     },
   ];
 
@@ -174,7 +184,7 @@ export default function ContactsPage() {
         {/* ===== CONTACT CARDS ===== */}
         <section className="py-16">
           <div className="container mx-auto px-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
               {contactCards.map((card, index) => (
                 <ContactCard
                   key={index}

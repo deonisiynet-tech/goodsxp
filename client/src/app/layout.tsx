@@ -6,6 +6,7 @@ import AnalyticsTracker from '@/components/AnalyticsTracker';
 import StoreStatusChecker from '@/components/StoreStatusChecker';
 import ScrollToTop from '@/components/ScrollToTop';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
+import CartResumePopup from '@/components/CartResumePopup';
 
 const inter = Inter({
   subsets: ['latin', 'cyrillic'],
@@ -140,6 +141,7 @@ export default function RootLayout({
           {children}
           <ScrollToTop />
           <PWAInstallPrompt />
+          <CartResumePopup />
         </Providers>
       </body>
     </html>

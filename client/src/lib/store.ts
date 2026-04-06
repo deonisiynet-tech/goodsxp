@@ -17,6 +17,9 @@ interface CartStore {
   clearCart: () => void;
   getTotal: () => number;
   getItemCount: () => number;
+  // ✅ Анімація додавання
+  lastAddedPosition: { x: number; y: number } | null;
+  setLastAddedPosition: (pos: { x: number; y: number } | null) => void;
 }
 
 export const useCartStore = create<CartStore>()(
@@ -78,6 +81,11 @@ export const useCartStore = create<CartStore>()(
 
       getItemCount: () => {
         return get().items.reduce((count, item) => count + item.quantity, 0);
+      },
+
+      lastAddedPosition: null,
+      setLastAddedPosition: (pos) => {
+        set({ lastAddedPosition: pos });
       },
     }),
     {

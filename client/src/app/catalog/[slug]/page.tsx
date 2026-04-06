@@ -6,7 +6,7 @@ import { productsApi, Review } from '@/lib/products-api';
 import { useCartStore } from '@/lib/store';
 import { useWishlistStore } from '@/lib/wishlist';
 import toast from 'react-hot-toast';
-import { ArrowLeft, ShoppingCart, Check, ChevronLeft, ChevronRight, Star, Send, Trash2, Truck, Shield, RotateCcw, Heart } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, Check, ChevronLeft, ChevronRight, Star, Send, Trash2, Truck, Shield, RotateCcw, Heart, Share2 } from 'lucide-react';
 import Link from 'next/link';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
@@ -48,6 +48,7 @@ export default function ProductPage() {
   const [activeTab, setActiveTab] = useState<'description' | 'specs' | 'reviews'>('description');
   const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
   const addItem = useCartStore((state) => state.addItem);
+  const setLastAddedPosition = useCartStore((state) => state.setLastAddedPosition);
   const wishlistToggle = useWishlistStore((state) => state.toggleItem);
   const isInWishlist = useWishlistStore((state) => state.isInWishlist);
 
@@ -130,6 +131,13 @@ export default function ProductPage() {
   const handleAddToCart = () => {
     if (!product) return;
 
+    // ✅ Анімація польоту до кошика
+    const button = document.querySelector('[data-add-to-cart-btn]') as HTMLElement;
+    if (button) {
+      const rect = button.getBoundingClientRect();
+      setLastAddedPosition({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
+    }
+
     // Використовуємо discountPrice якщо є і вона менша за price
     const actualPrice = (product.discountPrice && product.discountPrice < product.price)
       ? product.discountPrice
@@ -150,6 +158,7 @@ export default function ProductPage() {
 
   const handleWishlistToggle = () => {
     if (!product) return;
+    const wasInWishlist = isInWishlist(product.id);
     const actualPrice = (product.discountPrice && product.discountPrice < product.price)
       ? product.discountPrice
       : product.price;
@@ -163,7 +172,7 @@ export default function ProductPage() {
       imageUrl: imageUrl || null,
     });
     toast.success(
-      isInWishlist(product.id) ? 'Видалено з обраного' : 'Додано до обраного'
+      wasInWishlist ? '🗑️ Видалено з обраного' : '❤️ Додано до обраного'
     );
   };
 
@@ -396,7 +405,27 @@ export default function ProductPage() {
 
             {/* Info */}
             <div className="flex flex-col">
-              <h1 className="text-3xl md:text-4xl font-light text-white mb-4">{product.title}</h1>
+              <div className="flex items-start justify-between gap-4 mb-4">
+                <h1 className="text-3xl md:text-4xl font-light text-white">{product.title}</h1>
+                {/* ✅ Share button */}
+                <button
+                  onClick={async () => {
+                    const url = window.location.href;
+                    if (navigator.share) {
+                      try {
+                        await navigator.share({ title: product.title, url });
+                      } catch { /* User cancelled */ }
+                    } else {
+                      await navigator.clipboard.writeText(url);
+                      toast.success('Посилання скопійовано');
+                    }
+                  }}
+                  className="p-2.5 rounded-xl border border-[#26262b] text-muted hover:text-white hover:border-purple-500/50 transition-all shrink-0"
+                  title="Поділитися"
+                >
+                  <Share2 size={20} />
+                </button>
+              </div>
 
               {/* Badges */}
               <div className="flex flex-wrap gap-2 mb-4">
@@ -632,6 +661,7 @@ export default function ProductPage() {
                 </div>
 
                 <button
+                  data-add-to-cart-btn
                   onClick={handleAddToCart}
                   disabled={product.stock === 0}
                   className="btn-primary w-full py-4 text-base flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
