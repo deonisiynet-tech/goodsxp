@@ -279,7 +279,7 @@ export default function WarrantyPage() {
               <AdvantageCard
                 icon={RefreshCw}
                 title="14 днів на повернення"
-                description="Поверніть або обміняйте товар протягом 14 днів без зайвих запитань."
+                description="Повернення або обмін товару протягом 14 днів відповідно до Закону України «Про захист прав споживачів»."
               />
               <AdvantageCard
                 icon={Shield}

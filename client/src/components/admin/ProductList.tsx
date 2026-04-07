@@ -23,6 +23,7 @@ interface Product {
   isPopular: boolean;
   createdAt: string;
   updatedAt: string;
+  categoryId: string | null;
 }
 
 export default function AdminProductList() {

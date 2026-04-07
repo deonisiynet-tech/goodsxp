@@ -6,6 +6,12 @@ import { productsApi } from '@/lib/products-api'
 import toast from 'react-hot-toast'
 import { X, Upload, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
 
+interface Category {
+  id: string
+  name: string
+  slug: string
+}
+
 interface Product {
   id: string
   title: string
@@ -22,6 +28,7 @@ interface Product {
   isActive: boolean
   createdAt: string
   updatedAt: string
+  categoryId: string | null
 }
 
 interface ProductModalProps {
@@ -37,6 +44,21 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
   // New images being uploaded (Cloudinary URLs only - no File objects!)
   const [newImages, setNewImages] = useState<string[]>([])
   const fileInputRef = useRef<HTMLInputElement>(null)
+
+  // Categories
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const response = await productsApi.getCategories();
+        setCategories(response.categories || []);
+      } catch (e) {
+        console.error('Failed to load categories:', e);
+      }
+    };
+    loadCategories();
+  }, []);
 
   // All images for display = existing URLs + new URLs
   const allImages = [
@@ -61,6 +83,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
       isActive: product?.isActive ?? true,
       isFeatured: product?.isFeatured ?? false,
       isPopular: product?.isPopular ?? false,
+      categoryId: product?.categoryId || '',
     },
   })
 
@@ -77,6 +100,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
       isActive: product?.isActive ?? true,
       isFeatured: product?.isFeatured ?? false,
       isPopular: product?.isPopular ?? false,
+      categoryId: product?.categoryId || '',
     })
     setExistingImages(product?.images || [])
     setNewImages([])
@@ -114,6 +138,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
           isActive: data.isActive,
           isFeatured: data.isFeatured,
           isPopular: data.isPopular,
+          categoryId: data.categoryId || null,
           images: allImageUrls,
         })
         console.log('📝 Update result:', result)
@@ -131,6 +156,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
           isActive: data.isActive,
           isFeatured: data.isFeatured,
           isPopular: data.isPopular,
+          categoryId: data.categoryId || null,
           images: allImageUrls,
         })
         console.log('📦 Create result:', result)
@@ -397,6 +423,20 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
                 <p className="text-xs text-muted">Показувати бейдж на товарі</p>
               </div>
             </label>
+          </div>
+
+          {/* ✅ Category selector */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Категорія</label>
+            <select
+              {...register('categoryId')}
+              className="input-field"
+            >
+              <option value="">Без категорії</option>
+              {categories.map((cat) => (
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
+              ))}
+            </select>
           </div>
 
           <div className="mt-4">

@@ -39,6 +39,7 @@ interface ProductFilters {
   sortBy?: 'createdAt' | 'price' | 'title';
   sortOrder?: 'asc' | 'desc';
   category?: string;
+  featured?: string;
   minPrice?: number;
   maxPrice?: number;
 }
@@ -122,7 +123,8 @@ export class ProductService {
           { description: { contains: search, mode: 'insensitive' as const } },
         ],
       }),
-      ...(filters.category && { categoryId: filters.category }),
+      ...(filters.featured && { isFeatured: true }),
+      ...(!filters.featured && filters.category && { categoryId: filters.category }),
       ...(filters.minPrice && { price: { gte: filters.minPrice } }),
       ...(filters.maxPrice && filters.maxPrice < 100000 && { price: { lte: filters.maxPrice } }),
     };

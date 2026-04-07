@@ -60,6 +60,7 @@ export default function CatalogContent() {
   const [showFilters, setShowFilters] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [featuredOnly, setFeaturedOnly] = useState(false);
   const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page') || '1'));
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const addItem = useCartStore((state) => state.addItem);
@@ -124,7 +125,9 @@ export default function CatalogContent() {
       if (debouncedSearch && debouncedSearch.trim()) {
         params.search = debouncedSearch.trim();
       }
-      if (selectedCategory) {
+      if (featuredOnly) {
+        params.featured = 'true';
+      } else if (selectedCategory) {
         params.category = selectedCategory;
       }
       if (priceMax < 100000) {
@@ -140,7 +143,7 @@ export default function CatalogContent() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, debouncedSearch, sortBy, sortOrder, selectedCategory, priceMax]);
+  }, [currentPage, debouncedSearch, sortBy, sortOrder, selectedCategory, featuredOnly, priceMax]);
 
   useEffect(() => {
     loadProducts();
@@ -229,19 +232,29 @@ export default function CatalogContent() {
           {categories.length > 0 && (
             <div className="flex flex-wrap gap-2 mb-6">
               <button
-                onClick={() => { setSelectedCategory(''); setCurrentPage(1); updateURL({ category: '', page: '' }); }}
+                onClick={() => { setFeaturedOnly(false); setSelectedCategory(''); setCurrentPage(1); updateURL({ category: '', page: '', featured: '' }); }}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                  !selectedCategory
+                  !selectedCategory && !featuredOnly
                     ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30'
                     : 'bg-[#1f1f23] text-[#9ca3af] border border-[#26262b] hover:border-purple-500/50'
                 }`}
               >
                 Всі
               </button>
+              <button
+                onClick={() => { setFeaturedOnly(true); setSelectedCategory(''); setCurrentPage(1); updateURL({ category: '', page: '', featured: 'true' }); }}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  featuredOnly
+                    ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30'
+                    : 'bg-[#1f1f23] text-[#9ca3af] border border-[#26262b] hover:border-purple-500/50'
+                }`}
+              >
+                🔥 Хіт-продаж
+              </button>
               {categories.map((cat) => (
                 <button
                   key={cat.id}
-                  onClick={() => { setSelectedCategory(cat.id); setCurrentPage(1); updateURL({ category: cat.id, page: '' }); }}
+                  onClick={() => { setFeaturedOnly(false); setSelectedCategory(cat.id); setCurrentPage(1); updateURL({ category: cat.id, page: '', featured: '' }); }}
                   className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
                     selectedCategory === cat.id
                       ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30'

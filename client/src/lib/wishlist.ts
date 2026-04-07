@@ -3,6 +3,7 @@ import { persist, createJSONStorage } from 'zustand/middleware';
 
 export interface WishlistItem {
   productId: string;
+  slug: string;
   title: string;
   price: number;
   imageUrl: string | null;

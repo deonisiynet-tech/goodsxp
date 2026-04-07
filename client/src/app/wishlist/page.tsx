@@ -103,7 +103,7 @@ export default function WishlistPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
           {items.map((item) => (
             <div key={item.productId} className="card p-4 group">
-              <Link href={`/catalog/${item.productId}`} className="block">
+              <Link href={`/catalog/${item.slug}`} className="block">
                 <div className="aspect-square overflow-hidden bg-[#1f1f23] rounded-xl mb-4">
                   <img
                     src={item.imageUrl || '/placeholder.jpg'}
@@ -115,7 +115,7 @@ export default function WishlistPage() {
                   />
                 </div>
               </Link>
-              <Link href={`/catalog/${item.productId}`} className="block">
+              <Link href={`/catalog/${item.slug}`} className="block">
                 <h3 className="font-medium text-sm text-white mb-2 line-clamp-2 hover:text-purple-400 transition-colors">
                   {item.title}
                 </h3>

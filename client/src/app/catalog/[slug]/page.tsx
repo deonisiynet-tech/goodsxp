@@ -167,6 +167,7 @@ export default function ProductPage() {
 
     wishlistToggle({
       productId: product.id,
+      slug: product.slug,
       title: product.title,
       price: Number(actualPrice),
       imageUrl: imageUrl || null,

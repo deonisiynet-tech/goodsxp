@@ -2,7 +2,6 @@ import { ImageResponse } from 'next/og';
 
 export const runtime = 'edge';
 
-export const alt = 'GoodsXP — Сучасна електроніка та гаджети';
 export const size = {
   width: 1200,
   height: 630,
@@ -25,7 +24,6 @@ export default function Image() {
           backgroundImage: 'radial-gradient(circle at 25% 25%, rgba(168, 85, 247, 0.15) 0%, transparent 50%), radial-gradient(circle at 75% 75%, rgba(236, 72, 153, 0.1) 0%, transparent 50%)',
         }}
       >
-        {/* Top accent line */}
         <div style={{
           position: 'absolute',
           top: 0,
@@ -35,14 +33,12 @@ export default function Image() {
           background: 'linear-gradient(90deg, #a855f7, #ec4899, #a855f7)',
         }} />
 
-        {/* Logo / Brand */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
           gap: '16px',
           marginBottom: '32px',
         }}>
-          {/* Icon */}
           <div style={{
             display: 'flex',
             alignItems: 'center',
@@ -65,7 +61,6 @@ export default function Image() {
           </span>
         </div>
 
-        {/* Tagline */}
         <div style={{
           fontSize: '28px',
           color: '#9ca3af',
@@ -76,7 +71,6 @@ export default function Image() {
           Сучасна електроніка та гаджети
         </div>
 
-        {/* Feature badges */}
         <div style={{
           display: 'flex',
           gap: '24px',
@@ -104,7 +98,6 @@ export default function Image() {
           ))}
         </div>
 
-        {/* Bottom accent line */}
         <div style={{
           position: 'absolute',
           bottom: 0,

@@ -40,7 +40,7 @@ export class ProductController {
 
   async getAll(req: Request, res: Response, next: NextFunction) {
     try {
-      const { page, limit, search, sortBy, sortOrder, category, minPrice, maxPrice } = req.query;
+      const { page, limit, search, sortBy, sortOrder, category, featured, minPrice, maxPrice } = req.query;
       const result = await productService.getAll({
         page: page ? Number(page) : 1,
         limit: limit ? Number(limit) : 20,
@@ -48,6 +48,7 @@ export class ProductController {
         sortBy: sortBy as 'createdAt' | 'price' | 'title',
         sortOrder: sortOrder as 'asc' | 'desc',
         category: category as string,
+        featured: featured as string,
         minPrice: minPrice ? Number(minPrice) : undefined,
         maxPrice: maxPrice ? Number(maxPrice) : undefined,
       });

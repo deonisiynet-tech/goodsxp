@@ -109,6 +109,7 @@ export const productsApi = {
     sortBy?: string
     sortOrder?: 'asc' | 'desc'
     category?: string
+    featured?: string
     minPrice?: number
     maxPrice?: number
   }) => {
@@ -119,6 +120,7 @@ export const productsApi = {
     if (params?.sortBy) queryParams.append('sortBy', params.sortBy)
     if (params?.sortOrder) queryParams.append('sortOrder', params.sortOrder)
     if (params?.category) queryParams.append('category', params.category)
+    if (params?.featured) queryParams.append('featured', params.featured)
     if (params?.minPrice) queryParams.append('minPrice', String(params.minPrice))
     if (params?.maxPrice) queryParams.append('maxPrice', String(params.maxPrice))
 
@@ -203,6 +205,7 @@ export const productsApi = {
     images: string[]
     isFeatured?: boolean
     isPopular?: boolean
+    categoryId?: string | null
   }) => {
     const formData = new FormData()
     formData.append('title', data.title)
@@ -216,6 +219,7 @@ export const productsApi = {
     formData.append('images', JSON.stringify(data.images))
     formData.append('isFeatured', String(data.isFeatured))
     formData.append('isPopular', String(data.isPopular))
+    formData.append('categoryId', data.categoryId || '')
 
     return fetchAPI('/products', {
       method: 'POST',
@@ -236,6 +240,7 @@ export const productsApi = {
     images: string[]
     isFeatured?: boolean
     isPopular?: boolean
+    categoryId?: string | null
   }) => {
     const formData = new FormData()
     formData.append('title', data.title)
@@ -249,6 +254,7 @@ export const productsApi = {
     formData.append('images', JSON.stringify(data.images))
     formData.append('isFeatured', String(data.isFeatured))
     formData.append('isPopular', String(data.isPopular))
+    formData.append('categoryId', data.categoryId || '')
 
     return fetchAPI(`/products/${id}`, {
       method: 'PUT',

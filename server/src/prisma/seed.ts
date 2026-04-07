@@ -32,6 +32,7 @@ async function main() {
     { name: 'Павербанки', slug: 'powerbanks', description: 'Портативні зарядні пристрої' },
     { name: 'Аксесуари', slug: 'accessories', description: 'Чохли, кабелі, зарядки, тримачі' },
     { name: 'Гаджети', slug: 'gadgets', description: 'Корисні електронні гаджети' },
+    { name: 'Техніка для дому', slug: 'home-appliances', description: 'Електроніка для дому та побуту' },
   ];
 
   const categoryIds: Record<string, string> = {};
