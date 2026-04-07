@@ -82,7 +82,7 @@ import adminAuthRoutes from './routes/admin.auth.routes.js';
 import novaPoshtaRoutes from './routes/nova-poshta.routes.js';
 import analyticsRoutes from './routes/analytics.routes.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
-import { adminRateLimiter } from './middleware/rateLimiter.js';
+import { adminRateLimiter, apiRateLimiter, strictRateLimiter } from './middleware/rateLimiter.js';
 import { blockAdminScanning } from './middleware/adminPanelPath.js';
 import { getAdminApiPrefix } from './utils/adminPaths.js';
 import { initializeAdmin } from './utils/initAdmin.js';
@@ -123,10 +123,15 @@ app.use(cors({
       console.log('✅ CORS: Origin allowed:', origin);
       return callback(null, true);
     }
-    
-    // Allow railway.app domains
-    if (origin.includes('railway.app') || origin.includes('goodsxp.store')) {
-      console.log('✅ CORS: Railway domain allowed:', origin);
+
+    // ✅ Strict matching for production domains — no wildcard subdomains
+    const allowedPatterns = [
+      /^https?:\/\/goodsxp\.store$/,
+      /^https?:\/\/www\.goodsxp\.store$/,
+      /^https?:\/\/.*\.railway\.app$/,
+    ];
+    if (allowedPatterns.some(pattern => pattern.test(origin))) {
+      console.log('✅ CORS: Railway/domain allowed:', origin);
       return callback(null, true);
     }
     
@@ -145,13 +150,39 @@ app.use((req, res, next) => {
   next();
 });
 
-// Helmet - Security headers with relaxed CSP for Next.js
+// Helmet - Security headers
 app.use(helmet({
-  contentSecurityPolicy: false,
-  crossOriginEmbedderPolicy: false,
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'"], // Next.js needs inline scripts
+      styleSrc: ["'self'", "'unsafe-inline'"], // Next.js needs inline styles
+      imgSrc: ["'self'", "data:", "https:", "blob:"], // Allow images from any HTTPS source
+      connectSrc: ["'self'", "https:"], // API calls to any HTTPS origin
+      fontSrc: ["'self'", "data:"],
+      objectSrc: ["'none'"], // Block flash/objects
+      frameSrc: ["'none'"], // Block iframes
+      frameAncestors: ["'none'"], // Clickjacking protection
+      baseUri: ["'self'"],
+      formAction: ["'self'"],
+    },
+  },
+  crossOriginEmbedderPolicy: false, // Needed for Next.js
   crossOriginOpenerPolicy: false,
   crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
+
+// ✅ Additional security headers
+app.use((req, res, next) => {
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('X-Frame-Options', 'DENY');
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  if (process.env.NODE_ENV === 'production') {
+    res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
+  }
+  next();
+});
 
 // Body parsing
 app.use(express.json({ limit: '10mb' }));
@@ -214,13 +245,13 @@ app.get('/healthz', (_req: Request, res: Response) => {
 // IMPORTANT: Admin API routes use dynamic path from ADMIN_PANEL_PATH env variable
 const adminApiPrefix = getAdminApiPrefix();
 
-app.use('/api/auth', authRoutes);
+app.use('/api/auth', apiRateLimiter, authRoutes); // ✅ Rate limited
 app.use(`${adminApiPrefix}/auth`, adminRateLimiter, adminAuthRoutes);  // Admin auth with hidden path
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 app.use(`${adminApiPrefix}`, adminRoutes);           // Admin only - requires auth
 app.use('/api/upload', uploadRoutes);
-app.use('/api/nova-poshta', novaPoshtaRoutes);
+app.use('/api/nova-poshta', apiRateLimiter, novaPoshtaRoutes); // ✅ Rate limited
 app.use('/api/analytics', analyticsRoutes);   // Analytics endpoints
 
 console.log(`🔒 Admin API prefix: ${adminApiPrefix}`);

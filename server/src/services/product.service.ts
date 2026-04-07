@@ -418,17 +418,34 @@ export class ProductService {
       throw new Error('Товар не знайдено');
     }
 
-    // Validate rating
+    // ✅ Validate rating
     if (data.rating < 1 || data.rating > 5) {
       throw new Error('Рейтинг має бути від 1 до 5');
+    }
+
+    // ✅ Validate and sanitize name
+    if (!data.name || typeof data.name !== 'string') {
+      throw new Error("Ім'я обов'язкове");
+    }
+    const sanitizedName = data.name.trim().slice(0, 100);
+    if (sanitizedName.length < 1) {
+      throw new Error("Ім'я занадто коротке");
+    }
+
+    // ✅ Validate and sanitize comment
+    let sanitizedComment: string | undefined = undefined;
+    if (data.comment) {
+      sanitizedComment = data.comment.trim().slice(0, 2000);
+      // ✅ Strip HTML tags to prevent XSS
+      sanitizedComment = sanitizedComment.replace(/<[^>]*>/g, '');
     }
 
     const review = await prisma.review.create({
       data: {
         productId,
-        name: data.name,
+        name: sanitizedName,
         rating: data.rating,
-        comment: data.comment,
+        comment: sanitizedComment,
       },
     });
 

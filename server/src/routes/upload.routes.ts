@@ -2,6 +2,10 @@ import { Router } from 'express';
 import { v2 as cloudinary } from 'cloudinary';
 import fileUpload from 'express-fileupload';
 import fs from 'fs';
+import os from 'os';
+import path from 'path';
+import { authenticate, authorize } from '../middleware/auth.js';
+import { Role } from '@prisma/client';
 
 const router = Router();
 
@@ -12,12 +16,18 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// Configure file upload middleware
+// ✅ File type validation
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'];
+const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
+// Configure file upload middleware — ✅ auth required
+router.use(authenticate);
+router.use(authorize(Role.ADMIN));
 router.use(fileUpload({
   useTempFiles: true,
-  tempFileDir: '/tmp/',
+  tempFileDir: os.tmpdir(), // ✅ Cross-platform compatible
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB max
+    fileSize: MAX_FILE_SIZE,
   },
   abortOnLimit: true,
 }));
@@ -31,10 +41,9 @@ router.use(fileUpload({
  */
 router.post('/', async (req, res) => {
   console.log('📤 Upload request received');
-  console.log('📋 Files:', req.files ? Object.keys(req.files) : 'none');
 
   try {
-    // Validate Cloudinary configuration
+    // ✅ Validate Cloudinary configuration
     const cloudName = process.env.CLOUDINARY_CLOUD_NAME;
     const apiKey = process.env.CLOUDINARY_API_KEY;
     const apiSecret = process.env.CLOUDINARY_API_SECRET;
@@ -43,12 +52,10 @@ router.post('/', async (req, res) => {
       console.error('❌ Cloudinary credentials missing');
       return res.status(500).json({
         error: 'Cloudinary не налаштовано',
-        message: 'Перевірте змінні оточення CLOUDINARY_*',
       });
     }
 
     // Collect all files from request
-    // Support multiple field names: 'files', 'file', 'image', 'images'
     const files: Array<{
       name: string;
       tempFilePath: string;
@@ -62,13 +69,26 @@ router.post('/', async (req, res) => {
       const fieldFiles = req.files?.[fieldName];
       if (fieldFiles) {
         const fileArray = Array.isArray(fieldFiles) ? fieldFiles : [fieldFiles];
-        files.push(...fileArray.map((f: any) => ({
-          name: f.name || `upload_${Date.now()}`,
-          tempFilePath: f.tempFilePath,
-          mimetype: f.mimetype,
-          size: f.size,
-        })));
-        console.log(`📁 Found ${fileArray.length} file(s) in '${fieldName}' field`);
+        for (const f of fileArray as any[]) {
+          // ✅ Validate MIME type
+          if (!ALLOWED_MIME_TYPES.includes(f.mimetype)) {
+            return res.status(400).json({
+              error: `Непідтримуваний тип файлу: ${f.mimetype}. Дозволені: JPEG, PNG, WebP, GIF, SVG`,
+            });
+          }
+          // ✅ Validate file size
+          if (f.size > MAX_FILE_SIZE) {
+            return res.status(400).json({
+              error: `Файл занадто великий: ${(f.size / 1024 / 1024).toFixed(1)}MB (макс. ${(MAX_FILE_SIZE / 1024 / 1024)}MB)`,
+            });
+          }
+          files.push({
+            name: f.name || `upload_${Date.now()}`,
+            tempFilePath: f.tempFilePath,
+            mimetype: f.mimetype,
+            size: f.size,
+          });
+        }
       }
     }
 
@@ -183,8 +203,7 @@ router.post('/', async (req, res) => {
   } catch (error: any) {
     console.error('❌ Upload error:', error.message);
     res.status(500).json({
-      error: error.message || 'Помилка завантаження',
-      message: 'Не вдалося завантажити файл',
+      error: 'Помилка завантаження',
     });
   }
 });

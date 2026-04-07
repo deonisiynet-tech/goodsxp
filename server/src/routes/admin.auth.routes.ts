@@ -9,6 +9,16 @@ import { twoFAService } from '../services/twoFA.service.js';
 
 const router = Router();
 
+// ✅ Centralized JWT secret getter — fails fast if not configured
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
+    console.error('❌ JWT_SECRET is not configured!');
+    throw new Error('JWT_SECRET is not configured');
+  }
+  return secret;
+}
+
 interface AdminLoginRequest {
   email: string;
   password: string;
@@ -123,7 +133,7 @@ router.post('/login', limitLoginAttempts, async (req: Request, res: Response) =>
     }
 
     // Generate JWT token
-    const secret = process.env.JWT_SECRET || 'default-secret';
+    const secret = getJwtSecret();
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       secret,
@@ -199,7 +209,7 @@ router.post('/logout', async (req: Request, res: Response) => {
     const token = req.cookies?.admin_session;
     if (token) {
       try {
-        const secret = process.env.JWT_SECRET || 'default-secret';
+        const secret = getJwtSecret();
         const decoded = jwt.verify(token, secret) as { id: string; email: string; role: string };
         adminId = decoded.id;
       } catch (e) {
@@ -251,7 +261,7 @@ router.get('/me', async (req: Request, res: Response) => {
       return res.status(401).json({ authenticated: false });
     }
 
-    const secret = process.env.JWT_SECRET || 'default-secret';
+    const secret = getJwtSecret();
     const decoded = jwt.verify(token, secret) as { id: string; email: string; role: string };
 
     const user = await prisma.user.findUnique({
@@ -302,7 +312,7 @@ router.get('/2fa/status', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Потрібна авторизація' });
     }
 
-    const secret = process.env.JWT_SECRET || 'default-secret';
+    const secret = getJwtSecret();
     const decoded = jwt.verify(token, secret) as { id: string };
 
     const user = await prisma.user.findUnique({
@@ -335,7 +345,7 @@ router.post('/2fa/generate', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Потрібна авторизація' });
     }
 
-    const secret = process.env.JWT_SECRET || 'default-secret';
+    const secret = getJwtSecret();
     const decoded = jwt.verify(token, secret) as { id: string };
 
     const result = await twoFAService.generateSecret(decoded.id);
@@ -372,7 +382,7 @@ router.post('/2fa/enable', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Потрібна авторизація' });
     }
 
-    const secret = process.env.JWT_SECRET || 'default-secret';
+    const secret = getJwtSecret();
     const decoded = jwt.verify(token, secret) as { id: string };
 
     await twoFAService.enableTwoFA(decoded.id, twoFAToken);
@@ -405,7 +415,7 @@ router.post('/2fa/disable', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Потрібна авторизація' });
     }
 
-    const secret = process.env.JWT_SECRET || 'default-secret';
+    const secret = getJwtSecret();
     const decoded = jwt.verify(token, secret) as { id: string };
 
     await twoFAService.disableTwoFA(decoded.id, twoFAToken);
@@ -432,7 +442,7 @@ router.get('/logs', async (req: Request, res: Response) => {
       return res.status(401).json({ error: 'Потрібна авторизація' });
     }
 
-    const secret = process.env.JWT_SECRET || 'default-secret';
+    const secret = getJwtSecret();
     const decoded = jwt.verify(token, secret) as { id: string; role: string };
 
     if (decoded.role !== Role.ADMIN) {

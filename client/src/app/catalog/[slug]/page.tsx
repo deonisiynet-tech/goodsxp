@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { productsApi, Review } from '@/lib/products-api';
 import { useCartStore } from '@/lib/store';
 import { useWishlistStore } from '@/lib/wishlist';
+import { generateProductJsonLd, generateBreadcrumbJsonLd } from '@/lib/schema';
 import toast from 'react-hot-toast';
 import { ArrowLeft, ShoppingCart, Check, ChevronLeft, ChevronRight, Star, Send, Trash2, Truck, Shield, RotateCcw, Heart, Share2 } from 'lucide-react';
 import Link from 'next/link';
@@ -258,52 +259,41 @@ export default function ProductPage() {
     ? Math.round((1 - product.discountPrice / product.originalPrice) * 100)
     : 0;
 
-  const siteUrl = typeof window !== 'undefined' ? window.location.origin : 'https://goodsxp.store';
   const productPrice = product.discountPrice && product.discountPrice < product.price
     ? product.discountPrice
     : product.price;
 
-  // JSON-LD Product structured data
-  const productJsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'Product',
-    name: product.title,
+  // JSON-LD Product structured data (generated from centralized schema module)
+  const productJsonLd = generateProductJsonLd({
+    id: product.id,
+    slug: product.slug,
+    title: product.title,
     description: product.description || '',
-    image: images.length > 0 ? images : undefined,
-    sku: product.id,
-    offers: {
-      '@type': 'Offer',
-      price: Number(productPrice).toFixed(2),
-      priceCurrency: 'UAH',
-      availability: product.stock > 0
-        ? 'https://schema.org/InStock'
-        : 'https://schema.org/OutOfStock',
-      url: `${siteUrl}/catalog/${product.slug}`,
-      seller: {
-        '@type': 'Organization',
-        name: 'GoodsXP',
-      },
-    },
-    ...(product.averageRating
-      ? {
-          aggregateRating: {
-            '@type': 'AggregateRating',
-            ratingValue: product.averageRating.toFixed(1),
-            reviewCount: product.reviewCount || 0,
-            bestRating: 5,
-            worstRating: 1,
-          },
-        }
-      : {}),
-  };
+    price: product.price,
+    originalPrice: product.originalPrice,
+    discountPrice: product.discountPrice,
+    imageUrl: product.imageUrl,
+    images: Array.isArray(product.images) ? product.images : [],
+    stock: product.stock,
+    averageRating: product.averageRating,
+    reviewCount: product.reviewCount,
+    categoryId: (product as any).categoryId,
+  });
+
+  // JSON-LD Breadcrumb structured data (auto-generated from route)
+  const breadcrumbJsonLd = generateBreadcrumbJsonLd(`/catalog/${product.slug}`);
 
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      {/* JSON-LD Product Structured Data */}
+      {/* JSON-LD: Product + Breadcrumb */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
       <main className="flex-1 pt-20">
         <div className="container mx-auto px-4 py-8">
@@ -315,20 +305,6 @@ export default function ProductPage() {
             <span className="text-[#26262b]">/</span>
             <span className="text-white">{product.title}</span>
           </nav>
-          <script
-            type="application/ld+json"
-            dangerouslySetInnerHTML={{
-              __html: JSON.stringify({
-                '@context': 'https://schema.org',
-                '@type': 'BreadcrumbList',
-                itemListElement: [
-                  { '@type': 'ListItem', position: 1, name: 'Головна', item: siteUrl },
-                  { '@type': 'ListItem', position: 2, name: 'Каталог', item: `${siteUrl}/catalog` },
-                  { '@type': 'ListItem', position: 3, name: product.title, item: `${siteUrl}/catalog/${product.slug}` },
-                ],
-              }),
-            }}
-          />
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-16">
             {/* Images Gallery */}

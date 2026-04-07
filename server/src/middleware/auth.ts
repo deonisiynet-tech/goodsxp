@@ -36,7 +36,11 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
       return res.status(401).json({ error: 'Потрібна авторизація' });
     }
 
-    const secret = process.env.JWT_SECRET || 'default-secret';
+    const secret = process.env.JWT_SECRET;
+    if (!secret) {
+      console.error('❌ JWT_SECRET is not configured!');
+      return res.status(500).json({ error: 'Серверна помилка конфігурації' });
+    }
 
     let decoded: { id: string; email: string; role: Role };
     try {

@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { productsApi } from '@/lib/products-api';
 import { useCartStore } from '@/lib/store';
+import { generateItemListJsonLd } from '@/lib/schema';
 import toast from 'react-hot-toast';
 import { ShoppingCart, Search, SlidersHorizontal, Star, ChevronLeft, ChevronRight, Filter } from 'lucide-react';
 
@@ -398,6 +399,15 @@ export default function CatalogContent() {
             </div>
           ) : (
             <>
+              {/* JSON-LD: ItemList for SEO */}
+              {products.length > 0 && (
+                <script
+                  type="application/ld+json"
+                  dangerouslySetInnerHTML={{
+                    __html: JSON.stringify(generateItemListJsonLd(products, currentPage)),
+                  }}
+                />
+              )}
               <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
                 {products.map((product) => (
                   <div

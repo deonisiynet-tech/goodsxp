@@ -7,6 +7,7 @@ import StoreStatusChecker from '@/components/StoreStatusChecker';
 import ScrollToTop from '@/components/ScrollToTop';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import CartResumePopup from '@/components/CartResumePopup';
+import { generateOrganizationJsonLd, generateWebSiteJsonLd } from '@/lib/schema';
 
 const inter = Inter({
   subsets: ['latin', 'cyrillic'],
@@ -95,44 +96,18 @@ export default function RootLayout({
   return (
     <html lang="uk">
       <body className={inter.className}>
-        {/* JSON-LD Structured Data — Organization */}
+        {/* JSON-LD: Organization */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              '@context': 'https://schema.org',
-              '@type': 'Organization',
-              name: 'GoodsXP',
-              url: siteUrl,
-              logo: `${siteUrl}/logo.png`,
-              description: 'Інтернет-магазин сучасної електроніки та гаджетів',
-              contactPoint: {
-                '@type': 'ContactPoint',
-                email: 'support@goodsxp.store',
-                contactType: 'customer service',
-                availableLanguage: ['Ukrainian'],
-              },
-              sameAs: [
-                'https://t.me/goodsxp',
-              ],
-            }),
+            __html: JSON.stringify(generateOrganizationJsonLd()),
           }}
         />
-        {/* JSON-LD Structured Data — WebSite with SearchAction */}
+        {/* JSON-LD: WebSite + SearchAction */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{
-            __html: JSON.stringify({
-              '@context': 'https://schema.org',
-              '@type': 'WebSite',
-              name: 'GoodsXP',
-              url: siteUrl,
-              potentialAction: {
-                '@type': 'SearchAction',
-                target: `${siteUrl}/catalog?search={search_term_string}`,
-                'query-input': 'required name=search_term_string',
-              },
-            }),
+            __html: JSON.stringify(generateWebSiteJsonLd()),
           }}
         />
         <Providers>

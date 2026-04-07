@@ -116,6 +116,17 @@ export class AdminService {
   }
 
   async resetUserPassword(id: string, newPassword: string) {
+    // ✅ Validate password strength
+    if (!newPassword || typeof newPassword !== 'string') {
+      throw new Error('Пароль обов\'язковий');
+    }
+    if (newPassword.length < 8) {
+      throw new Error('Мінімум 8 символів');
+    }
+    if (newPassword.length > 128) {
+      throw new Error('Максимум 128 символів');
+    }
+
     const hashedPassword = await bcrypt.hash(newPassword, 12);
 
     return prisma.user.update({

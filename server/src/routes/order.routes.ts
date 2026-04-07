@@ -9,6 +9,7 @@ const controller = new OrderController();
 
 // Public routes — rate limited to prevent spam
 router.post('/', strictRateLimiter, controller.create);
+// ✅ Protected: only admin or order owner can view
 router.get('/:id', controller.getById);
 
 // Admin routes

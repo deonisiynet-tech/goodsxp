@@ -4,7 +4,10 @@ import axios from 'axios';
 const router = express.Router();
 
 const API_URL = "https://api.novaposhta.ua/v2.0/json/";
-const API_KEY = process.env.NOVA_POSHTA_API_KEY || "fd61dad0d97e5d3479d7f3164b54b03f";
+const API_KEY = process.env.NOVA_POSHTA_API_KEY;
+if (!API_KEY) {
+  console.error('вќЊ NOVA_POSHTA_API_KEY environment variable is required!');
+}
 
 /**
  * вњ… POST /api/nova-poshta/cities
@@ -61,7 +64,7 @@ router.post('/cities', async (req: Request, res: Response) => {
     if (error.response) {
       console.error("[NovaPoshta] /cities Error:", error.response.data);
     }
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Помилка сервера' });
   }
 });
 
@@ -145,7 +148,7 @@ router.post('/warehouses', async (req: Request, res: Response) => {
     if (error.response) {
       console.error("[NovaPoshta] /warehouses Error:", error.response.data);
     }
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Помилка сервера' });
   }
 });
 
@@ -212,7 +215,7 @@ router.post('/postomats', async (req: Request, res: Response) => {
     if (error.response) {
       console.error("[NovaPoshta] /postomats Error:", error.response.data);
     }
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ error: 'Помилка сервера' });
   }
 });
 

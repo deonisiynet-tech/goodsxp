@@ -3,8 +3,14 @@ import bcrypt from 'bcryptjs';
 
 export async function initializeAdmin() {
   try {
-    const adminEmail = process.env.ADMIN_EMAIL || 'goodsxp.net@gmail.com';
-    const adminPassword = process.env.ADMIN_PASSWORD || 'Admin123';
+    const adminEmail = process.env.ADMIN_EMAIL;
+    const adminPassword = process.env.ADMIN_PASSWORD;
+
+    if (!adminEmail || !adminPassword) {
+      console.error('❌ FATAL: ADMIN_EMAIL and ADMIN_PASSWORD environment variables are required!');
+      console.error('📝 Set these in your .env file before starting the server.');
+      process.exit(1);
+    }
 
     console.log('🔧 Initializing admin user...');
     console.log('📧 Admin email:', adminEmail);
