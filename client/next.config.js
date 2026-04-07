@@ -3,14 +3,6 @@ const nextConfig = {
   output: 'standalone',
   reactStrictMode: true,
 
-  // ESLint/TypeScript - ignore during build
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-
   // Image configuration
   images: {
     domains: ['res.cloudinary.com', 'localhost', 'images.unsplash.com'],

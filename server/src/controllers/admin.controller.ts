@@ -278,8 +278,6 @@ export class AdminController {
       const { value } = req.body;
       const adminId = (req as AuthRequest).user?.id;
 
-      console.log('[API] Updating storeEnabled to:', value);
-
       // ✅ Перевірка значення
       const stringValue = value === 'true' || value === true ? 'true' : 'false';
 
@@ -295,7 +293,13 @@ export class AdminController {
         },
       });
 
-      console.log('[API] storeEnabled updated to:', setting.value);
+      loggerService.log({
+        level: LogLevel.INFO,
+        message: `Store ${stringValue === 'true' ? 'enabled' : 'disabled'}`,
+        source: LogSource.ADMIN_PANEL,
+        userId: adminId,
+        ipAddress: req.ip,
+      });
 
       // ✅ ЛОГУВАННЯ ДІЇ
       if (adminId) {
@@ -309,13 +313,23 @@ export class AdminController {
             ipAddress: req.ip,
           });
         } catch (logError: any) {
-          console.warn('⚠️ Failed to log storeEnabled update:', logError.message);
+          loggerService.log({
+            level: LogLevel.WARNING,
+            message: 'Failed to log storeEnabled update',
+            source: LogSource.ADMIN_PANEL,
+            metadata: { error: logError.message },
+          });
         }
       }
 
       res.json({ success: true, value: setting.value });
     } catch (error) {
-      console.error('[API] Error updating storeEnabled:', error instanceof Error ? error.message : error);
+      loggerService.log({
+        level: LogLevel.ERROR,
+        message: 'Error updating storeEnabled',
+        source: LogSource.ADMIN_PANEL,
+        metadata: { error: error instanceof Error ? error.message : String(error) },
+      });
       next(error);
     }
   }
@@ -326,8 +340,6 @@ export class AdminController {
    */
   async getStoreEnabled(req: Request, res: Response, next: NextFunction) {
     try {
-      console.log('[API] Getting storeEnabled status');
-
       const setting = await prisma.siteSettings.findUnique({
         where: {
           key: 'storeEnabled',
@@ -336,7 +348,6 @@ export class AdminController {
 
       // ✅ ЯКЩО НЕМАЄ - СТВОРЮЄМО З ЗНАЧЕННЯМ ЗА ЗАМОВЧУВАННЯМ
       if (!setting) {
-        console.log('[API] storeEnabled not found, creating with default value: true');
         const newSetting = await prisma.siteSettings.create({
           data: {
             key: 'storeEnabled',
@@ -345,11 +356,8 @@ export class AdminController {
             description: 'Статус магазину (включений/вимкнений)',
           },
         });
-        console.log('[API] storeEnabled:', newSetting.value);
         return res.json(newSetting);
       }
-
-      console.log('[API] storeEnabled:', setting.value);
 
       // ✅ NO CACHE HEADERS - завжди актуальне значення
       res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
@@ -358,7 +366,12 @@ export class AdminController {
 
       res.json(setting);
     } catch (error) {
-      console.error('[API] Error getting storeEnabled:', error instanceof Error ? error.message : error);
+      loggerService.log({
+        level: LogLevel.ERROR,
+        message: 'Error getting storeEnabled',
+        source: LogSource.ADMIN_PANEL,
+        metadata: { error: error instanceof Error ? error.message : String(error) },
+      });
       next(error);
     }
   }

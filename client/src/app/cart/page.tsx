@@ -1,13 +1,25 @@
 'use client';
 
+import type { Metadata } from 'next';
 import { useCartStore } from '@/lib/store';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { Trash2, Plus, Minus, ArrowRight, ShoppingCart, Package } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { productsApi } from '@/lib/products-api';
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://goodsxp.store';
+
+export const metadata: Metadata = {
+  title: 'Кошик | GoodsXP',
+  description: 'Переглянь товари у кошику та оформи замовлення. Доставка Новою Поштою по Україні.',
+  alternates: {
+    canonical: `${siteUrl}/cart`,
+  },
+};
 
 interface CartItemWithSlug {
   productId: string;
@@ -96,14 +108,12 @@ export default function CartPage() {
                   key={item.productId}
                   className="card p-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center"
                 >
-                  <Link href={`/catalog/${slug}`} className="w-24 h-24 flex-shrink-0 overflow-hidden rounded-xl bg-surfaceLight">
-                    <img
+                  <Link href={`/catalog/${slug}`} className="w-24 h-24 flex-shrink-0 overflow-hidden rounded-xl bg-surfaceLight relative">
+                    <Image
                       src={item.imageUrl || '/placeholder.jpg'}
                       alt={item.title}
-                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = 'https://via.placeholder.com/100?text=No+Image';
-                      }}
+                      fill
+                      className="object-cover hover:scale-105 transition-transform duration-300"
                     />
                   </Link>
 

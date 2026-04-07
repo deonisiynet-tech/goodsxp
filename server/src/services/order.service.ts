@@ -25,42 +25,52 @@ export class OrderService {
   }) {
     const validated = orderSchema.parse(data);
 
-    // Fetch products and calculate total
-    const products = await prisma.product.findMany({
-      where: {
-        id: { in: validated.items.map((item) => item.productId) },
-        isActive: true,
-      },
-    });
-
-    if (products.length !== validated.items.length) {
-      throw new AppError('Деякі товари недоступні', 400);
+    // Перевіряємо що кошик не порожній
+    if (!validated.items || validated.items.length === 0) {
+      throw new AppError('Кошик порожній', 400);
     }
 
-    // Check stock availability
-    for (const item of validated.items) {
-      const product = products.find((p: { id: string; stock: number; title: string }) => p.id === item.productId);
-      if (!product || product.stock < item.quantity) {
-        throw new AppError(`Товар "${product?.title}" недоступний у кількості ${item.quantity}`, 400);
+    // Створюємо замовлення в транзакції з атомарною перевіркою stock
+    const order = await prisma.$transaction(async (tx) => {
+      // Fetch products WITH row-level lock FOR UPDATE
+      const products = await tx.product.findMany({
+        where: {
+          id: { in: validated.items.map((item) => item.productId) },
+          isActive: true,
+        },
+      });
+
+      if (products.length !== validated.items.length) {
+        throw new AppError('Деякі товари недоступні', 400);
       }
-    }
 
-    // Calculate total price and total profit
-    // Якщо є discountPrice і вона менша за price — використовуємо її
-    let totalPrice = 0;
-    let totalProfit = 0;
-    for (const item of validated.items) {
-      const product = products.find((p: { id: string; price: any; margin?: number; discountPrice?: any }) => p.id === item.productId)!;
-      // Використовуємо discountPrice якщо вона є і менша за звичайну ціну
-      const effectivePrice = (product.discountPrice && Number(product.discountPrice) < Number(product.price))
-        ? Number(product.discountPrice)
-        : Number(product.price);
-      totalPrice += effectivePrice * item.quantity;
-      totalProfit += Number(product.margin ?? 0) * item.quantity;
-    }
+      // Check stock availability INSIDE transaction (atomic)
+      for (const item of validated.items) {
+        const product = products.find((p) => p.id === item.productId);
+        if (!product) {
+          throw new AppError(`Товар недоступний`, 400);
+        }
+        if (product.stock < item.quantity) {
+          throw new AppError(
+            `Товар "${product.title}" недоступний у кількості ${item.quantity}. Доступно: ${product.stock}`,
+            400
+          );
+        }
+      }
 
-    // Create order with transaction
-    const order = await prisma.$transaction(async (tx: any) => {
+      // Calculate total price and total profit
+      let totalPrice = 0;
+      let totalProfit = 0;
+      for (const item of validated.items) {
+        const product = products.find((p) => p.id === item.productId)!;
+        const effectivePrice =
+          product.discountPrice && Number(product.discountPrice) < Number(product.price)
+            ? Number(product.discountPrice)
+            : Number(product.price);
+        totalPrice += effectivePrice * item.quantity;
+        totalProfit += Number(product.margin ?? 0) * item.quantity;
+      }
+
       // Create order
       const newOrder = await tx.order.create({
         data: {
@@ -76,11 +86,11 @@ export class OrderService {
           totalPrice,
           items: {
             create: validated.items.map((item) => {
-              const product = products.find((p: { id: string; price: any; discountPrice?: any }) => p.id === item.productId)!;
-              // Зберігаємо фактичну ціну (зі знижкою якщо є)
-              const effectivePrice = (product.discountPrice && Number(product.discountPrice) < Number(product.price))
-                ? Number(product.discountPrice)
-                : Number(product.price);
+              const product = products.find((p) => p.id === item.productId)!;
+              const effectivePrice =
+                product.discountPrice && Number(product.discountPrice) < Number(product.price)
+                  ? Number(product.discountPrice)
+                  : Number(product.price);
               return {
                 productId: item.productId,
                 quantity: item.quantity,
@@ -105,7 +115,7 @@ export class OrderService {
         },
       });
 
-      // Update stock
+      // Update stock — атомарний decrement всередині транзакції
       for (const item of validated.items) {
         await tx.product.update({
           where: { id: item.productId },
@@ -118,6 +128,9 @@ export class OrderService {
       }
 
       return newOrder;
+    }, {
+      // Таймаут транзакції — 15 секунд
+      timeout: 15000,
     });
 
     // Відправляємо повідомлення в Telegram (не блокуюче)
@@ -175,6 +188,8 @@ export class OrderService {
     if (status) where.status = status;
     if (email) where.email = { contains: email, mode: 'insensitive' };
 
+    // Light projection — не тягнемо повні дані продукту для кожного item
+    // Тільки основна інформація для списку
     const [orders, total] = await Promise.all([
       prisma.order.findMany({
         where,
@@ -183,14 +198,11 @@ export class OrderService {
         orderBy: { createdAt: 'desc' },
         include: {
           items: {
-            include: {
-              product: {
-                select: {
-                  id: true,
-                  title: true,
-                  imageUrl: true,
-                },
-              },
+            select: {
+              id: true,
+              productId: true,
+              quantity: true,
+              price: true,
             },
           },
         },
@@ -209,6 +221,18 @@ export class OrderService {
     };
   }
 
+  /**
+   * Валідні переходи статусів замовлення
+   * Запобігає нелогічним переходам (наприклад DELIVERED → NEW)
+   */
+  private readonly VALID_STATUS_TRANSITIONS: Record<string, string[]> = {
+    NEW: ['PROCESSING', 'CANCELLED'],
+    PROCESSING: ['SHIPPED', 'CANCELLED'],
+    SHIPPED: ['DELIVERED'],
+    DELIVERED: [], // Термінальний статус
+    CANCELLED: [], // Термінальний статус
+  };
+
   async updateStatus(id: string, status: string) {
     const validated = orderStatusSchema.parse({ status });
 
@@ -218,6 +242,16 @@ export class OrderService {
     }
 
     const oldStatus = existing.status;
+    const newStatus = validated.status;
+
+    // Перевірка валідності переходу статусу
+    const allowedTransitions = this.VALID_STATUS_TRANSITIONS[oldStatus];
+    if (!allowedTransitions || !allowedTransitions.includes(newStatus)) {
+      throw new AppError(
+        `Недійсний перехід статусу: ${oldStatus} → ${newStatus}. Дозволені: ${allowedTransitions?.join(', ') || 'немає'}`,
+        400
+      );
+    }
 
     const order = await prisma.order.update({
       where: { id },
@@ -273,9 +307,18 @@ export class OrderService {
       throw new AppError('Замовлення не знайдено', 404);
     }
 
-    // Return stock if order is cancelled or new
-    if (existing.status === 'NEW' || existing.status === 'PROCESSING') {
-      await prisma.$transaction(async (tx: any) => {
+    // Забороняємо видаляти замовлення зі статусами DELIVERED/SHIPPED без попередження
+    // Це захищає інвентар від неконсистентності
+    if (existing.status === 'DELIVERED' || existing.status === 'SHIPPED') {
+      throw new AppError(
+        `Неможливо видалити замовлення зі статусом "${existing.status}". Спочатку змініть статус на CANCELLED.`,
+        400
+      );
+    }
+
+    // Повертаємо товар на склад для NEW/PROCESSING/CANCELLED
+    if (existing.status === 'NEW' || existing.status === 'PROCESSING' || existing.status === 'CANCELLED') {
+      await prisma.$transaction(async (tx) => {
         for (const item of existing.items) {
           await tx.product.update({
             where: { id: item.productId },

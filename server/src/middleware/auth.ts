@@ -38,7 +38,7 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
 
     const secret = process.env.JWT_SECRET;
     if (!secret) {
-      console.error('❌ JWT_SECRET is not configured!');
+      console.error('❌ JWT_SECRET не налаштовано');
       return res.status(500).json({ error: 'Серверна помилка конфігурації' });
     }
 

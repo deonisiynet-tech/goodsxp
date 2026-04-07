@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { escapeForTelegramHtml } from '../utils/validators.js';
 
 /**
  * Telegram Bot Service
@@ -133,10 +134,16 @@ export async function notifyNewOrder(order: OrderNotificationData): Promise<bool
   const orderNum = order.orderNumber || order.id.slice(0, 8).toUpperCase();
   const displayNumber = typeof orderNum === 'number' ? orderNum : orderNum;
 
+  // Екрануємо користувацькі дані для запобігання HTML injection
+  const safeName = escapeForTelegramHtml(order.name);
+  const safePhone = escapeForTelegramHtml(order.phone);
+  const safeCity = order.city ? escapeForTelegramHtml(order.city) : null;
+  const safeWarehouse = order.warehouse ? escapeForTelegramHtml(order.warehouse) : null;
+
   // Формуємо список товарів
   const itemsList = order.items
     .map((item, index) => {
-      const productName = item.product.title;
+      const productName = escapeForTelegramHtml(item.product.title);
       const quantity = item.quantity;
       const price = formatPrice(item.price);
       return `<b>${index + 1}. ${productName}</b>
@@ -154,10 +161,10 @@ ${itemsList}
 
 💳 <b>Оплата:</b> ${paymentMethodText}
 
-👤 Клієнт: ${order.name}
-📞 Телефон: ${order.phone}${order.city ? `
-📍 Місто: ${order.city}` : ''}${order.warehouse ? `
-🚚 Доставка: ${order.warehouse}` : ''}
+👤 Клієнт: ${safeName}
+📞 Телефон: ${safePhone}${safeCity ? `
+📍 Місто: ${safeCity}` : ''}${safeWarehouse ? `
+🚚 Доставка: ${safeWarehouse}` : ''}
 
 📊 Статус: ${order.status || 'NEW'}`;
 
@@ -197,6 +204,7 @@ export async function notifyOrderStatusChanged(
   newStatus: string
 ): Promise<boolean> {
   const orderNumber = order.orderNumber || order.id.slice(0, 8).toUpperCase();
+  const safeName = escapeForTelegramHtml(order.name);
 
   const statusEmoji: Record<string, string> = {
     NEW: '🆕',
@@ -213,7 +221,7 @@ export async function notifyOrderStatusChanged(
 🆔 Номер: #${orderNumber}
 🔄 ${oldStatus} → <b>${newStatus}</b>
 
-👤 Клієнт: ${order.name}
+👤 Клієнт: ${safeName}
 💰 Сума: ${formatPrice(order.totalPrice)}`;
 
   return sendTelegramMessage(message, { parseMode: 'HTML' });
@@ -230,10 +238,11 @@ interface UserNotificationData {
 }
 
 export async function notifyNewUser(user: UserNotificationData): Promise<boolean> {
+  const safeEmail = escapeForTelegramHtml(user.email);
   const message = `👤 <b>Новий користувач</b>
 
 🆔 ID: ${user.id.slice(0, 8).toUpperCase()}
-📧 Email: ${user.email}
+📧 Email: ${safeEmail}
 📋 Роль: ${user.role || 'USER'}
 📅 Дата: ${formatDate(user.createdAt || new Date())}`;
 

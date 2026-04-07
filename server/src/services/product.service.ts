@@ -126,37 +126,35 @@ export class ProductService {
       ...(filters.featured && { isFeatured: true }),
       ...(!filters.featured && filters.category && { categoryId: filters.category }),
       ...(filters.minPrice && { price: { gte: filters.minPrice } }),
-      ...(filters.maxPrice && filters.maxPrice < 100000 && { price: { lte: filters.maxPrice } }),
+      ...(filters.maxPrice && { price: { lte: filters.maxPrice } }),
     };
 
-    const [products, total] = await Promise.all([
-      prisma.product.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: { [sortBy]: sortOrder },
-        include: {
-          reviews: {
-            select: {
-              rating: true,
-            },
-          },
-        },
-      }) as Promise<any[]>,
-      prisma.product.count({ where }),
-    ]);
+    const products = await prisma.product.findMany({
+      where,
+      skip,
+      take: limit,
+      orderBy: { [sortBy]: sortOrder },
+    }) as any[];
 
-    // Calculate average rating for each product
+    const total = await prisma.product.count({ where });
+
+    // Обчислюємо середній рейтинг через aggregate — без завантаження всіх відгуків
+    const productIds = products.map(p => p.id);
+    const ratingStats = await prisma.review.groupBy({
+      by: ['productId'],
+      where: { productId: { in: productIds } },
+      _avg: { rating: true },
+      _count: { rating: true },
+    });
+
+    const ratingMap = new Map(ratingStats.map(s => [s.productId, { avg: s._avg.rating ?? 0, count: s._count.rating }]));
+
     const productsWithRating = products.map((product: any) => {
-      const { reviews, ...rest } = product;
-      const averageRating =
-        reviews.length > 0
-          ? reviews.reduce((sum: number, r: { rating: number }) => sum + r.rating, 0) / reviews.length
-          : 0;
+      const stats = ratingMap.get(product.id);
       return {
-        ...rest,
-        averageRating: Math.round(averageRating * 10) / 10,
-        reviewCount: reviews.length,
+        ...product,
+        averageRating: stats ? Math.round((stats.avg as number) * 10) / 10 : 0,
+        reviewCount: stats ? (stats.count as number) : 0,
       };
     });
 
@@ -174,70 +172,54 @@ export class ProductService {
   async getById(id: string) {
     const product = await prisma.product.findUnique({
       where: { id },
-      include: {
-        reviews: {
-          select: {
-            rating: true,
-          },
-        },
-      },
     }) as any;
 
     if (!product) {
       throw new AppError('Товар не знайдено', 404);
     }
 
-    // Calculate average rating
-    const averageRating =
-      product.reviews.length > 0
-        ? product.reviews.reduce((sum: number, r: { rating: number }) => sum + r.rating, 0) / product.reviews.length
-        : 0;
+    // Обчислюємо середній рейтинг через aggregate
+    const stats = await prisma.review.aggregate({
+      where: { productId: id },
+      _avg: { rating: true },
+      _count: { rating: true },
+    });
 
-    const reviewCount = product.reviews.length;
-
-    // Remove reviews from returned object
-    const { reviews, ...productWithoutReviews } = product;
+    const averageRating = stats._avg.rating ? Math.round(stats._avg.rating * 10) / 10 : 0;
+    const reviewCount = stats._count.rating;
 
     return {
-      ...productWithoutReviews,
-      averageRating: Math.round(averageRating * 10) / 10,
+      ...product,
+      averageRating,
       reviewCount,
-      ...withDiscountPercent(productWithoutReviews),
+      ...withDiscountPercent(product),
     };
   }
 
   async getBySlug(slug: string) {
     const product = await prisma.product.findFirst({
       where: { slug },
-      include: {
-        reviews: {
-          select: {
-            rating: true,
-          },
-        },
-      },
     }) as any;
 
     if (!product) {
       throw new AppError('Товар не знайдено', 404);
     }
 
-    // Calculate average rating
-    const averageRating =
-      product.reviews.length > 0
-        ? product.reviews.reduce((sum: number, r: { rating: number }) => sum + r.rating, 0) / product.reviews.length
-        : 0;
+    // Обчислюємо середній рейтинг через aggregate
+    const stats = await prisma.review.aggregate({
+      where: { productId: product.id },
+      _avg: { rating: true },
+      _count: { rating: true },
+    });
 
-    const reviewCount = product.reviews.length;
-
-    // Remove reviews from returned object
-    const { reviews, ...productWithoutReviews } = product;
+    const averageRating = stats._avg.rating ? Math.round(stats._avg.rating * 10) / 10 : 0;
+    const reviewCount = stats._count.rating;
 
     return {
-      ...productWithoutReviews,
-      averageRating: Math.round(averageRating * 10) / 10,
+      ...product,
+      averageRating,
       reviewCount,
-      ...withDiscountPercent(productWithoutReviews),
+      ...withDiscountPercent(product),
     };
   }
 
@@ -295,11 +277,28 @@ export class ProductService {
 
     if (data.title !== undefined) {
       updateData.title = data.title;
-      updateData.slug = data.title
+      // Генеруємо новий slug з перевіркою унікальності
+      let newSlug = data.title
         .toLowerCase()
         .replace(/[^a-z0-9\u0400-\u04FF-]/g, '-')
         .replace(/-+/g, '-')
         .replace(/^-|-$/g, '');
+
+      // Перевіряємо чи slug вже зайнятий ІНШИМ товаром
+      const slugConflict = await prisma.product.findFirst({
+        where: {
+          slug: newSlug,
+          id: { not: id }, // Виключаємо поточний товар
+        },
+        select: { id: true },
+      });
+
+      if (slugConflict) {
+        // Додаємо унікальний суфікс
+        newSlug = `${newSlug}-${Math.random().toString(36).substring(2, 8)}`;
+      }
+
+      updateData.slug = newSlug;
     }
     if (data.description !== undefined) updateData.description = data.description;
     if (data.price !== undefined) updateData.price = data.price;
@@ -436,8 +435,6 @@ export class ProductService {
     let sanitizedComment: string | undefined = undefined;
     if (data.comment) {
       sanitizedComment = data.comment.trim().slice(0, 2000);
-      // ✅ Strip HTML tags to prevent XSS
-      sanitizedComment = sanitizedComment.replace(/<[^>]*>/g, '');
     }
 
     const review = await prisma.review.create({

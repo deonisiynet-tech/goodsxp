@@ -9,14 +9,15 @@ const controller = new OrderController();
 
 // Public routes — rate limited to prevent spam
 router.post('/', strictRateLimiter, controller.create);
-// ✅ Protected: only admin or order owner can view
-router.get('/:id', controller.getById);
 
-// Admin routes
+// Admin routes — MUST be before /:id to avoid route conflict
 router.use(authenticate, authorize(Role.ADMIN));
 router.get('/admin/all', controller.getAll);
+router.get('/admin/stats', controller.getStats);
 router.patch('/:id/status', controller.updateStatus);
 router.delete('/:id', controller.delete);
-router.get('/admin/stats', controller.getStats);
+
+// ✅ Protected: only admin or order owner can view
+router.get('/:id', authenticate, controller.getById);
 
 export default router;

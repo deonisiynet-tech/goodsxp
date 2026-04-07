@@ -3,7 +3,11 @@ import { v2 as cloudinary } from 'cloudinary';
 import { AppError } from './errorHandler.js';
 import fs from 'fs';
 import path from 'path';
+import os from 'os';
 import { v4 as uuidv4 } from 'uuid';
+import { LoggerService } from '../services/logger.service.js';
+
+const logger = new LoggerService();
 
 // Configure Cloudinary (optional)
 if (process.env.CLOUDINARY_CLOUD_NAME) {
@@ -16,7 +20,7 @@ if (process.env.CLOUDINARY_CLOUD_NAME) {
 
 export const uploadMiddleware = fileUpload({
   useTempFiles: true,
-  tempFileDir: '/tmp/',
+  tempFileDir: os.tmpdir(), // Крос-платформний тимчасовий каталог
   limits: {
     fileSize: 5 * 1024 * 1024, // 5MB limit
   },
@@ -47,7 +51,11 @@ export const uploadToCloudinary = async (filePath: string): Promise<string> => {
 
     return result.secure_url;
   } catch (error) {
-    console.error('Cloudinary upload error:', error);
+    logger.error('Cloudinary upload failed', {
+      message: 'Cloudinary upload failed',
+      source: 'SYSTEM' as any,
+      metadata: { error: error instanceof Error ? error.message : String(error) },
+    });
     return '';
   }
 };
@@ -74,25 +82,26 @@ export const saveImageLocally = async (file: any): Promise<string> => {
 export const processImageUpload = async (file: any): Promise<string> => {
   if (!file) return '';
 
-  // Try Cloudinary first
-  if (process.env.CLOUDINARY_CLOUD_NAME) {
-    const cloudinaryUrl = await uploadToCloudinary(file.tempFilePath);
-    if (cloudinaryUrl) {
-      // Clean up temp file
-      if (fs.existsSync(file.tempFilePath)) {
-        fs.unlinkSync(file.tempFilePath);
+  try {
+    // Try Cloudinary first
+    if (process.env.CLOUDINARY_CLOUD_NAME) {
+      const cloudinaryUrl = await uploadToCloudinary(file.tempFilePath);
+      if (cloudinaryUrl) {
+        return cloudinaryUrl;
       }
-      return cloudinaryUrl;
+    }
+
+    // Fallback to local storage
+    const localPath = await saveImageLocally(file);
+    return localPath;
+  } finally {
+    // Гарантоване очищення тимчасового файлу
+    if (file.tempFilePath && fs.existsSync(file.tempFilePath)) {
+      try {
+        fs.unlinkSync(file.tempFilePath);
+      } catch (e) {
+        // Ігноруємо помилки видалення temp файлу
+      }
     }
   }
-
-  // Fallback to local storage
-  const localPath = await saveImageLocally(file);
-  
-  // Clean up temp file
-  if (fs.existsSync(file.tempFilePath)) {
-    fs.unlinkSync(file.tempFilePath);
-  }
-  
-  return localPath;
 };

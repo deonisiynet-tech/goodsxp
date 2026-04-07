@@ -6,6 +6,7 @@ import path from 'path';
 import fs from 'fs';
 import next from 'next';
 import { parse } from 'url';
+import crypto from 'crypto';
 import cookieParser from 'cookie-parser';
 
 // Завантажуємо .env з кореня проекту
@@ -84,6 +85,7 @@ import analyticsRoutes from './routes/analytics.routes.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 import { adminRateLimiter, apiRateLimiter, strictRateLimiter } from './middleware/rateLimiter.js';
 import { blockAdminScanning } from './middleware/adminPanelPath.js';
+import { csrfProtection } from './middleware/csrf.js';
 import { getAdminApiPrefix } from './utils/adminPaths.js';
 import { initializeAdmin } from './utils/initAdmin.js';
 import { runMigrations } from './prisma/migrate.js';
@@ -155,19 +157,19 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'"], // Next.js needs inline scripts
-      styleSrc: ["'self'", "'unsafe-inline'"], // Next.js needs inline styles
-      imgSrc: ["'self'", "data:", "https:", "blob:"], // Allow images from any HTTPS source
-      connectSrc: ["'self'", "https:"], // API calls to any HTTPS origin
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Next.js потребує в dev режимі
+      styleSrc: ["'self'", "'unsafe-inline'"],
+      imgSrc: ["'self'", "data:", "https:", "blob:"],
+      connectSrc: ["'self'", "https:"],
       fontSrc: ["'self'", "data:"],
-      objectSrc: ["'none'"], // Block flash/objects
-      frameSrc: ["'none'"], // Block iframes
-      frameAncestors: ["'none'"], // Clickjacking protection
+      objectSrc: ["'none'"],
+      frameSrc: ["'none'"],
+      frameAncestors: ["'none'"],
       baseUri: ["'self'"],
       formAction: ["'self'"],
     },
   },
-  crossOriginEmbedderPolicy: false, // Needed for Next.js
+  crossOriginEmbedderPolicy: false,
   crossOriginOpenerPolicy: false,
   crossOriginResourcePolicy: { policy: 'cross-origin' },
 }));
@@ -184,9 +186,9 @@ app.use((req, res, next) => {
   next();
 });
 
-// Body parsing
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+// Body parsing — 2mb достатньо для e-commerce API
+app.use(express.json({ limit: '2mb' }));
+app.use(express.urlencoded({ extended: true, limit: '2mb' }));
 
 // Cookie parsing
 app.use(cookieParser());
@@ -249,6 +251,8 @@ app.use('/api/auth', apiRateLimiter, authRoutes); // ✅ Rate limited
 app.use(`${adminApiPrefix}/auth`, adminRateLimiter, adminAuthRoutes);  // Admin auth with hidden path
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
+// CSRF для адмінських маршрутів (cookie-based auth)
+app.use(`${adminApiPrefix}`, csrfProtection);
 app.use(`${adminApiPrefix}`, adminRoutes);           // Admin only - requires auth
 app.use('/api/upload', uploadRoutes);
 app.use('/api/nova-poshta', apiRateLimiter, novaPoshtaRoutes); // ✅ Rate limited

@@ -29,9 +29,20 @@ export class OrderController {
     }
   }
 
-  async getById(req: Request, res: Response, next: NextFunction) {
+  async getById(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const order = await orderService.getById(req.params.id);
+
+      // Перевірка: користувач може бачити тільки своє замовлення, адмін — будь-яке
+      if (req.user) {
+        if (req.user.role !== 'ADMIN' && order.email !== req.user.email) {
+          return res.status(403).json({ error: 'Недостатньо прав для перегляду цього замовлення' });
+        }
+      } else {
+        // Якщо немає авторизованого користувача — забороняємо
+        return res.status(401).json({ error: 'Потрібна авторизація для перегляду замовлення' });
+      }
+
       res.json(order);
     } catch (error) {
       next(error);

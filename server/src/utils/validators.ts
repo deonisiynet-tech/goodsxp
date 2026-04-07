@@ -1,5 +1,27 @@
 import { z } from 'zod';
 
+/**
+ * Санітизація HTML — видаляє всі HTML теги з рядка
+ * Запобігає Stored XSS атакам коли дані зберігаються в БД
+ * і відображаються в адмінці або на фронтенді
+ */
+function sanitizeHtml(input: string): string {
+  return input.replace(/<[^>]*>/g, '');
+}
+
+/**
+ * Санітизація спеціальних символів для Telegram HTML
+ * Екранує < > & щоб унеможливити XSS через Telegram повідомлення
+ */
+function escapeForTelegramHtml(input: string): string {
+  return input
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
+
+export { sanitizeHtml, escapeForTelegramHtml };
+
 export const registerSchema = z.object({
   email: z.string().email('Некоректний email'),
   password: z.string().min(6, 'Пароль має містити мінімум 6 символів'),
@@ -11,8 +33,8 @@ export const loginSchema = z.object({
 });
 
 export const productSchema = z.object({
-  title: z.string().min(1, 'Назва обов\'язкова').max(200),
-  description: z.string().min(1, 'Опис обов\'язковий').max(5000),
+  title: z.string().min(1, 'Назва обов\'язкова').max(200).transform(sanitizeHtml),
+  description: z.string().min(1, 'Опис обов\'язковий').max(5000).transform(sanitizeHtml),
   price: z.coerce.number().positive('Ціна має бути додатною'),
   margin: z.coerce.number().min(0, 'Маржа не може бути менше 0').optional().default(0),
   categoryId: z.string().uuid().optional().nullable(),
@@ -30,14 +52,14 @@ export const productSchema = z.object({
 export const productUpdateSchema = productSchema.partial();
 
 export const orderSchema = z.object({
-  name: z.string().min(1, 'Ім\'я обов\'язкове').max(100),
+  name: z.string().min(1, 'Ім\'я обов\'язкове').max(100).transform(sanitizeHtml),
   phone: z.string().min(5, 'Некоректний телефон').max(20),
   email: z.string().email('Некоректний email').optional().nullable(),
-  address: z.string().min(1, 'Адреса обов\'язкова').max(500).optional().nullable(),
-  city: z.string().min(1, 'Місто обов\'язкове').max(200).optional().nullable(),
-  warehouse: z.string().min(1, 'Відділення обов\'язкове').max(200).optional().nullable(),
-  warehouseAddress: z.string().min(1, 'Адреса відділення обов\'язкова').max(500).optional().nullable(),
-  comment: z.string().max(1000).optional(),
+  address: z.string().min(1, 'Адреса обов\'язкова').max(500).optional().nullable().transform((val) => val ? sanitizeHtml(val) : val),
+  city: z.string().min(1, 'Місто обов\'язкове').max(200).optional().nullable().transform((val) => val ? sanitizeHtml(val) : val),
+  warehouse: z.string().min(1, 'Відділення обов\'язкове').max(200).optional().nullable().transform((val) => val ? sanitizeHtml(val) : val),
+  warehouseAddress: z.string().min(1, 'Адреса відділення обов\'язкова').max(500).optional().nullable().transform((val) => val ? sanitizeHtml(val) : val),
+  comment: z.string().max(1000).optional().transform((val) => val ? sanitizeHtml(val) : val),
   paymentMethod: z.enum(['COD', 'CARD']).optional().default('COD'),
   items: z.array(
     z.object({

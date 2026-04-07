@@ -162,78 +162,56 @@ export class AdminService {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    // Today's start and end
     const todayStart = new Date();
     todayStart.setHours(0, 0, 0, 0);
     const todayEnd = new Date();
     todayEnd.setHours(23, 59, 59, 999);
 
-    try {
-      const [
-        totalOrders,
-        totalRevenue,
-        totalProducts,
-        ordersToday,
-        newOrdersCount,
-        processingOrdersCount,
-        deliveredOrdersCount,
-        ordersByStatus,
-      ] = await Promise.all([
-        prisma.order.count(),
-        prisma.order.aggregate({
-          _sum: { totalPrice: true },
-        }),
-        prisma.product.count(),
-        prisma.order.count({
-          where: {
-            createdAt: {
-              gte: todayStart,
-              lte: todayEnd,
-            },
-          },
-        }),
-        prisma.order.count({ where: { status: 'NEW' } }),
-        prisma.order.count({ where: { status: 'PROCESSING' } }),
-        prisma.order.count({ where: { status: 'DELIVERED' } }),
-        prisma.order.groupBy({
-          by: ['status'],
-          _count: true,
-        }),
-      ]);
+    // Основні метрики — паралельні запити без raw SQL
+    const [
+      totalOrders,
+      totalRevenue,
+      totalProducts,
+      ordersToday,
+      newOrdersCount,
+      processingOrdersCount,
+      deliveredOrdersCount,
+      ordersByStatus,
+    ] = await Promise.all([
+      prisma.order.count(),
+      prisma.order.aggregate({ _sum: { totalPrice: true } }),
+      prisma.product.count(),
+      prisma.order.count({ where: { createdAt: { gte: todayStart, lte: todayEnd } } }),
+      prisma.order.count({ where: { status: 'NEW' } }),
+      prisma.order.count({ where: { status: 'PROCESSING' } }),
+      prisma.order.count({ where: { status: 'DELIVERED' } }),
+      prisma.order.groupBy({ by: ['status'], _count: true }),
+    ]);
 
-      // Raw SQL queries separately (могут падать из-за SQL синтаксиса)
-      let dailyRevenue: any[] = [];
-      let dailyOrders: any[] = [];
-      let dailyProfit: any[] = [];
-      try {
-        dailyRevenue = await prisma.$queryRaw`
+    // Daily revenue/orders/profit — raw SQL з окремим catch
+    let dailyRevenue: any[] = [];
+    let dailyOrders: any[] = [];
+    let dailyProfit: any[] = [];
+
+    try {
+      const results = await Promise.all([
+        prisma.$queryRaw`
           SELECT DATE("createdAt") as date, SUM("totalPrice") as revenue
           FROM "Order"
           WHERE "createdAt" >= ${startDate}
           GROUP BY DATE("createdAt")
           ORDER BY date DESC
           LIMIT ${days}
-        `;
-      } catch (e) {
-        console.error('❌ dailyRevenue query failed:', e);
-      }
-
-      try {
-        dailyOrders = await prisma.$queryRaw`
+        `,
+        prisma.$queryRaw`
           SELECT DATE("createdAt") as date, COUNT(*) as orders
           FROM "Order"
           WHERE "createdAt" >= ${startDate}
           GROUP BY DATE("createdAt")
           ORDER BY date DESC
           LIMIT ${days}
-        `;
-      } catch (e) {
-        console.error('❌ dailyOrders query failed:', e);
-      }
-
-      // Прибуток по дняях: SUM(margin * quantity) grouped by order date
-      try {
-        dailyProfit = await prisma.$queryRaw`
+        `,
+        prisma.$queryRaw`
           SELECT DATE(o."createdAt") as date, SUM(oi."margin" * oi."quantity") as profit
           FROM "OrderItem" oi
           JOIN "Order" o ON oi."orderId" = o."id"
@@ -241,35 +219,39 @@ export class AdminService {
           GROUP BY DATE(o."createdAt")
           ORDER BY date DESC
           LIMIT ${days}
-        `;
-      } catch (e) {
-        console.error('❌ dailyProfit query failed:', e);
-      }
+        `,
+      ]) as [any[], any[], any[]];
+      dailyRevenue = results[0];
+      dailyOrders = results[1];
+      dailyProfit = results[2];
+    } catch (e) {
+      console.error('❌ Daily stats queries failed:', e);
+    }
 
-      // Загальний прибуток
-      let totalProfit = 0;
-      try {
-        const profitResult = await prisma.$queryRaw`
-          SELECT SUM(oi."margin" * oi."quantity") as "totalProfit"
-          FROM "OrderItem" oi
-        `;
-        totalProfit = Number((profitResult as any[])?.[0]?.totalProfit || 0);
-      } catch (e) {
-        console.error('❌ totalProfit query failed:', e);
-      }
+    // Total profit
+    let totalProfit = 0;
+    try {
+      const profitResult = await prisma.$queryRaw`
+        SELECT SUM(oi."margin" * oi."quantity") as "totalProfit"
+        FROM "OrderItem" oi
+      `;
+      totalProfit = Number((profitResult as any[])?.[0]?.totalProfit || 0);
+    } catch (e) {
+      console.error('❌ totalProfit query failed:', e);
+    }
 
-      // Top products
-      let topProducts: any[] = [];
-      let topProductsWithDetails: any[] = [];
-      try {
-        topProducts = await prisma.orderItem.groupBy({
-          by: ['productId'],
-          _sum: { quantity: true },
-          _count: true,
-          orderBy: { _sum: { quantity: 'desc' } },
-        }) as any;
+    // Top products
+    let topProductsWithDetails: any[] = [];
+    try {
+      const topProducts = await prisma.orderItem.groupBy({
+        by: ['productId'],
+        _sum: { quantity: true },
+        _count: true,
+        orderBy: { _sum: { quantity: 'desc' } },
+      }) as any;
 
-        const topProductIds = topProducts.map((p: any) => p.productId);
+      const topProductIds = topProducts.slice(0, 10).map((p: any) => p.productId);
+      if (topProductIds.length > 0) {
         const topProductsDetails = await prisma.product.findMany({
           where: { id: { in: topProductIds } },
           select: { id: true, title: true, price: true, imageUrl: true },
@@ -279,78 +261,69 @@ export class AdminService {
           .slice(0, 10)
           .map((tp: any) => ({
             ...tp,
+            _count: tp._count ? Number(tp._count) : 0,
+            _sum: tp._sum ? { quantity: Number(tp._sum.quantity || 0) } : { quantity: 0 },
             product: topProductsDetails.find((p: any) => p.id === tp.productId),
           }));
-      } catch (e) {
-        console.error('❌ topProducts query failed:', e);
       }
+    } catch (e) {
+      console.error('❌ topProducts query failed:', e);
+    }
 
-      // Recent orders
-      let recentOrders: any[] = [];
-      try {
-        recentOrders = await prisma.order.findMany({
-          take: 5,
-          orderBy: { createdAt: 'desc' },
-          include: {
-            items: {
-              include: {
-                product: {
-                  select: {
-                    id: true,
-                    title: true,
-                    imageUrl: true,
-                  },
-                },
-              },
+    // Recent orders
+    let recentOrders: any[] = [];
+    try {
+      const orders = await prisma.order.findMany({
+        take: 5,
+        orderBy: { createdAt: 'desc' },
+        include: {
+          items: {
+            include: {
+              product: { select: { id: true, title: true, imageUrl: true } },
             },
           },
-        });
-      } catch (e) {
-        console.error('❌ recentOrders query failed:', e);
-      }
+        },
+      });
 
-      return {
-        totalOrders: Number(totalOrders),
-        totalRevenue: Number(totalRevenue._sum.totalPrice || 0),
-        totalProfit,
-        totalProducts: Number(totalProducts),
-        ordersToday: Number(ordersToday),
-        new: Number(newOrdersCount),
-        processing: Number(processingOrdersCount),
-        delivered: Number(deliveredOrdersCount),
-        ordersByStatus: ordersByStatus.map((s: any) => ({
-          status: s.status,
-          count: Number(s._count),
+      recentOrders = orders.map((order: any) => ({
+        id: order.id,
+        name: order.name,
+        email: order.email,
+        totalPrice: Number(order.totalPrice),
+        status: order.status,
+        createdAt: order.createdAt.toISOString(),
+        items: order.items.map((item: any) => ({
+          quantity: Number(item.quantity),
+          price: Number(item.price),
+          product: {
+            title: item.product?.title || 'Видалений товар',
+            imageUrl: item.product?.imageUrl || null,
+          },
         })),
-        dailyRevenue,
-        dailyOrders,
-        dailyProfit,
-        topProducts: topProductsWithDetails.map((tp: any) => ({
-          ...tp,
-          _count: tp._count ? Number(tp._count) : 0,
-          _sum: tp._sum ? { quantity: Number(tp._sum.quantity || 0) } : { quantity: 0 },
-        })),
-        recentOrders: recentOrders.map((order: any) => ({
-          id: order.id,
-          name: order.name,
-          email: order.email,
-          totalPrice: Number(order.totalPrice),
-          status: order.status,
-          createdAt: order.createdAt.toISOString(),
-          items: order.items.map((item: any) => ({
-            quantity: Number(item.quantity),
-            price: Number(item.price),
-            product: {
-              title: item.product?.title || 'Удалённый товар',
-              imageUrl: item.product?.imageUrl || null,
-            },
-          })),
-        })),
-      };
-    } catch (error: any) {
-      console.error('❌ getDashboardStats error:', error.message);
-      throw error;
+      }));
+    } catch (e) {
+      console.error('❌ recentOrders query failed:', e);
     }
+
+    return {
+      totalOrders: Number(totalOrders),
+      totalRevenue: Number(totalRevenue._sum.totalPrice || 0),
+      totalProfit,
+      totalProducts: Number(totalProducts),
+      ordersToday: Number(ordersToday),
+      new: Number(newOrdersCount),
+      processing: Number(processingOrdersCount),
+      delivered: Number(deliveredOrdersCount),
+      ordersByStatus: ordersByStatus.map((s: any) => ({
+        status: s.status,
+        count: Number(s._count),
+      })),
+      dailyRevenue,
+      dailyOrders,
+      dailyProfit,
+      topProducts: topProductsWithDetails,
+      recentOrders,
+    };
   }
 
   // ==================== SALES STATS ====================

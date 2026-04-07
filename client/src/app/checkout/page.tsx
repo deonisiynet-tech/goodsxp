@@ -1,5 +1,6 @@
 'use client';
 
+import type { Metadata } from 'next';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -10,7 +11,18 @@ import Footer from '@/components/Footer';
 import NovaPoshtaSelector from '@/components/NovaPoshtaSelector';
 import { useCheckoutStorage, CheckoutData } from '@/hooks/useCheckoutStorage';
 import toast from 'react-hot-toast';
+import Image from 'next/image';
 import { ArrowLeft, ShoppingCart, Check, ShieldCheck, Truck, CreditCard, User, MapPin } from 'lucide-react';
+
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://goodsxp.store';
+
+export const metadata: Metadata = {
+  title: 'Оформлення замовлення | GoodsXP',
+  description: 'Оформи замовлення швидко та зручно. Доставка Новою Поштою, оплата при отриманні або онлайн.',
+  alternates: {
+    canonical: `${siteUrl}/checkout`,
+  },
+};
 
 // ===== TYPES =====
 interface City {
@@ -482,8 +494,13 @@ export default function CheckoutPage() {
                 <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
                   {items.map((item) => (
                     <div key={item.productId} className="flex gap-3 p-3 rounded-lg bg-surfaceLight/50">
-                      <div className="w-16 h-16 flex-shrink-0 overflow-hidden rounded-md bg-surfaceLight">
-                        <img src={item.imageUrl || '/placeholder.jpg'} alt={item.title} className="w-full h-full object-cover" />
+                      <div className="w-16 h-16 flex-shrink-0 overflow-hidden rounded-md bg-surfaceLight relative">
+                        <Image
+                          src={item.imageUrl || '/placeholder.jpg'}
+                          alt={item.title}
+                          fill
+                          className="object-cover"
+                        />
                       </div>
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium text-sm truncate mb-1">{item.title}</h4>

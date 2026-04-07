@@ -3,6 +3,43 @@ import prisma from '../prisma/client.js';
 import { getAdminApiPrefix } from '../utils/adminPaths.js';
 
 /**
+ * Кеш статусу магазину з TTL 10 секунд
+ * Запобігає запиту БД на кожному запиті
+ */
+let storeStatusCache: { value: boolean; expiresAt: number } | null = null;
+const STORE_STATUS_TTL_MS = 10_000; // 10 секунд
+
+async function getStoreStatus(): Promise<boolean> {
+  const now = Date.now();
+
+  // Перевіряємо кеш
+  if (storeStatusCache && storeStatusCache.expiresAt > now) {
+    return storeStatusCache.value;
+  }
+
+  // Запитуємо БД
+  try {
+    const storeEnabledSetting = await prisma.siteSettings.findUnique({
+      where: { key: 'storeEnabled' },
+    });
+
+    const isEnabled = storeEnabledSetting?.value !== 'false';
+
+    // Зберігаємо в кеш
+    storeStatusCache = {
+      value: isEnabled,
+      expiresAt: now + STORE_STATUS_TTL_MS,
+    };
+
+    return isEnabled;
+  } catch (error) {
+    // У разі помилки — повертаємо true (fail-safe)
+    console.error('[StoreStatus] DB error:', error);
+    return true;
+  }
+}
+
+/**
  * Middleware для перевірки статусу магазину
  * Якщо магазин вимкнений (storeEnabled = false):
  * - Блокує публічні API маршрути
@@ -16,12 +53,7 @@ export async function checkStoreStatus(
   next: NextFunction
 ) {
   try {
-    // Перевіряємо статус магазину
-    const storeEnabledSetting = await prisma.siteSettings.findUnique({
-      where: { key: 'storeEnabled' },
-    });
-
-    const isStoreEnabled = storeEnabledSetting?.value !== 'false'; // За замовчуванням true
+    const isStoreEnabled = await getStoreStatus();
 
     // Додаємо заголовок для Next.js
     res.setHeader('X-Store-Status', isStoreEnabled ? 'enabled' : 'disabled');
