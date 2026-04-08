@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Phone, Mail, MapPin, Clock, ShieldCheck, Truck, RotateCcw } from 'lucide-react';
 
 const footerLinks = {
@@ -42,8 +43,8 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 md:gap-8">
           {/* Brand */}
           <div className="lg:col-span-2">
-            <Link href="/" className="text-xl font-bold tracking-wider text-white mb-4 block hover:text-purple-300 transition-colors">
-              GoodsXP
+            <Link href="/" className="inline-block mb-4 hover:opacity-80 transition-opacity">
+              <Image src="/logo.png" alt="GoodsXP — Головна" width={160} height={40} className="h-10 w-auto" />
             </Link>
             <p className="text-muted text-sm leading-relaxed mb-4">
               Сучасна електроніка для твого життя. Якість, якій довіряють.

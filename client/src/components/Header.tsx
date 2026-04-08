@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import { ShoppingCart, User, Menu, X, Phone, Heart } from 'lucide-react';
 import { useCartStore } from '@/lib/store';
@@ -74,8 +75,8 @@ export default function Header() {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16 md:h-20 gap-4">
           {/* Logo */}
-          <Link href="/" className="text-xl font-bold tracking-wider text-white shrink-0 hover:text-purple-300 transition-colors duration-200">
-            GoodsXP
+          <Link href="/" className="shrink-0 hover:opacity-80 transition-opacity duration-200">
+            <Image src="/logo.png" alt="GoodsXP — Головна" width={160} height={40} className="h-10 w-auto" />
           </Link>
 
           {/* Desktop Navigation */}
