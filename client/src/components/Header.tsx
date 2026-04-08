@@ -75,8 +75,12 @@ export default function Header() {
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-16 md:h-20 gap-4">
           {/* Logo */}
-          <Link href="/" className="shrink-0 hover:opacity-80 transition-opacity duration-200">
-            <Image src="/logo.png" alt="GoodsXP — Головна" width={160} height={40} className="h-10 w-auto" />
+          <Link href="/" className="shrink-0 transition-transform duration-200 hover:scale-105">
+            <img
+              src="/logo.png"
+              alt="GoodsXP — Головна"
+              className="h-20 sm:h-24 md:h-28 lg:h-32 w-auto"
+            />
           </Link>
 
           {/* Desktop Navigation */}
