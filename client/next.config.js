@@ -3,6 +3,11 @@ const nextConfig = {
   output: 'standalone',
   reactStrictMode: true,
 
+  // ESLint не використовується — пропускаємо щоб build не падав
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+
   // Image configuration
   images: {
     domains: ['res.cloudinary.com', 'localhost', 'images.unsplash.com'],

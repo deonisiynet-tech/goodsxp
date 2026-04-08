@@ -66,7 +66,6 @@ export async function generateMetadata({ params }: { params: { slug: string } })
       title: `${product.title} — GoodsXP`,
       description,
       url: `${siteUrl}/catalog/${product.slug}`,
-      type: 'product',
       images: [{ url: ogImage, width: 1200, height: 630, alt: product.title }],
     },
     twitter: {
