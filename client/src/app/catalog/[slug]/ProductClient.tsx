@@ -71,7 +71,8 @@ export default function ProductClient({ product }: { product: Product }) {
       const response = await productsApi.getReviewsBySlug(slug, sortBy);
       setReviews(response.reviews || []);
     } catch {
-      // silent
+      // Reviews are non-critical — just show empty state
+      setReviews([]);
     }
   };
 

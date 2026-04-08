@@ -1,5 +1,6 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import prisma from '../prisma/client.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { registerSchema, loginSchema } from '../utils/validators.js';
@@ -102,5 +103,79 @@ export class AuthService {
     }
 
     return user;
+  }
+
+  /**
+   * Генерація токену для скидання пароля
+   * Повертає токен який треба відправити на email
+   */
+  async forgotPassword(email: string) {
+    const user = await prisma.user.findUnique({ where: { email } });
+
+    // Завжди повертаємо success — не розкриваємо чи існує email
+    if (!user) {
+      return { success: true, message: 'Якщо email існує, ви отримаєте посилання для скидання пароля' };
+    }
+
+    // Генеруємо криптографічний токен
+    const resetToken = crypto.randomBytes(32).toString('hex');
+    const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 година
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        passwordResetToken: resetToken,
+        passwordResetExpiry: resetTokenExpiry,
+      },
+    });
+
+    // TODO: Відправити email з посиланням /reset-password?token=xxx
+    // Поки що просто повертаємо токен (для розробки)
+    return {
+      success: true,
+      message: 'Якщо email існує, ви отримаєте посилання для скидання пароля',
+      resetToken, // Видалити в production!
+    };
+  }
+
+  /**
+   * Скидання пароля з токеном
+   */
+  async resetPassword(token: string, newPassword: string) {
+    // Валідація пароля
+    if (!newPassword || typeof newPassword !== 'string') {
+      throw new AppError('Пароль обов\'язковий', 400);
+    }
+    if (newPassword.length < 8) {
+      throw new AppError('Мінімум 8 символів', 400);
+    }
+    if (newPassword.length > 128) {
+      throw new AppError('Максимум 128 символів', 400);
+    }
+
+    // Пошук користувача з валідним токеном
+    const user = await prisma.user.findFirst({
+      where: {
+        passwordResetToken: token,
+        passwordResetExpiry: { gte: new Date() },
+      },
+    });
+
+    if (!user) {
+      throw new AppError('Недійсний або прострочений токен', 400);
+    }
+
+    // Оновлюємо пароль та очищуємо токен
+    const hashedPassword = await bcrypt.hash(newPassword, 12);
+    await prisma.user.update({
+      where: { id: user.id },
+      data: {
+        password: hashedPassword,
+        passwordResetToken: null,
+        passwordResetExpiry: null,
+      },
+    });
+
+    return { success: true, message: 'Пароль змінено' };
   }
 }

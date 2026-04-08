@@ -184,7 +184,9 @@ export class OrderService {
     const { page = 1, limit = 20, status, email } = filters;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
+    const where: any = {
+      deletedAt: null, // Виключаємо м'яко видалені
+    };
     if (status) where.status = status;
     if (email) where.email = { contains: email, mode: 'insensitive' };
 
@@ -308,7 +310,6 @@ export class OrderService {
     }
 
     // Забороняємо видаляти замовлення зі статусами DELIVERED/SHIPPED без попередження
-    // Це захищає інвентар від неконсистентності
     if (existing.status === 'DELIVERED' || existing.status === 'SHIPPED') {
       throw new AppError(
         `Неможливо видалити замовлення зі статусом "${existing.status}". Спочатку змініть статус на CANCELLED.`,
@@ -316,7 +317,8 @@ export class OrderService {
       );
     }
 
-    // Повертаємо товар на склад для NEW/PROCESSING/CANCELLED
+    // Soft delete — встановлюємо deletedAt замість фізичного видалення
+    // Для NEW/PROCESSING/CANCELLED — повертаємо товар на склад
     if (existing.status === 'NEW' || existing.status === 'PROCESSING' || existing.status === 'CANCELLED') {
       await prisma.$transaction(async (tx) => {
         for (const item of existing.items) {
@@ -329,10 +331,18 @@ export class OrderService {
             },
           });
         }
-        await tx.order.delete({ where: { id } });
+        // Soft delete
+        await tx.order.update({
+          where: { id },
+          data: { deletedAt: new Date() },
+        });
       });
     } else {
-      await prisma.order.delete({ where: { id } });
+      // Soft delete для інших статусів
+      await prisma.order.update({
+        where: { id },
+        data: { deletedAt: new Date() },
+      });
     }
 
     return { message: 'Замовлення видалено' };

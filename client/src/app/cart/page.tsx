@@ -35,21 +35,27 @@ export default function CartPage() {
   const { items, updateQuantity, removeItem, getTotal, getItemCount, clearCart } = useCartStore();
   const [itemSlugs, setItemSlugs] = useState<Record<string, string>>({});
 
-  // Fetch sl for cart items
+  // Fetch sl for cart items — batch request (1 вместо N)
   useEffect(() => {
     const fetchSlugs = async () => {
-      const slugs: Record<string, string> = {};
-      for (const item of items) {
-        try {
-          const product = await productsApi.getById(item.productId);
-          slugs[item.productId] = product.slug;
-        } catch {
-          slugs[item.productId] = item.productId; // fallback
+      if (items.length === 0) return;
+      try {
+        const ids = items.map(item => item.productId);
+        const response = await productsApi.getBatch(ids);
+        const slugs: Record<string, string> = {};
+        for (const product of response.products) {
+          slugs[product.id] = product.slug;
         }
+        setItemSlugs(slugs);
+      } catch {
+        const slugs: Record<string, string> = {};
+        for (const item of items) {
+          slugs[item.productId] = item.productId;
+        }
+        setItemSlugs(slugs);
       }
-      setItemSlugs(slugs);
     };
-    if (items.length > 0) fetchSlugs();
+    fetchSlugs();
   }, [items]);
 
   const handleCheckout = () => {

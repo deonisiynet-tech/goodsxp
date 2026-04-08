@@ -8,18 +8,20 @@ datasource db {
 }
 
 model User {
-  id              String      @id @default(uuid())
-  email           String      @unique
-  password        String
-  role            Role        @default(USER)
-  twoFASecret     String?
-  twoFAEnabled    Boolean     @default(false)
-  createdAt       DateTime    @default(now()) @db.Timestamptz(6)
-  updatedAt       DateTime    @updatedAt @db.Timestamptz(6)
-  loginLogs       LoginLog[]
-  logs            AdminLog[]
-  orders          Order[]
-  systemLogs      SystemLog[]
+  id                   String      @id @default(uuid())
+  email                String      @unique
+  password             String
+  role                 Role        @default(USER)
+  twoFASecret          String?
+  twoFAEnabled         Boolean     @default(false)
+  passwordResetToken   String?
+  passwordResetExpiry  DateTime?   @db.Timestamptz(6)
+  createdAt            DateTime    @default(now()) @db.Timestamptz(6)
+  updatedAt            DateTime    @updatedAt @db.Timestamptz(6)
+  loginLogs            LoginLog[]
+  logs                 AdminLog[]
+  orders               Order[]
+  systemLogs           SystemLog[]
 
   @@index([email])
   @@index([role])
@@ -104,6 +106,7 @@ model Order {
   status          OrderStatus   @default(NEW)
   paymentMethod   PaymentMethod @default(COD)
   comment         String?
+  deletedAt       DateTime?     @db.Timestamptz(6)
   createdAt       DateTime      @default(now()) @db.Timestamptz(6)
   updatedAt       DateTime      @updatedAt @db.Timestamptz(6)
   user            User?         @relation(fields: [userId], references: [id])
@@ -113,6 +116,7 @@ model Order {
   @@index([createdAt])
   @@index([email])
   @@index([userId])
+  @@index([deletedAt])
 }
 
 model OrderItem {

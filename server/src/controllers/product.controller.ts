@@ -4,6 +4,7 @@ import { AuthRequest } from '../middleware/auth.js';
 import { processImageUpload } from '../middleware/upload.js';
 import { AdminService } from '../services/admin.service.js';
 import { ActionType } from '@prisma/client';
+import prisma from '../prisma/client.js';
 
 const productService = new ProductService();
 const adminService = new AdminService();
@@ -53,6 +54,33 @@ export class ProductController {
         maxPrice: maxPrice ? Number(maxPrice) : undefined,
       });
       res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // Batch fetch — отримати багато товарів одним запитом по масиву ID
+  async getBatch(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { ids } = req.body;
+      if (!Array.isArray(ids) || ids.length === 0 || ids.length > 100) {
+        return res.status(400).json({ error: 'Потрібен масив ID (1-100)' });
+      }
+
+      const products = await prisma.product.findMany({
+        where: { id: { in: ids }, isActive: true },
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          price: true,
+          discountPrice: true,
+          imageUrl: true,
+          stock: true,
+        },
+      });
+
+      res.json({ products });
     } catch (error) {
       next(error);
     }

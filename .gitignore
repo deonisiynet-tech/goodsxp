@@ -42,8 +42,8 @@ client/dist/
 # Ignore all .env files EXCEPT templates
 *.env
 !.env.example
-!.env.build
-!.env.railway
+.env.railway
+server/.env.railway
 
 # ==================================
 # Database

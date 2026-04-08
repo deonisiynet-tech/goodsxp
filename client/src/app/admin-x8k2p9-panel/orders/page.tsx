@@ -41,11 +41,17 @@ export default function OrdersPage() {
   const [statusFilter, setStatusFilter] = useState('')
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null)
   const [modalOpen, setModalOpen] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [totalOrders, setTotalOrders] = useState(0)
+  const ORDERS_PER_PAGE = 20
 
   const loadOrders = async () => {
     try {
       setLoading(true)
       const params = new URLSearchParams()
+      params.append('page', String(currentPage))
+      params.append('limit', String(ORDERS_PER_PAGE))
       if (statusFilter) params.append('status', statusFilter)
       if (searchEmail) params.append('email', searchEmail)
       if (searchId) params.append('searchId', searchId)
@@ -60,6 +66,8 @@ export default function OrdersPage() {
 
       const data = await response.json()
       setOrders(data.orders || [])
+      setTotalPages(data.pagination?.totalPages || 1)
+      setTotalOrders(data.pagination?.total || 0)
     } catch (error) {
       console.error('Error loading orders:', error)
       toast.error('Помилка завантаження замовлень')
@@ -73,7 +81,7 @@ export default function OrdersPage() {
       loadOrders()
     }, 300)
     return () => clearTimeout(debounce)
-  }, [searchEmail, searchId, statusFilter])
+  }, [searchEmail, searchId, statusFilter, currentPage])
 
   const handleView = (order: Order) => {
     setSelectedOrder(order)
@@ -284,6 +292,57 @@ export default function OrdersPage() {
                 <p>Замовлення не знайдені</p>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-between mt-6">
+            <p className="text-sm text-muted">
+              Всього: {totalOrders} замовлень
+            </p>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-3 py-2 rounded-lg bg-surface border border-border text-sm text-muted hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                ← Назад
+              </button>
+              {Array.from({ length: Math.min(totalPages, 5) }).map((_, i) => {
+                // Показуємо вікно з 5 сторінок навколо поточної
+                let page: number;
+                if (totalPages <= 5) {
+                  page = i + 1;
+                } else if (currentPage <= 3) {
+                  page = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  page = totalPages - 4 + i;
+                } else {
+                  page = currentPage - 2 + i;
+                }
+                return (
+                  <button
+                    key={page}
+                    onClick={() => setCurrentPage(page)}
+                    className={`w-10 h-10 rounded-lg text-sm font-medium transition-all ${
+                      currentPage === page
+                        ? 'bg-purple-500 text-white'
+                        : 'bg-surface border border-border text-muted hover:text-white'
+                    }`}
+                  >
+                    {page}
+                  </button>
+                );
+              })}
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="px-3 py-2 rounded-lg bg-surface border border-border text-sm text-muted hover:text-white disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                Далі →
+              </button>
+            </div>
           </div>
         )}
       </div>

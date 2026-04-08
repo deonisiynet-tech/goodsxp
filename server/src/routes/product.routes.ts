@@ -11,6 +11,7 @@ const controller = new ProductController();
 router.get('/categories', controller.getAllCategories);
 router.get('/related/:productId', controller.getRelated);
 router.get('/', controller.getAll);
+router.post('/batch', controller.getBatch); // Batch fetch by IDs — MUST be before /:slug
 router.get('/id/:id', controller.getById);
 router.get('/:slug', controller.getBySlug);
 

@@ -11,7 +11,6 @@ export class AuthController {
       const result = await authService.register(email, password);
       res.status(201).json(result);
     } catch (error) {
-      console.error('Register error:', error);
       next(error);
     }
   }
@@ -19,12 +18,9 @@ export class AuthController {
   async login(req: Request, res: Response, next: NextFunction) {
     try {
       const { email, password } = req.body;
-      console.log('Login attempt:', { email, passwordLength: password?.length });
       const result = await authService.login(email, password);
-      console.log('Login successful:', { email, role: result.user.role });
       res.json(result);
     } catch (error) {
-      console.error('Login error:', error);
       next(error);
     }
   }
@@ -35,7 +31,39 @@ export class AuthController {
       const user = await authService.getProfile(userId);
       res.json(user);
     } catch (error) {
-      console.error('Get profile error:', error);
+      next(error);
+    }
+  }
+
+  /**
+   * Запит на скидання пароля — генерує токен
+   */
+  async forgotPassword(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { email } = req.body;
+      if (!email) {
+        return res.status(400).json({ error: 'Email обов\'язковий' });
+      }
+      const result = await authService.forgotPassword(email);
+      // Завжди повертаємо 200 — не розкриваємо чи існує email
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /**
+   * Скидання пароля з токеном
+   */
+  async resetPassword(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { token, password } = req.body;
+      if (!token || !password) {
+        return res.status(400).json({ error: 'Token і пароль обов\'язкові' });
+      }
+      const result = await authService.resetPassword(token, password);
+      res.json(result);
+    } catch (error) {
       next(error);
     }
   }

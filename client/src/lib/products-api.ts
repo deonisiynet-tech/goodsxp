@@ -41,6 +41,49 @@ const getToken = (): string | null => {
   return localStorage.getItem('token')
 }
 
+/**
+ * Retry з exponential backoff для критичних запитів
+ * 3 спроби: 1s → 2s → 4s
+ */
+async function fetchWithRetry(
+  url: string,
+  options: RequestInit = {},
+  maxRetries = 3
+): Promise<Response> {
+  let lastError: Error | null = null
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetch(url, options)
+
+      // Не retry-ємо клієнтські помилки (4xx)
+      if (response.status >= 400 && response.status < 500) {
+        return response
+      }
+
+      // Серверна помилка — retry
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+
+      return response
+    } catch (error) {
+      lastError = error as Error
+
+      // Остання спроба — кидаємо помилку
+      if (attempt === maxRetries) {
+        throw lastError
+      }
+
+      // Exponential backoff: 1s, 2s, 4s
+      const delay = Math.pow(2, attempt) * 1000
+      await new Promise(resolve => setTimeout(resolve, delay))
+    }
+  }
+
+  throw lastError
+}
+
 async function fetchAPI(endpoint: string, options: RequestInit = {}) {
   const token = getToken()
 
@@ -66,10 +109,10 @@ async function fetchAPI(endpoint: string, options: RequestInit = {}) {
   }
 
   // IMPORTANT: Always include credentials for cookie-based auth (admin)
-  const response = await fetch(`${API_BASE}${endpoint}`, {
+  const response = await fetchWithRetry(`${API_BASE}${endpoint}`, {
     ...options,
     headers,
-    credentials: 'include', // Include cookies for admin authentication
+    credentials: 'include',
   })
 
   if (typeof window !== 'undefined') {
@@ -153,6 +196,15 @@ export const productsApi = {
   // Get product by ID
   getById: async (id: string) => {
     return fetchAPI(`/products/id/${id}`)
+  },
+
+  // Batch fetch products by IDs — 1 request instead of N
+  getBatch: async (ids: string[]) => {
+    return fetchAPI('/products/batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ids }),
+    })
   },
 
   // Get product by slug
