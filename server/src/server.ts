@@ -170,12 +170,6 @@ app.use(cors({
   optionsSuccessStatus: 200,
 }));
 
-// Logging
-app.use((req, res, next) => {
-  console.log(`📡 ${req.method} ${req.path} | Origin: ${req.headers.origin || 'no-origin'}`);
-  next();
-});
-
 // Helmet - Security headers
 app.use(helmet({
   contentSecurityPolicy: {

@@ -33,19 +33,29 @@ export class OrderService {
 
     // Створюємо замовлення в транзакції з атомарною перевіркою stock
     const order = await prisma.$transaction(async (tx) => {
-      // Fetch products WITH row-level lock FOR UPDATE
-      const products = await tx.product.findMany({
-        where: {
-          id: { in: validated.items.map((item) => item.productId) },
-          isActive: true,
-        },
-      });
+      // ✅ SELECT ... FOR UPDATE — блокуємо рядки продуктів на рівні БД
+      // Запобігає race condition: інша транзакція чекатиме поки ця завершиться
+      const productIds = validated.items.map((item) => item.productId);
+      const products = await tx.$queryRaw<Array<{
+        id: string;
+        title: string;
+        price: import('@prisma/client').Prisma.Decimal;
+        discountPrice: import('@prisma/client').Prisma.Decimal | null;
+        margin: number;
+        stock: number;
+        isActive: boolean;
+      }>>`
+        SELECT id, title, price, "discountPrice", margin, stock, "isActive"
+        FROM "Product"
+        WHERE id IN (${productIds.join(',')}) AND "isActive" = true
+        FOR UPDATE
+      `;
 
       if (products.length !== validated.items.length) {
         throw new AppError('Деякі товари недоступні', 400);
       }
 
-      // Check stock availability INSIDE transaction (atomic)
+      // Check stock availability INSIDE locked transaction (atomic)
       for (const item of validated.items) {
         const product = products.find((p) => p.id === item.productId);
         if (!product) {
@@ -64,10 +74,9 @@ export class OrderService {
       let totalProfit = 0;
       for (const item of validated.items) {
         const product = products.find((p) => p.id === item.productId)!;
-        const effectivePrice =
-          product.discountPrice && Number(product.discountPrice) < Number(product.price)
-            ? Number(product.discountPrice)
-            : Number(product.price);
+        const priceNum = Number(product.price);
+        const discountNum = product.discountPrice ? Number(product.discountPrice) : null;
+        const effectivePrice = (discountNum !== null && discountNum < priceNum) ? discountNum : priceNum;
         totalPrice += effectivePrice * item.quantity;
         totalProfit += Number(product.margin ?? 0) * item.quantity;
       }
@@ -88,15 +97,14 @@ export class OrderService {
           items: {
             create: validated.items.map((item) => {
               const product = products.find((p) => p.id === item.productId)!;
-              const effectivePrice =
-                product.discountPrice && Number(product.discountPrice) < Number(product.price)
-                  ? Number(product.discountPrice)
-                  : Number(product.price);
+              const priceNum = Number(product.price);
+              const discountNum = product.discountPrice ? Number(product.discountPrice) : null;
+              const effectivePrice = (discountNum !== null && discountNum < priceNum) ? discountNum : priceNum;
               return {
                 productId: item.productId,
                 quantity: item.quantity,
                 price: effectivePrice,
-                margin: (product as any).margin ?? 0,
+                margin: product.margin ?? 0,
               };
             }),
           },

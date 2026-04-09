@@ -54,3 +54,28 @@ export const strictRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
 });
+
+/**
+ * ✅ Rate limiter спеціально для створення замовлень
+ * Запобігає спаму фейковими замовленнями
+ * 5 замовлень за 5 хвилин на одну IP-адресу
+ */
+export const orderRateLimiter = rateLimit({
+  windowMs: 5 * 60 * 1000, // 5 хвилин
+  max: 5, // 5 замовлень за 5 хвилин
+  message: {
+    error: 'Занадто багато замовлень. Зачекайте кілька хвилин.',
+    retryAfter: 300,
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    return req.ip || req.connection.remoteAddress || 'unknown';
+  },
+  handler: (req, res) => {
+    res.status(429).json({
+      error: 'Занадто багато замовлень. Зачекайте кілька хвилин.',
+      retryAfter: 300,
+    });
+  },
+});
