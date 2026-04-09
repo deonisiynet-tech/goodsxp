@@ -429,18 +429,6 @@ export default function CheckoutClient() {
                     </label>
                   </div>
 
-                  {/* ✅ Payment Icons */}
-                  <div className="flex items-center gap-2 mt-4 pt-4 border-t border-purple-500/10">
-                    <span className="text-xs text-[#9ca3af]">Підтримуємо:</span>
-                    <div className="flex items-center gap-1.5">
-                      {['Visa', 'MC', 'Apple', 'Google'].map((brand) => (
-                        <span key={brand} className="px-2 py-0.5 bg-[#1f1f23] rounded text-[10px] text-[#9ca3af] font-medium border border-[#26262b]">
-                          {brand}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
                   <div className="flex gap-3 mt-6">
                     <button type="button" onClick={() => setCurrentStep(1)} className="btn-secondary flex-1">
                       ← Назад
