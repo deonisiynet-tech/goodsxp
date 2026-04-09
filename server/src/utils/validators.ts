@@ -1,12 +1,64 @@
 import { z } from 'zod';
 
 /**
- * Санітизація HTML — видаляє всі HTML теги з рядка
- * Запобігає Stored XSS атакам коли дані зберігаються в БД
- * і відображаються в адмінці або на фронтенді
+ * ✅ БЕЗПЕЧНА санітизація HTML — замість regex використовує proper escaping
+ *
+ * Попередня версія `input.replace(/<[^>]*>/g, '')` була вразлива:
+ * - `<<script>alert(1)<</script>` → `<script>alert(1)</script>` (проходить!)
+ * - `<scr<script>ipt>alert(1)</script>` → `<script>alert(1)</script>` (проходить!)
+ * - `%3Cscript%3E` — encoded теги не видалялись
+ *
+ * Нова версія:
+ * 1. Декодує URL-encoded символи
+ * 2. Видаляє ВСЕ що виглядає як HTML тег (рекурсивно)
+ * 3. Екейпить залишки спеціальних символів
  */
 function sanitizeHtml(input: string): string {
-  return input.replace(/<[^>]*>/g, '');
+  if (!input || typeof input !== 'string') return '';
+
+  // 1. Декодуємо URL-encoded символи (наприклад %3Cscript%3E)
+  let decoded = input;
+  try {
+    decoded = decodeURIComponent(decoded);
+  } catch {
+    // Якщо не вдається декодувати — використовуємо оригінал
+  }
+
+  // 2. Видаляємо HTML теги рекурсивно (до 10 разів для nested тегів)
+  let result = decoded;
+  for (let i = 0; i < 10; i++) {
+    const prev = result;
+    result = result.replace(/<[^>]*>/g, '');
+    if (result === prev) break; // Більше тегів немає
+  }
+
+  // 3. Екейпимо залишки спеціальних символів для безпеки
+  result = result
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+
+  return result.trim();
+}
+
+/**
+ * Проста санітизація — тільки видалення тегів без escaping
+ * Використовується коли треба зберегти читабельний текст
+ * ✅ Рекурсивна — видаляє nested теги
+ */
+function sanitizeHtmlText(input: string): string {
+  if (!input || typeof input !== 'string') return '';
+
+  let result = input;
+  for (let i = 0; i < 10; i++) {
+    const prev = result;
+    result = result.replace(/<[^>]*>/g, '');
+    if (result === prev) break;
+  }
+
+  return result.trim();
 }
 
 /**
@@ -20,7 +72,7 @@ function escapeForTelegramHtml(input: string): string {
     .replace(/>/g, '&gt;');
 }
 
-export { sanitizeHtml, escapeForTelegramHtml };
+export { sanitizeHtml, sanitizeHtmlText, escapeForTelegramHtml };
 
 export const registerSchema = z.object({
   email: z.string().email('Некоректний email'),

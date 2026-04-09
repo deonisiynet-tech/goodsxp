@@ -73,6 +73,23 @@ model Product {
   @@index([isPopular])
   @@index([categoryId])
   @@index([rating])
+  slugRedirects ProductSlugRedirect[]
+}
+
+/**
+ * Редіректи для старих slug товарів
+ * Коли адмін перейменовує товар — старий slug редіректить на новий
+ */
+model ProductSlugRedirect {
+  id        String   @id @default(uuid())
+  oldSlug   String   @unique // Старий slug (наприклад "stara-nazva")
+  newSlug   String   // Новий slug (наприклад "nova-nazva-abc123")
+  productId String   // ID товару для швидкого пошуку
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+
+  @@index([oldSlug])
+  @@index([productId])
 }
 
 model Review {

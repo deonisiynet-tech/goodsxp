@@ -25,12 +25,12 @@ export const adminRateLimiter = rateLimit({
 });
 
 /**
- * Более мягкий rate limiter для обычных API маршрутов
- * 30 запросов в минуту
+ * ✅ Більш мягкий rate limiter для обычных API маршрутів
+ * ✅ 60 запитів/хвилину — достатньо для активного користування каталогом
  */
 export const apiRateLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 30, // 30 requests per window
+  max: 60, // ✅ 60 requests per window (збільшено з 30)
   message: {
     error: 'Занадто багато запитів. Спробуйте пізніше.',
     retryAfter: 60,
@@ -41,6 +41,7 @@ export const apiRateLimiter = rateLimit({
 
 /**
  * Строгий rate limiter для чувствительных операций
+ * (регистрация, логин, отправка отзывов, создание заказов)
  * 3 запроса в минуту
  */
 export const strictRateLimiter = rateLimit({

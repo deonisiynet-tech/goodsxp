@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { productsApi, Review } from '@/lib/products-api';
 import { useCartStore } from '@/lib/store';
 import { useWishlistStore } from '@/lib/wishlist';
-import { generateProductJsonLd, generateBreadcrumbJsonLd } from '@/lib/schema';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -194,35 +193,10 @@ export default function ProductClient({ product }: { product: Product }) {
     ? Math.round((1 - product.discountPrice / product.originalPrice) * 100)
     : 0;
 
-  const productJsonLd = generateProductJsonLd({
-    id: product.id,
-    slug: product.slug,
-    title: product.title,
-    description: product.description || '',
-    price: product.price,
-    originalPrice: product.originalPrice,
-    discountPrice: product.discountPrice,
-    imageUrl: product.imageUrl,
-    images: Array.isArray(product.images) ? product.images : [],
-    stock: product.stock,
-    averageRating: product.averageRating,
-    reviewCount: product.reviewCount,
-    categoryId: (product as any).categoryId,
-  });
-
-  const breadcrumbJsonLd = generateBreadcrumbJsonLd(`/catalog/${product.slug}`);
+  // ✅ JSON-LD тепер генерується на сервері (page.tsx) — цей компонент тільки UI
 
   return (
-    <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
-      />
-      <main className="flex-1 pt-20">
+    <main className="flex-1 pt-20">
         <div className="container mx-auto px-4 py-8">
           <nav className="flex items-center gap-2 text-sm text-[#9ca3af] mb-6" aria-label="Breadcrumb">
             <Link href="/" className="hover:text-purple-400 transition-colors">Головна</Link>
@@ -658,7 +632,6 @@ export default function ProductClient({ product }: { product: Product }) {
             </div>
           </section>
         )}
-      </main>
 
       {/* Review Form Modal */}
       {showReviewForm && (
@@ -734,6 +707,6 @@ export default function ProductClient({ product }: { product: Product }) {
           </div>
         </div>
       )}
-    </>
+    </main>
   );
 }

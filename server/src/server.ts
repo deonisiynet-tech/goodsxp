@@ -104,40 +104,64 @@ console.log('📡 Server will listen on PORT:', PORT);
 // ==================================
 // CORS Middleware - Configured for production
 // ==================================
-const allowedOrigins = process.env.CLIENT_URL
-  ? [process.env.CLIENT_URL, 'http://localhost:3000', 'http://localhost:5000']
-  : ['http://localhost:3000', 'http://localhost:5000'];
+// ✅ isProduction вже оголошена вище (Next.js initialization)
 
-console.log('🔒 CORS allowed origins:', allowedOrigins);
+// ✅ В production НЕ дозволяємо localhost — тільки реальні домени
+const corsAllowedOrigins = isProduction
+  ? [
+      process.env.CLIENT_URL || 'https://goodsxp.store',
+      'https://goodsxp.store',
+      'https://www.goodsxp.store',
+    ]
+  : [
+      process.env.CLIENT_URL || 'http://localhost:3000',
+      'http://localhost:3000',
+      'http://localhost:5000',
+      'http://127.0.0.1:3000',
+      'http://127.0.0.1:5000',
+    ];
+
+console.log('🔒 CORS mode:', isProduction ? 'PRODUCTION' : 'DEVELOPMENT');
+console.log('🔒 CORS allowed origins:', corsAllowedOrigins);
 
 app.use(cors({
   origin: (origin, callback) => {
-    console.log('🔒 CORS check:', origin);
-    
     // Allow requests with no origin (like mobile apps or curl requests)
     if (!origin) {
-      console.log('✅ CORS: No origin (mobile/curl)');
       return callback(null, true);
     }
 
-    // Check if origin is allowed
-    if (allowedOrigins.indexOf(origin) !== -1) {
-      console.log('✅ CORS: Origin allowed:', origin);
+    // Check if origin is in allowed list
+    if (corsAllowedOrigins.includes(origin)) {
       return callback(null, true);
     }
 
-    // ✅ Strict matching for production domains — no wildcard subdomains
-    const allowedPatterns = [
-      /^https?:\/\/goodsxp\.store$/,
-      /^https?:\/\/www\.goodsxp\.store$/,
-      /^https?:\/\/.*\.railway\.app$/,
-    ];
-    if (allowedPatterns.some(pattern => pattern.test(origin))) {
-      console.log('✅ CORS: Railway/domain allowed:', origin);
-      return callback(null, true);
+    // ✅ Dynamic subdomain matching for Railway/preview environments
+    // Only in development or if explicitly enabled
+    if (!isProduction) {
+      const allowedPatterns = [
+        /^https?:\/\/localhost/,
+        /^https?:\/\/127\.0\.0\.1/,
+        /^https?:\/\/.*\.railway\.app$/,
+        /^https?:\/\/.*\.vercel\.app$/,
+      ];
+      if (allowedPatterns.some(pattern => pattern.test(origin))) {
+        return callback(null, true);
+      }
     }
-    
-    console.log('❌ CORS: Origin rejected:', origin);
+
+    // ✅ In production — strict matching only
+    if (isProduction) {
+      const allowedPatterns = [
+        /^https?:\/\/goodsxp\.store$/,
+        /^https?:\/\/www\.goodsxp\.store$/,
+        /^https?:\/\/.*\.railway\.app$/,  // Railway preview
+      ];
+      if (allowedPatterns.some(pattern => pattern.test(origin))) {
+        return callback(null, true);
+      }
+    }
+
     callback(new Error('Not allowed by CORS'));
   },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
@@ -248,6 +272,11 @@ app.get('/healthz', (_req: Request, res: Response) => {
 const adminApiPrefix = getAdminApiPrefix();
 
 app.use('/api/auth', apiRateLimiter, authRoutes); // ✅ Rate limited
+// CSRF для admin auth routes (крім login — ще немає сесії)
+app.use(`${adminApiPrefix}/auth/logout`, csrfProtection);
+app.use(`${adminApiPrefix}/auth/2fa/generate`, csrfProtection);
+app.use(`${adminApiPrefix}/auth/2fa/enable`, csrfProtection);
+app.use(`${adminApiPrefix}/auth/2fa/disable`, csrfProtection);
 app.use(`${adminApiPrefix}/auth`, adminRateLimiter, adminAuthRoutes);  // Admin auth with hidden path
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);

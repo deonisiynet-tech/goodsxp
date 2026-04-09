@@ -3,8 +3,8 @@ import getRedisClient from '../prisma/redis.js';
 // In-memory fallback when Redis is not available
 const memoryStore = new Map<string, { count: number; blockedUntil: number | null }>();
 
-const MAX_ATTEMPTS = 3;
-const BLOCK_DURATION_MS = 10 * 60 * 1000; // 10 minutes
+const MAX_ATTEMPTS = 10;
+const BLOCK_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 const RESET_DURATION_MS = 30 * 60 * 1000; // Reset counter after 30 minutes
 
 export class LoginAttemptService {

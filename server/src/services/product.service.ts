@@ -196,30 +196,60 @@ export class ProductService {
     };
   }
 
-  async getBySlug(slug: string) {
-    const product = await prisma.product.findFirst({
+  async getBySlug(slug: string): Promise<{ product: any; redirectedFrom?: string }> {
+    // Спочатку шукаємо по поточному slug
+    let product = await prisma.product.findFirst({
       where: { slug },
     }) as any;
 
+    // ✅ Якщо не знайдено — шукаємо в редіректах
     if (!product) {
+      const redirect = await prisma.productSlugRedirect.findUnique({
+        where: { oldSlug: slug },
+      });
+
+      if (redirect) {
+        // Знайшли редірект — отримуємо товар по новому slug
+        product = await prisma.product.findFirst({
+          where: { slug: redirect.newSlug },
+        }) as any;
+
+        if (!product) {
+          throw new AppError('Товар не знайдено', 404);
+        }
+
+        return {
+          product: {
+            ...product,
+            ...withDiscountPercent(product),
+            ...(await this.getProductRating(product.id)),
+          },
+          redirectedFrom: slug,
+        };
+      }
+
       throw new AppError('Товар не знайдено', 404);
     }
 
-    // Обчислюємо середній рейтинг через aggregate
+    return {
+      product: {
+        ...product,
+        ...withDiscountPercent(product),
+        ...(await this.getProductRating(product.id)),
+      },
+    };
+  }
+
+  private async getProductRating(productId: string) {
     const stats = await prisma.review.aggregate({
-      where: { productId: product.id },
+      where: { productId },
       _avg: { rating: true },
       _count: { rating: true },
     });
 
-    const averageRating = stats._avg.rating ? Math.round(stats._avg.rating * 10) / 10 : 0;
-    const reviewCount = stats._count.rating;
-
     return {
-      ...product,
-      averageRating,
-      reviewCount,
-      ...withDiscountPercent(product),
+      averageRating: stats._avg.rating ? Math.round(stats._avg.rating * 10) / 10 : 0,
+      reviewCount: stats._count.rating,
     };
   }
 
@@ -298,7 +328,20 @@ export class ProductService {
         newSlug = `${newSlug}-${Math.random().toString(36).substring(2, 8)}`;
       }
 
-      updateData.slug = newSlug;
+      // ✅ Якщо slug змінився — зберігаємо редірект
+      if (existing.slug !== newSlug) {
+        await prisma.productSlugRedirect.upsert({
+          where: { oldSlug: existing.slug },
+          update: { newSlug },
+          create: {
+            oldSlug: existing.slug,
+            newSlug,
+            productId: id,
+          },
+        });
+
+        updateData.slug = newSlug;
+      }
     }
     if (data.description !== undefined) updateData.description = data.description;
     if (data.price !== undefined) updateData.price = data.price;

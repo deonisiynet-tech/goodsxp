@@ -11,19 +11,54 @@ export class OrderController {
   async create(req: Request, res: Response, next: NextFunction) {
     try {
       const { name, phone, email, address, city, warehouse, warehouseAddress, comment, paymentMethod, items } = req.body;
-      const order = await orderService.create({
-        name,
-        phone,
-        email,
-        address,
-        city,
-        warehouse,
-        warehouseAddress,
-        comment,
-        paymentMethod,
-        items,
+
+      // ✅ Retry логіка для race condition при піковому навантаженні
+      // Якщо два користувачи одночасно замовляють останній товар — один отримає помилку
+      // Даємо 2 спроби з невеликою затримкою
+      const MAX_RETRIES = 2;
+      let lastError: any;
+
+      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        try {
+          const order = await orderService.create({
+            name,
+            phone,
+            email,
+            address,
+            city,
+            warehouse,
+            warehouseAddress,
+            comment,
+            paymentMethod,
+            items,
+          });
+          return res.status(201).json(order);
+        } catch (err: any) {
+          lastError = err;
+
+          // Retry тільки якщо це conflict/stock помилка (не валідація)
+          const isRetryable =
+            err.message?.includes('недоступний') ||
+            err.message?.includes('Товар') ||
+            err.code === 'P2034' || // Prisma transaction error
+            err.message?.includes('timeout') ||
+            err.message?.includes('deadlock');
+
+          if (!isRetryable || attempt === MAX_RETRIES) {
+            throw err;
+          }
+
+          // ✅ Експоненційна затримка: 100ms, 300ms
+          const delay = Math.pow(2, attempt - 1) * 100 + Math.random() * 100;
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+
+      // Досягаємо сюди тільки якщо всі спроби вичерпані (не повинно статись)
+      return res.status(409).json({
+        error: lastError?.message || 'Не вдалося створити замовлення. Спробуйте ще раз.',
+        retryable: true,
       });
-      res.status(201).json(order);
     } catch (error) {
       next(error);
     }

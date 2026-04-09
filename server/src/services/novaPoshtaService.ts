@@ -1,7 +1,10 @@
 import axios from "axios";
 
 const API_URL = "https://api.novaposhta.ua/v2.0/json/";
-const API_KEY = process.env.NOVA_POSHTA_API_KEY || "fd61dad0d97e5d3479d7f3164b54b03f";
+const API_KEY = process.env.NOVA_POSHTA_API_KEY;
+if (!API_KEY) {
+  throw new Error('NOVA_POSHTA_API_KEY не налаштовано. Встановіть змінну оточення.');
+}
 
 console.log("[NovaPoshta] Service initialized with API Key:", API_KEY ? "YES" : "NO");
 

@@ -5,6 +5,7 @@ import { processImageUpload } from '../middleware/upload.js';
 import { AdminService } from '../services/admin.service.js';
 import { ActionType } from '@prisma/client';
 import prisma from '../prisma/client.js';
+import { productSchema, sanitizeHtml } from '../utils/validators.js';
 
 const productService = new ProductService();
 const adminService = new AdminService();
@@ -97,8 +98,20 @@ export class ProductController {
 
   async getBySlug(req: Request, res: Response, next: NextFunction) {
     try {
-      const product = await productService.getBySlug(req.params.slug);
-      res.json(product);
+      const result = await productService.getBySlug(req.params.slug);
+
+      // ✅ Якщо був редірект — повертаємо 301 з новим slug
+      if (result.redirectedFrom) {
+        res.setHeader('Location', `/catalog/${result.product.slug}`);
+        return res.status(301).json({
+          redirected: true,
+          newSlug: result.product.slug,
+          newUrl: `/catalog/${result.product.slug}`,
+          product: result.product,
+        });
+      }
+
+      res.json(result.product);
     } catch (error) {
       next(error);
     }
@@ -123,7 +136,11 @@ export class ProductController {
 
   async create(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const { title, description, price, margin, originalPrice, discountPrice, stock, isActive, images, isFeatured, isPopular, categoryId } = req.body;
+      let { title, description, price, margin, originalPrice, discountPrice, stock, isActive, images, isFeatured, isPopular, categoryId } = req.body;
+
+      // ✅ Санітизація HTML для запобігання XSS
+      if (title && typeof title === 'string') title = sanitizeHtml(title);
+      if (description && typeof description === 'string') description = sanitizeHtml(description);
 
       let imageUrl: string | undefined = undefined;
       let imagesArray: string[] = [];
@@ -191,7 +208,11 @@ export class ProductController {
   async update(req: AuthRequest, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const { title, description, price, margin, stock, isActive, images, categoryId, isFeatured, isPopular, originalPrice, discountPrice } = req.body;
+      let { title, description, price, margin, stock, isActive, images, categoryId, isFeatured, isPopular, originalPrice, discountPrice } = req.body;
+
+      // ✅ Санітизація HTML для запобігання XSS
+      if (title && typeof title === 'string') title = sanitizeHtml(title);
+      if (description && typeof description === 'string') description = sanitizeHtml(description);
 
       const updateData: any = {};
       if (title !== undefined) updateData.title = title;
@@ -319,9 +340,9 @@ export class ProductController {
       const { slug } = req.params;
       const { sortBy } = req.query as { sortBy?: 'newest' | 'best' | 'worst' };
 
-      const product = await productService.getBySlug(slug);
+      const result = await productService.getBySlug(slug);
       // Використовуємо той самий метод що й для ID
-      req.params.id = product.id;
+      req.params.id = result.product.id;
       return this.getReviews(req, res, next);
     } catch (error) {
       next(error);
@@ -333,9 +354,9 @@ export class ProductController {
       const { slug } = req.params;
       const { name, rating, comment } = req.body;
 
-      const product = await productService.getBySlug(slug);
+      const result = await productService.getBySlug(slug);
       // Використовуємо той самий метод що й для ID
-      req.params.id = product.id;
+      req.params.id = result.product.id;
       req.body = { name, rating, comment };
       return this.createReview(req, res, next);
     } catch (error) {

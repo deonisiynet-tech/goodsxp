@@ -131,16 +131,58 @@ export default function CheckoutClient() {
           quantity: item.quantity,
         })),
       };
-      const response = await ordersApi.create(orderData);
-      clearCart();
-      saveData({
-        surname: '', firstName: '', middleName: '',
-        phone: '', city: null, cityRef: null, warehouse: null, warehouseAddress: null
-      });
-      const orderNumber = response.data?.orderNumber || response.data?.id;
-      router.push(`/orders/success?order=${orderNumber}`);
+
+      // ✅ Retry логіка на клієнті для race condition
+      const MAX_RETRIES = 2;
+      let lastError: any;
+
+      for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
+        try {
+          const response = await ordersApi.create(orderData);
+
+          // ✅ Очищаємо кошик ТІЛЬКИ після успішної відповіді
+          clearCart();
+          saveData({
+            surname: '', firstName: '', middleName: '',
+            phone: '', city: null, cityRef: null, warehouse: null, warehouseAddress: null
+          });
+
+          const orderNumber = response.data?.orderNumber || response.data?.id;
+          router.push(`/orders/success?order=${orderNumber}`);
+          return; // Вихід після успіху
+        } catch (err: any) {
+          lastError = err;
+
+          const isRetryable =
+            err.response?.status === 409 ||
+            err.response?.data?.retryable === true ||
+            err.response?.data?.error?.includes('недоступний') ||
+            err.response?.data?.error?.includes('Товар') ||
+            err.response?.status === 500;
+
+          if (!isRetryable || attempt === MAX_RETRIES) {
+            throw err;
+          }
+
+          // Експоненційна затримка + jitter
+          const delay = Math.pow(2, attempt - 1) * 200 + Math.random() * 200;
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+
+      // Всі спроби вичерпані
+      throw lastError;
     } catch (error: any) {
-      toast.error(error.response?.data?.error || 'Помилка при оформленні замовлення');
+      const errorMsg = error.response?.data?.error || error.response?.data?.message;
+
+      // ✅ Спеціальне повідомлення для race condition
+      if (errorMsg?.includes('недоступний') || errorMsg?.includes('Товар')) {
+        toast.error('На жаль, товар вже закінчився. Видаліть його з кошика та спробуйте знову.');
+      } else if (error.response?.status === 429) {
+        toast.error('Занадто багато спроб. Зачекайте хвилину та спробуйте знову.');
+      } else {
+        toast.error(errorMsg || 'Помилка при оформленні замовлення. Спробуйте ще раз.');
+      }
     } finally {
       setLoading(false);
     }

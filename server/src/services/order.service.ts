@@ -1,4 +1,5 @@
 import prisma from '../prisma/client.js';
+import { Prisma, PrismaClient } from '@prisma/client';
 import { AppError } from '../middleware/errorHandler.js';
 import { orderSchema, orderStatusSchema } from '../utils/validators.js';
 import { notifyNewOrder, notifyOrderStatusChanged } from './telegram.service.js';
@@ -129,8 +130,10 @@ export class OrderService {
 
       return newOrder;
     }, {
-      // Таймаут транзакції — 15 секунд
-      timeout: 15000,
+      // ✅ Таймаут транзакції — 10 секунд (швидше фейлить ніж блокує)
+      timeout: 10000,
+      // ✅ Isolation level — гарантує що SELECT ... FOR UPDATE блокує рядки
+      isolationLevel: Prisma.TransactionIsolationLevel.Serializable,
     });
 
     // Відправляємо повідомлення в Telegram (не блокуюче)

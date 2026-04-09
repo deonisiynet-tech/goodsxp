@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { AuthService } from '../services/auth.service.js';
 import { AuthRequest } from '../middleware/auth.js';
+import { loginAttemptService } from '../services/login-attempt.service.js';
+import { loginLogService } from '../services/login-log.service.js';
 
 const authService = new AuthService();
 
@@ -18,9 +20,59 @@ export class AuthController {
   async login(req: Request, res: Response, next: NextFunction) {
     try {
       const { email, password } = req.body;
+      const ip = req.ip || req.connection.remoteAddress || 'unknown';
+      const userAgent = req.headers['user-agent'];
+
       const result = await authService.login(email, password);
+
+      // ✅ Reset attempts on successful login
+      await loginAttemptService.resetAttempts(ip);
+
+      // ✅ Log successful login
+      await loginLogService.log({
+        email,
+        success: true,
+        ipAddress: ip,
+        userAgent,
+        userId: result.user.id,
+      });
+
       res.json(result);
-    } catch (error) {
+    } catch (error: any) {
+      const ip = req.ip || req.connection.remoteAddress || 'unknown';
+      const userAgent = req.headers['user-agent'];
+      const { email } = req.body || {};
+
+      // ✅ Record failed attempt
+      const { attemptsLeft, blocked } = await loginAttemptService.recordFailedAttempt(ip);
+
+      // ✅ Log failed login
+      await loginLogService.log({
+        email: email || 'unknown',
+        success: false,
+        ipAddress: ip,
+        userAgent,
+        failureReason: error.message?.includes('пароль') ? 'WRONG_PASSWORD' : 'USER_NOT_FOUND',
+      });
+
+      // Якщо заблоковано — повертаємо спеціальну відповідь
+      if (blocked) {
+        return res.status(429).json({
+          error: 'Занадто багато невдалих спроб. IP заблоковано на 15 хвилин.',
+          blocked: true,
+          retryAfterMinutes: 15,
+        });
+      }
+
+      // Додаємо інформацію про залишок спроб
+      if (error.message?.includes('Невірний')) {
+        return res.status(401).json({
+          error: 'Невірний email або пароль',
+          attemptsLeft,
+          maxAttempts: 10,
+        });
+      }
+
       next(error);
     }
   }

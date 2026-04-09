@@ -39,11 +39,15 @@ client/dist/
 # ==================================
 # Environment variables
 # ==================================
-# Ignore all .env files EXCEPT templates
-*.env
+# ІГНОРУЄМО ВСІ .env файли окрім шаблонів
+.env
+.env.*
 !.env.example
-.env.railway
-server/.env.railway
+server/.env
+server/.env.*
+!server/.env.example
+client/.env*
+!client/.env.local.example
 
 # ==================================
 # Database

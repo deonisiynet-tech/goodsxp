@@ -64,6 +64,12 @@ router.post('/login', limitLoginAttempts, async (req: Request, res: Response) =>
     const genericError = 'Невірний email або пароль';
 
     if (!user) {
+      // Record failed attempt for brute-force protection
+      const attemptService = (req as any).loginAttemptService;
+      if (attemptService) {
+        await attemptService.recordFailedAttempt(ip);
+      }
+
       // Log failed attempt
       await loginLogService.log({
         email,
@@ -78,6 +84,11 @@ router.post('/login', limitLoginAttempts, async (req: Request, res: Response) =>
 
     // Check if user is admin
     if (user.role !== Role.ADMIN) {
+      const attemptService = (req as any).loginAttemptService;
+      if (attemptService) {
+        await attemptService.recordFailedAttempt(ip);
+      }
+
       await loginLogService.log({
         email,
         success: false,
@@ -93,6 +104,11 @@ router.post('/login', limitLoginAttempts, async (req: Request, res: Response) =>
     const isPasswordValid = await bcrypt.compare(password, user.password);
 
     if (!isPasswordValid) {
+      const attemptService = (req as any).loginAttemptService;
+      if (attemptService) {
+        await attemptService.recordFailedAttempt(ip);
+      }
+
       await loginLogService.log({
         userId: user.id,
         email,
@@ -119,6 +135,11 @@ router.post('/login', limitLoginAttempts, async (req: Request, res: Response) =>
       const isTwoFAValid = await twoFAService.verifyToken(user.id, twoFAToken);
 
       if (!isTwoFAValid) {
+        const attemptService = (req as any).loginAttemptService;
+        if (attemptService) {
+          await attemptService.recordFailedAttempt(ip);
+        }
+
         await loginLogService.log({
           userId: user.id,
           email,
