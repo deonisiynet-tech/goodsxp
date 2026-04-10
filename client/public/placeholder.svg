@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="500" height="500" viewBox="0 0 500 500">
+  <rect width="500" height="500" fill="#1f1f23"/>
+  <text x="250" y="240" font-family="Arial, sans-serif" font-size="24" fill="#6b7280" text-anchor="middle">Немає зображення</text>
+  <text x="250" y="275" font-family="Arial, sans-serif" font-size="16" fill="#4b5563" text-anchor="middle">No Image</text>
+  <circle cx="250" cy="180" r="40" fill="none" stroke="#4b5563" stroke-width="2"/>
+  <path d="M235 180 L250 195 L270 165" fill="none" stroke="#4b5563" stroke-width="3"/>
+</svg>

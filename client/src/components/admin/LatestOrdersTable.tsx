@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { Clock, CheckCircle, Package, Truck } from 'lucide-react';
+import { formatOrderNumber } from '@/lib/order-utils';
 
 interface OrderItem {
   quantity: number;
@@ -142,7 +143,7 @@ export default function LatestOrdersTable({ orders = [], loading = false }: Late
                       href={`/admin/orders`}
                       className="font-mono text-sm text-white hover:underline"
                     >
-                      #{order.orderNumber}
+                      {formatOrderNumber(order.orderNumber)}
                     </Link>
                   </td>
                   <td className="px-4 py-4">

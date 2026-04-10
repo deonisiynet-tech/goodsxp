@@ -150,7 +150,8 @@ export class OrderController {
       });
 
       res.json(result);
-    } catch (error) {
+    } catch (error: any) {
+      console.error('❌ Order delete error:', error?.message, error?.code, error?.stack);
       next(error);
     }
   }

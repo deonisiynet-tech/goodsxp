@@ -10,7 +10,7 @@ const nextConfig = {
 
   // Image configuration
   images: {
-    domains: ['res.cloudinary.com', 'localhost', 'images.unsplash.com'],
+    domains: ['res.cloudinary.com', 'localhost', 'images.unsplash.com', 'via.placeholder.com'],
     remotePatterns: [
       {
         protocol: 'https',
@@ -34,12 +34,20 @@ const nextConfig = {
         pathname: '/uploads/**',
       },
       {
-        protocol: 'https',
-        hostname: 'goodsxp.store',
+        protocol: 'http',
+        hostname: 'localhost',
+        port: '8080',
         pathname: '/uploads/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'goodsxp.store',
+        pathname: '/**',
+      },
     ],
-    unoptimized: false,
+    // ✅ Дозволяємо будь-які відносні шляхи (local images з public/)
+    dangerouslyAllowSVG: true,
+    unoptimized: process.env.NODE_ENV === 'development',
   },
 
   // Experimental features for better SSR support

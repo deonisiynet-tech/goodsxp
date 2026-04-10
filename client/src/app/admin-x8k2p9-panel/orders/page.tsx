@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import AdminLayout from '@/components/admin/AdminLayout'
 import OrderModal from '@/components/admin/OrderModal'
 import { getAdminApiFullPath } from '@/lib/admin-paths'
+import { formatOrderNumber } from '@/lib/order-utils'
 import toast from 'react-hot-toast'
 import { ShoppingCart, Search, Filter, Eye, Trash2, RefreshCw } from 'lucide-react'
 
@@ -237,7 +238,7 @@ export default function OrdersPage() {
                 {orders.map((order) => (
                   <tr key={order.id} className="hover:bg-surfaceLight transition-colors">
                     <td className="px-6 py-4 font-mono text-sm font-medium text-primary">
-                      #{order.orderNumber}
+                      {formatOrderNumber(order.orderNumber)}
                     </td>
                     <td className="px-6 py-4">
                       <div>

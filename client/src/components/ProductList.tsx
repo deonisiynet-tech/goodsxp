@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { productsApi } from '@/lib/products-api';
 import { useCartStore } from '@/lib/store';
+import { normalizeImageUrl } from '@/lib/image-utils';
 import toast from 'react-hot-toast';
 import { ShoppingCart, Star } from 'lucide-react';
 
@@ -147,7 +148,7 @@ export default function ProductList({ title = 'Каталог товарів', l
               >
                 <div className="aspect-square overflow-hidden bg-surfaceLight relative">
                   <img
-                    src={product.imageUrl || '/placeholder.jpg'}
+                    src={normalizeImageUrl(product.imageUrl)}
                     alt={product.title}
                     className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                     onError={(e) => {

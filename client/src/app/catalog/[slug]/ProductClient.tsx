@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { productsApi, Review } from '@/lib/products-api';
 import { useCartStore } from '@/lib/store';
 import { useWishlistStore } from '@/lib/wishlist';
+import { normalizeImageUrl } from '@/lib/image-utils';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -116,7 +117,7 @@ export default function ProductClient({ product }: { product: Product }) {
       : product.price;
 
     const imageList = getImageList(product);
-    const imageUrl = imageList.length > 0 ? imageList[0] : undefined;
+    const imageUrl = imageList.length > 0 ? imageList[0] : null;
 
     addItem({
       productId: product.id,
@@ -134,7 +135,7 @@ export default function ProductClient({ product }: { product: Product }) {
       ? product.discountPrice
       : product.price;
     const imageList = getImageList(product);
-    const imageUrl = imageList.length > 0 ? imageList[0] : undefined;
+    const imageUrl = imageList.length > 0 ? imageList[0] : null;
 
     wishlistToggle({
       productId: product.id,
@@ -148,19 +149,12 @@ export default function ProductClient({ product }: { product: Product }) {
     );
   };
 
-  const getImageUrl = (img: string): string => {
-    if (!img) return '';
-    if (img.startsWith('http://') || img.startsWith('https://')) return img;
-    if (img.startsWith('/')) return img;
-    return `/${img}`;
-  };
-
   const getImageList = (prod: Product | null): string[] => {
     if (!prod) return [];
     const images = Array.isArray(prod.images) ? prod.images : [];
-    const imageUrls = images.map(getImageUrl).filter(Boolean);
+    const imageUrls = images.map(normalizeImageUrl).filter(Boolean);
     if (imageUrls.length === 0 && prod.imageUrl) {
-      const imageUrl = getImageUrl(prod.imageUrl);
+      const imageUrl = normalizeImageUrl(prod.imageUrl);
       if (imageUrl) return [imageUrl];
     }
     return imageUrls;

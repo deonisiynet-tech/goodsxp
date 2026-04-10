@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { X } from 'lucide-react'
+import { formatOrderNumber } from '@/lib/order-utils'
 
 interface OrderItem {
   id: string
@@ -80,7 +81,7 @@ export default function OrderModal({ order, onClose, onStatusChange }: OrderModa
     <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50 p-4">
       <div className="bg-background border border-border max-w-2xl w-full max-h-[90vh] overflow-y-auto">
         <div className="flex justify-between items-center p-6 border-b border-border sticky top-0 bg-background">
-          <h2 className="text-2xl font-light">Замовлення #{order.orderNumber}</h2>
+          <h2 className="text-2xl font-light">Замовлення {formatOrderNumber(order.orderNumber)}</h2>
           <button onClick={onClose} className="text-muted hover:text-primary transition-colors">
             <X size={24} />
           </button>

@@ -2,6 +2,7 @@
 
 import { useSearchParams } from 'next/navigation';
 import { Suspense } from 'react';
+import { formatOrderNumber } from '@/lib/order-utils';
 
 function OrderNumberDisplay() {
   const searchParams = useSearchParams();
@@ -9,7 +10,7 @@ function OrderNumberDisplay() {
 
   return (
     <p className="text-lg font-medium text-white mt-6 mb-8">
-      Номер вашого замовлення: #{orderNumber || '...'}
+      Номер вашого замовлення: <span className="text-purple-400 font-bold">{formatOrderNumber(orderNumber)}</span>
     </p>
   );
 }

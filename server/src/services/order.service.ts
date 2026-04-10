@@ -3,6 +3,7 @@ import { Prisma, PrismaClient } from '@prisma/client';
 import { AppError } from '../middleware/errorHandler.js';
 import { orderSchema, orderStatusSchema } from '../utils/validators.js';
 import { notifyNewOrder, notifyOrderStatusChanged } from './telegram.service.js';
+import { formatOrderNumber } from '../utils/order-formatter.js';
 
 interface OrderFilters {
   page?: number;
@@ -289,7 +290,7 @@ export class OrderService {
       notifyOrderStatusChanged(
         {
           id: order.id,
-          orderNumber: order.id.slice(0, 8).toUpperCase(),
+          orderNumber: order.orderNumber,
           items: order.items,
           totalPrice: order.totalPrice,
           name: order.name,
@@ -333,14 +334,22 @@ export class OrderService {
     if (existing.status === 'NEW' || existing.status === 'PROCESSING' || existing.status === 'CANCELLED') {
       await prisma.$transaction(async (tx) => {
         for (const item of existing.items) {
-          await tx.product.update({
+          // ✅ Перевіряємо що продукт існує перед increment stock
+          const product = await tx.product.findUnique({
             where: { id: item.productId },
-            data: {
-              stock: {
-                increment: item.quantity,
-              },
-            },
+            select: { id: true },
           });
+
+          if (product) {
+            await tx.product.update({
+              where: { id: item.productId },
+              data: {
+                stock: {
+                  increment: item.quantity,
+                },
+              },
+            });
+          }
         }
         // Soft delete
         await tx.order.update({

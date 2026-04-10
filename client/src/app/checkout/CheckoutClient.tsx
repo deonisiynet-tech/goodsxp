@@ -11,6 +11,7 @@ import NovaPoshtaSelector from '@/components/NovaPoshtaSelector';
 import { useCheckoutStorage, CheckoutData } from '@/hooks/useCheckoutStorage';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
+import { normalizeImageUrl } from '@/lib/image-utils';
 import { ArrowLeft, ShoppingCart, Check, ShieldCheck, Truck, CreditCard, User, MapPin } from 'lucide-react';
 
 // ===== TYPES =====
@@ -515,7 +516,7 @@ export default function CheckoutClient() {
                     <div key={item.productId} className="flex gap-3 p-3 rounded-lg bg-surfaceLight/50">
                       <div className="w-16 h-16 flex-shrink-0 overflow-hidden rounded-md bg-surfaceLight relative">
                         <Image
-                          src={item.imageUrl || '/placeholder.jpg'}
+                          src={normalizeImageUrl(item.imageUrl)}
                           alt={item.title}
                           fill
                           className="object-cover"

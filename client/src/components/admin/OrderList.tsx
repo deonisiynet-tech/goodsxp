@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { ordersApi } from '@/lib/api';
+import { formatOrderNumber } from '@/lib/order-utils';
 import toast from 'react-hot-toast';
 import { Eye, Trash2 } from 'lucide-react';
 import OrderModal from './OrderModal';
@@ -174,7 +175,7 @@ export default function OrderList() {
               {orders.map((order) => (
                 <tr key={order.id} className="hover:bg-surfaceLight">
                   <td className="px-6 py-4 font-mono text-sm font-medium text-primary">
-                    #{order.orderNumber}
+                    {formatOrderNumber(order.orderNumber)}
                   </td>
                   <td className="px-6 py-4">
                     <div>

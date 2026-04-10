@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { escapeForTelegramHtml } from '../utils/validators.js';
+import { formatOrderNumber } from '../utils/order-formatter.js';
 
 /**
  * Telegram Bot Service
@@ -131,8 +132,7 @@ export async function notifyNewOrder(order: OrderNotificationData): Promise<bool
     : 'Накладений платіж';
 
   // Форматуємо номер замовлення
-  const orderNum = order.orderNumber || order.id.slice(0, 8).toUpperCase();
-  const displayNumber = typeof orderNum === 'number' ? orderNum : orderNum;
+  const orderNum = formatOrderNumber(order.orderNumber);
 
   // Екрануємо користувацькі дані для запобігання HTML injection
   const safeName = escapeForTelegramHtml(order.name);
@@ -152,7 +152,7 @@ export async function notifyNewOrder(order: OrderNotificationData): Promise<bool
     })
     .join('\n\n');
 
-  const message = `📦 <b>НОВЕ ЗАМОВЛЕННЯ #${displayNumber}</b>
+  const message = `📦 <b>НОВЕ ЗАМОВЛЕННЯ #${orderNum}</b>
 
 🛒 <b>Товари:</b>
 ${itemsList}
@@ -175,7 +175,7 @@ ${itemsList}
  * Повідомлення про скасування замовлення
  */
 export async function notifyOrderCancelled(order: OrderNotificationData): Promise<boolean> {
-  const orderNumber = order.orderNumber || order.id.slice(0, 8).toUpperCase();
+  const orderNumber = formatOrderNumber(order.orderNumber);
 
   const itemsList = order.items
     .map((item) => `${item.product.title} x${item.quantity}`)
@@ -203,7 +203,7 @@ export async function notifyOrderStatusChanged(
   oldStatus: string,
   newStatus: string
 ): Promise<boolean> {
-  const orderNumber = order.orderNumber || order.id.slice(0, 8).toUpperCase();
+  const orderNumber = formatOrderNumber(order.orderNumber);
   const safeName = escapeForTelegramHtml(order.name);
 
   const statusEmoji: Record<string, string> = {

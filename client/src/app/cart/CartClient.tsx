@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 import { Trash2, Plus, Minus, ArrowRight, ShoppingCart, Package } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { productsApi } from '@/lib/products-api';
+import { normalizeImageUrl } from '@/lib/image-utils';
 
 interface CartItemWithSlug {
   productId: string;
@@ -105,7 +106,7 @@ export default function CartClient() {
                 >
                   <Link href={`/catalog/${slug}`} className="w-24 h-24 flex-shrink-0 overflow-hidden rounded-xl bg-surfaceLight relative">
                     <Image
-                      src={item.imageUrl || '/placeholder.jpg'}
+                      src={normalizeImageUrl(item.imageUrl)}
                       alt={item.title}
                       fill
                       className="object-cover hover:scale-105 transition-transform duration-300"
