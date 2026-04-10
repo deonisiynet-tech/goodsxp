@@ -44,7 +44,7 @@ export default function Footer() {
           {/* Brand */}
           <div className="lg:col-span-2">
             <Link href="/" className="inline-block mb-4 hover:opacity-80 transition-opacity">
-              <Image src="/logo-footer.png" alt="GoodsXP — Головна" width={280} height={70} className="h-16 w-auto" />
+              <Image src="/logo-footer.png" alt="GoodsXP — Головна" width={248} height={62} className="w-auto" style={{ height: '62px' }} />
             </Link>
             <p className="text-muted text-sm leading-relaxed mb-4">
               Сучасна електроніка для твого життя. Якість, якій довіряють.
