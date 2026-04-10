@@ -43,15 +43,15 @@ export default function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8 md:gap-8">
           {/* Brand */}
           <div className="lg:col-span-2">
-            <Link href="/" className="inline-block mb-4 hover:opacity-80 transition-opacity">
+            <Link href="/" className="inline-block mb-2 hover:opacity-80 transition-opacity">
               <Image src="/logo-footer.png" alt="GoodsXP — Головна" width={248} height={62} className="w-auto" style={{ height: '62px' }} />
             </Link>
-            <p className="text-muted text-sm leading-relaxed mb-4">
+            <p className="text-muted text-sm leading-relaxed mb-3">
               Сучасна електроніка для твого життя. Якість, якій довіряють.
             </p>
 
             {/* ✅ Контакти з іконками */}
-            <div className="space-y-3">
+            <div className="space-y-2">
               <a
                 href="tel:+380634010552"
                 className="flex items-center gap-2 text-muted text-sm hover:text-purple-300 transition-colors"
