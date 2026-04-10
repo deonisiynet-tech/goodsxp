@@ -17,6 +17,7 @@ const inter = Inter({
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://goodsxp.store';
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: {
     default: 'GoodsXP — Сучасна електроніка та гаджети з доставкою по Україні',
     template: '%s | GoodsXP',
