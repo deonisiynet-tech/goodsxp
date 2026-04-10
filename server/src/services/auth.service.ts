@@ -4,6 +4,7 @@ import crypto from 'crypto';
 import prisma from '../prisma/client.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { registerSchema, loginSchema } from '../utils/validators.js';
+import { sendResetPasswordEmail } from './email.service.js';
 
 export class AuthService {
   async register(email: string, password: string) {
@@ -121,12 +122,12 @@ export class AuthService {
       return { success: true, message: 'Якщо email існує, ви отримаєте посилання для скидання пароля' };
     }
 
-    // Генеруємо криптографічний токен
+    // Генеруємо криптографічний токен (32 bytes = 64 hex символи)
     const resetToken = crypto.randomBytes(32).toString('hex');
-    const resetTokenExpiry = new Date(Date.now() + 3600000); // 1 година
+    const resetTokenExpiry = new Date(Date.now() + 15 * 60 * 1000); // 15 хвилин
 
-    // Хешуємо токен перед збереженням в БД
-    const hashedToken = await bcrypt.hash(resetToken, 10);
+    // Хешуємо токен через SHA-256 перед збереженням в БД
+    const hashedToken = crypto.createHash('sha256').update(resetToken).digest('hex');
 
     await prisma.user.update({
       where: { id: user.id },
@@ -136,8 +137,15 @@ export class AuthService {
       },
     });
 
-    // TODO: Відправити email з посиланням /reset-password?token=xxx
+    // Відправляємо email з посиланням /reset-password?token=xxx
     // resetToken НІКОЛИ не повертається клієнту — тільки в email
+    try {
+      await sendResetPasswordEmail(user.email, resetToken);
+    } catch (emailError) {
+      console.error('❌ Помилка відправки email:', emailError);
+      // Не розкриваємо користувачу помилку email
+    }
+
     return {
       success: true,
       message: 'Якщо email існує, ви отримаєте посилання для скидання пароля',
@@ -146,7 +154,7 @@ export class AuthService {
 
   /**
    * Скидання пароля з токеном
-   * Порівнює наданий токен з хешем в БД через bcrypt.compare
+   * Порівнює наданий токен з хешем в БД через SHA-256
    */
   async resetPassword(token: string, newPassword: string) {
     // Валідація пароля
@@ -165,37 +173,24 @@ export class AuthService {
       throw new AppError('Недійсний токен', 400);
     }
 
-    // Знаходимо ВСІХ користувачів з ненульовим токеном і порівнюємо bcrypt
-    const candidates = await prisma.user.findMany({
+    // Хешуємо наданий токен через SHA-256 і шукаємо користувача
+    const hashedToken = crypto.createHash('sha256').update(token).digest('hex');
+
+    const user = await prisma.user.findFirst({
       where: {
-        passwordResetToken: { not: null },
+        passwordResetToken: hashedToken,
         passwordResetExpiry: { gte: new Date() },
       },
     });
 
-    let matchedUser: typeof candidates[number] | null = null;
-    for (const user of candidates) {
-      if (user.passwordResetToken) {
-        try {
-          const isValid = await bcrypt.compare(token, user.passwordResetToken);
-          if (isValid) {
-            matchedUser = user;
-            break;
-          }
-        } catch {
-          // Ігноруємо помилки порівняння
-        }
-      }
-    }
-
-    if (!matchedUser) {
+    if (!user) {
       throw new AppError('Недійсний або прострочений токен', 400);
     }
 
     // Оновлюємо пароль та очищуємо токен
     const hashedPassword = await bcrypt.hash(newPassword, 12);
     await prisma.user.update({
-      where: { id: matchedUser.id },
+      where: { id: user.id },
       data: {
         password: hashedPassword,
         passwordResetToken: null,

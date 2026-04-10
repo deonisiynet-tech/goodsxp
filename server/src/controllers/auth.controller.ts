@@ -109,11 +109,11 @@ export class AuthController {
    */
   async resetPassword(req: Request, res: Response, next: NextFunction) {
     try {
-      const { token, password } = req.body;
-      if (!token || !password) {
+      const { token, newPassword } = req.body;
+      if (!token || !newPassword) {
         return res.status(400).json({ error: 'Token і пароль обов\'язкові' });
       }
-      const result = await authService.resetPassword(token, password);
+      const result = await authService.resetPassword(token, newPassword);
       res.json(result);
     } catch (error) {
       next(error);

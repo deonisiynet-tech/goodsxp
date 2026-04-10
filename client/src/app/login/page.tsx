@@ -37,7 +37,8 @@ export default function LoginPage() {
       toast.success('Вхід виконано успішно!');
 
       if (response.data.user.role === 'ADMIN') {
-        router.push('/admin');
+        const adminPath = process.env.NEXT_PUBLIC_ADMIN_PANEL_PATH || '/admin-x8k2p9-panel';
+        router.push(adminPath);
       } else {
         router.push('/');
       }
@@ -116,7 +117,13 @@ export default function LoginPage() {
             </button>
           </form>
 
-          <p className="text-center mt-6 text-muted text-sm">
+          <div className="text-center mt-4">
+            <Link href="/forgot-password" className="text-sm text-primary hover:underline">
+              Забули пароль?
+            </Link>
+          </div>
+
+          <p className="text-center mt-4 text-muted text-sm">
             Немає аккаунта?{' '}
             <Link href="/register" className="text-primary hover:underline">
               Зареєструватися

@@ -70,12 +70,10 @@ export async function middleware(request: NextRequest) {
   }
 
   // ✅ ОТРИМУЄМО статус магазину через внутрішній API
-  const port = process.env.PORT || '8080';
+  // Використовуємо origin поточного запиту замість 127.0.0.1
+  // Це працює в будь-якому оточенні (Railway, Docker, localhost)
   const adminPanelPath = process.env.ADMIN_PANEL_PATH || '/admin-x8k2p9-panel';
-  const internalUrl = `http://127.0.0.1:${port}`;
-  const storeStatusUrl = `${internalUrl}/api${adminPanelPath}/settings/storeEnabled`;
-
-  console.log('[Middleware] fetching from:', storeStatusUrl);
+  const storeStatusUrl = `${request.nextUrl.origin}/api${adminPanelPath}/settings/storeEnabled`;
 
   let storeEnabled = true; // За замовчуванням включений
 
@@ -88,23 +86,17 @@ export async function middleware(request: NextRequest) {
       cache: 'no-store',
     });
 
-    console.log('[Middleware] API response status:', response.status);
-
     if (response.ok) {
       const data = await response.json();
-      console.log('[Middleware] storeEnabled value:', data.value);
       storeEnabled = data.value !== 'false';
-    } else {
-      console.warn('[Middleware] API returned:', response.status);
     }
-  } catch (error) {
-    console.error('[Middleware] Store status check failed:', error instanceof Error ? error.message : error);
+  } catch {
+    // У разі помилки — fail-safe: магазин включений
     storeEnabled = true;
   }
 
   // ✅ ЯКЩО МАГАЗИН ВИМКНЕНИЙ - редірект на maintenance
   if (!storeEnabled) {
-    console.log('[Middleware] redirecting to maintenance');
     const maintenanceUrl = new URL('/maintenance', request.url);
     return NextResponse.redirect(maintenanceUrl);
   }
