@@ -51,7 +51,7 @@ export default function Footer() {
             </p>
 
             {/* ✅ Контакти з іконками */}
-            <div className="space-y-2">
+            <div className="space-y-2.5">
               <a
                 href="tel:+380634010552"
                 className="flex items-center gap-2 text-muted text-sm hover:text-purple-300 transition-colors"
