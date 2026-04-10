@@ -29,13 +29,13 @@ export default function Footer() {
     <footer className="bg-gradient-to-b from-[#0d0d10] via-[#0a0a0e] to-[#08080c] border-t border-purple-500/20">
       <div className="container mx-auto px-4 py-12 md:py-16">
         {/* Trust Badges */}
-        <div className="grid grid-cols-3 gap-3 mb-10 pb-8 border-b border-purple-500/10">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10 pb-8 border-b border-purple-500/10">
           {trustBadges.map(({ icon: Icon, text }) => (
             <div key={text} className="flex items-center gap-3 justify-center">
               <div className="w-10 h-10 rounded-xl bg-purple-500/10 border border-purple-500/20 flex items-center justify-center">
                 <Icon size={20} className="text-purple-400" />
               </div>
-              <span className="text-white font-medium text-xs sm:text-sm text-center">{text}</span>
+              <span className="text-white font-medium text-sm">{text}</span>
             </div>
           ))}
         </div>

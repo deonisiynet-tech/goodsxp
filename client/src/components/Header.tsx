@@ -76,7 +76,7 @@ export default function Header() {
             <img
               src="/logo.png"
               alt="GoodsXP — Головна"
-              className="h-12 sm:h-16 md:h-20 lg:h-28 w-auto"
+              className="h-20 sm:h-24 md:h-28 lg:h-32 w-auto"
             />
           </Link>
 

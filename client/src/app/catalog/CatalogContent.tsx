@@ -381,7 +381,7 @@ export default function CatalogContent() {
 
           {/* Products Grid with Skeleton Loading */}
           {loading ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
               {Array.from({ length: 8 }).map((_, i) => (
                 <div key={i} className="animate-pulse">
                   <div className="aspect-square bg-[#1f1f23] rounded-xl mb-3" />
@@ -408,7 +408,7 @@ export default function CatalogContent() {
                   }}
                 />
               )}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
                 {products.map((product) => (
                   <div
                     key={product.id}
@@ -430,12 +430,12 @@ export default function CatalogContent() {
                       {/* Badges */}
                       <div className="absolute top-2 left-2 flex flex-col gap-1">
                         {product.isFeatured && (
-                          <span className="px-2 py-1 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs sm:text-sm font-bold rounded shadow-lg">
+                          <span className="px-2 py-1 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-bold rounded shadow-lg">
                             🔥 Хіт
                           </span>
                         )}
                         {product.discountPrice && product.originalPrice && (
-                          <span className="px-2 py-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs sm:text-sm font-bold rounded shadow-lg">
+                          <span className="px-2 py-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs font-bold rounded shadow-lg">
                             -{Math.round((1 - product.discountPrice / product.originalPrice) * 100)}%
                           </span>
                         )}
@@ -473,7 +473,7 @@ export default function CatalogContent() {
                       {product.averageRating !== undefined && product.reviewCount !== undefined && product.reviewCount > 0 && (
                         <div className="flex items-center gap-1 mb-2">
                           <Star size={14} className="fill-yellow-500 text-yellow-500" />
-                          <span className="text-xs sm:text-sm text-[#9ca3af]">
+                          <span className="text-xs text-[#9ca3af]">
                             {product.averageRating.toFixed(1)} ({product.reviewCount})
                           </span>
                         </div>

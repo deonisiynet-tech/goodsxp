@@ -88,7 +88,7 @@ export default function Home() {
                 <span className="font-medium">Нові надходження 2026</span>
               </div>
 
-              <h1 className="text-3xl sm:text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight animate-slide-up">
+              <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight animate-slide-up">
                 <span className="block text-white">Розумна електроніка</span>
                 <span className="block bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient">
                   для сучасного життя
