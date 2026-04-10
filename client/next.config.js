@@ -45,9 +45,9 @@ const nextConfig = {
         pathname: '/**',
       },
     ],
-    // ✅ Дозволяємо будь-які відносні шляхи (local images з public/)
-    dangerouslyAllowSVG: true,
-    unoptimized: process.env.NODE_ENV === 'development',
+    // ✅ Вимикаємо оптимізацію — Cloudinary/Unsplash вже оптимізовані
+    // Це усуває 400 помилки в Docker Alpine де немає sharp
+    unoptimized: true,
   },
 
   // Experimental features for better SSR support
