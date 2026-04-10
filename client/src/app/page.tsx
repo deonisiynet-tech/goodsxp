@@ -88,7 +88,7 @@ export default function Home() {
                 <span className="font-medium">Нові надходження 2026</span>
               </div>
 
-              <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight animate-slide-up">
+              <h1 className="text-3xl sm:text-5xl md:text-7xl lg:text-8xl font-bold tracking-tight animate-slide-up">
                 <span className="block text-white">Розумна електроніка</span>
                 <span className="block bg-gradient-to-r from-purple-400 via-pink-400 to-purple-400 bg-clip-text text-transparent bg-[length:200%_auto] animate-gradient">
                   для сучасного життя
@@ -102,14 +102,14 @@ export default function Home() {
               <div className="flex flex-col sm:flex-row gap-4 justify-center animate-slide-up delay-300">
                 <Link
                   href="/catalog"
-                  className="group relative inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-2xl overflow-hidden transition-all duration-300 hover:scale-105"
+                  className="group relative inline-flex items-center justify-center gap-2 px-6 py-4 sm:px-8 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-semibold rounded-2xl overflow-hidden transition-all duration-300 hover:scale-105 w-full sm:w-auto"
                 >
                   <span className="relative z-10">Перейти до каталогу</span>
                   <ArrowRight size={20} className="relative z-10 group-hover:translate-x-1 transition-transform" />
                 </Link>
                 <Link
                   href="/about"
-                  className="inline-flex items-center justify-center gap-2 px-8 py-4 border border-purple-500/30 text-white font-semibold rounded-2xl backdrop-blur-md bg-purple-500/10 transition-all duration-300 hover:bg-purple-500/20 hover:scale-105"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-4 sm:px-8 border border-purple-500/30 text-white font-semibold rounded-2xl backdrop-blur-md bg-purple-500/10 transition-all duration-300 hover:bg-purple-500/20 hover:scale-105 w-full sm:w-auto"
                 >
                   Про нас
                 </Link>
@@ -125,7 +125,7 @@ export default function Home() {
         </section>
 
         {/* Advantages */}
-        <section className="py-24 bg-surface/50">
+        <section className="py-12 md:py-24 bg-surface/50">
           <div className="container mx-auto px-4">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               <AdvantageCard icon={Truck} title="Доставка" description="Швидка доставка по Україні: 1–3 дні" gradient="from-blue-500/20 to-cyan-500/20" />
@@ -137,24 +137,24 @@ export default function Home() {
         </section>
 
         {/* How to order */}
-        <section className="py-24">
+        <section className="py-12 md:py-24">
           <div className="container mx-auto px-4">
-            <h2 className="text-4xl md:text-5xl font-bold mb-4 text-center">Як замовити?</h2>
-            <p className="text-muted text-lg mb-16 text-center max-w-2xl mx-auto">Всього 3 простих кроки — і товар у вас</p>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto">
+            <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold mb-4 text-center">Як замовити?</h2>
+            <p className="text-muted text-base sm:text-lg mb-10 md:mb-16 text-center max-w-2xl mx-auto">Всього 3 простих кроки — і товар у вас</p>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 max-w-4xl mx-auto">
               <div className="text-center">
-                <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 flex items-center justify-center text-4xl">🛒</div>
-                <h3 className="text-xl font-semibold mb-3 text-white">1. Обери товар</h3>
+                <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 sm:mb-6 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 flex items-center justify-center text-3xl sm:text-4xl">🛒</div>
+                <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3 text-white">1. Обери товар</h3>
                 <p className="text-muted text-sm">Переглянь каталог та додай товари до кошика</p>
               </div>
               <div className="text-center">
-                <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 flex items-center justify-center text-4xl">📋</div>
-                <h3 className="text-xl font-semibold mb-3 text-white">2. Оформи замовлення</h3>
+                <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 sm:mb-6 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 flex items-center justify-center text-3xl sm:text-4xl">📋</div>
+                <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3 text-white">2. Оформи замовлення</h3>
                 <p className="text-muted text-sm">Вкажи дані та обери відділення Нової Пошти</p>
               </div>
               <div className="text-center">
-                <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 flex items-center justify-center text-4xl">📦</div>
-                <h3 className="text-xl font-semibold mb-3 text-white">3. Отримай посилку</h3>
+                <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-4 sm:mb-6 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 flex items-center justify-center text-3xl sm:text-4xl">📦</div>
+                <h3 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3 text-white">3. Отримай посилку</h3>
                 <p className="text-muted text-sm">Забери на відділенні. Оглянь перед оплатою.</p>
               </div>
             </div>
@@ -164,12 +164,12 @@ export default function Home() {
         <ProductList title="Популярні товари" limit={5} showAllLink popular />
 
         {/* Why Choose Us */}
-        <section className="py-24 bg-surface/50">
+        <section className="py-12 md:py-24 bg-surface/50">
           <div className="container mx-auto px-4">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 md:gap-8 lg:gap-12 items-center">
               <div>
-                <h2 className="text-4xl md:text-5xl font-bold mb-6">Чому обирають GoodsXP</h2>
-                <p className="text-muted text-lg mb-8 leading-relaxed">
+                <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold mb-4 md:mb-6">Чому обирають GoodsXP</h2>
+                <p className="text-muted text-base md:text-lg mb-6 md:mb-8 leading-relaxed">
                   Ми не просто магазин — ми ваш надійний партнер у світі технологій.
                 </p>
                 <div className="space-y-4">
@@ -190,17 +190,17 @@ export default function Home() {
         </section>
 
         {/* CTA */}
-        <section className="py-24">
+        <section className="py-12 md:py-24">
           <div className="container mx-auto px-4">
             <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-primary/20 via-primary/10 to-purple-500/20 border border-primary/20">
-              <div className="relative z-10 py-16 md:py-24 px-8 text-center">
-                <h2 className="text-4xl md:text-5xl font-bold mb-6">Готові до покупок?</h2>
-                <p className="text-muted text-lg mb-8 max-w-2xl mx-auto">
+              <div className="relative z-10 py-12 md:py-24 px-4 sm:px-8 text-center">
+                <h2 className="text-2xl sm:text-4xl md:text-5xl font-bold mb-4 md:mb-6">Готові до покупок?</h2>
+                <p className="text-muted text-base md:text-lg mb-6 md:mb-8 max-w-2xl mx-auto">
                   Відкрийте для себе кращі гаджети на GoodsXP вже сьогодні
                 </p>
                 <Link
                   href="/catalog"
-                  className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-primary to-purple-400 text-background font-semibold rounded-2xl transition-all duration-300 hover:scale-105"
+                  className="inline-flex items-center justify-center gap-2 px-6 py-4 sm:px-8 bg-gradient-to-r from-primary to-purple-400 text-background font-semibold rounded-2xl transition-all duration-300 hover:scale-105 w-full sm:w-auto"
                 >
                   Перейти до каталогу
                   <ArrowRight size={20} />

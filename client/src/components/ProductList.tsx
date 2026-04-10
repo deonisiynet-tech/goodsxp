@@ -46,7 +46,7 @@ export default function ProductList({ title = 'Каталог товарів', l
       setLoading(true);
       const response = await productsApi.getAll({ limit });
       let productsList = response.products || [];
-      
+
       // ✅ Фільтрація популярних товарів
       if (popular) {
         productsList = productsList.filter((p: Product) => p.isPopular === true);
@@ -62,7 +62,7 @@ export default function ProductList({ title = 'Каталог товарів', l
           productsList = productsList.slice(0, limit);
         }
       }
-      
+
       setProducts(productsList);
     } catch (error) {
       console.error('Failed to load products:', error);
@@ -92,7 +92,7 @@ export default function ProductList({ title = 'Каталог товарів', l
 
   if (loading) {
     return (
-      <section className="py-16 md:py-24">
+      <section className="py-10 md:py-16 lg:py-24">
         <div className="container mx-auto px-4">
           {title && (
             <div className="flex justify-between items-center mb-10">
@@ -121,7 +121,7 @@ export default function ProductList({ title = 'Каталог товарів', l
   }
 
   return (
-    <section className="py-16 md:py-24">
+    <section className="py-10 md:py-16 lg:py-24">
       <div className="container mx-auto px-4">
         {title && (
           <div className="flex justify-between items-center mb-10">
@@ -156,26 +156,26 @@ export default function ProductList({ title = 'Каталог товарів', l
                         'https://via.placeholder.com/500?text=No+Image';
                     }}
                   />
-                  
+
                   {/* Badges */}
                   <div className="absolute top-2 left-2 flex flex-col gap-1">
                     {product.isFeatured && (
-                      <span className="px-2 py-1 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-bold rounded-md shadow-lg">
+                      <span className="px-2 py-1 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs sm:text-sm font-bold rounded-md shadow-lg">
                         🔥 Хіт-продаж
                       </span>
                     )}
                     {product.isPopular && (
-                      <span className="px-2 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs font-bold rounded-md shadow-lg">
+                      <span className="px-2 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs sm:text-sm font-bold rounded-md shadow-lg">
                         ⭐ Популярний
                       </span>
                     )}
                     {product.discountPrice && product.originalPrice && (
-                      <span className="px-2 py-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs font-bold rounded-md shadow-lg">
+                      <span className="px-2 py-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs sm:text-sm font-bold rounded-md shadow-lg">
                         -{Math.round((1 - product.discountPrice / product.originalPrice) * 100)}%
                       </span>
                     )}
                   </div>
-                  
+
                   {product.stock === 0 && (
                     <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
                       <span className="text-sm font-medium">Немає в наявності</span>
@@ -203,7 +203,7 @@ export default function ProductList({ title = 'Каталог товарів', l
                           />
                         ))}
                       </div>
-                      <span className="text-xs text-muted">
+                      <span className="text-xs sm:text-sm text-muted">
                         {product.reviewCount} відгуків
                       </span>
                     </div>
@@ -231,13 +231,13 @@ export default function ProductList({ title = 'Каталог товарів', l
                     {product.stock > 0 ? (
                       <button
                         onClick={(e) => handleAddToCart(e, product)}
-                        className="p-2 hover:bg-surfaceLight transition-colors"
+                        className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-surfaceLight transition-colors"
                         aria-label="Додати до кошика"
                       >
                         <ShoppingCart size={18} strokeWidth={1.5} />
                       </button>
                     ) : (
-                      <span className="text-xs text-muted">Недоступно</span>
+                      <span className="text-xs sm:text-sm text-muted">Недоступно</span>
                     )}
                   </div>
                 </div>

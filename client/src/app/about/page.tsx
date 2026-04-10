@@ -46,7 +46,7 @@ export default function AboutPage() {
       <main className="flex-1 pt-20">
         
         {/* ===== HERO SECTION ===== */}
-        <section className="relative py-20 overflow-hidden">
+        <section className="relative py-12 md:py-20 overflow-hidden">
           {/* Background */}
           <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 via-transparent to-pink-500/10" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-purple-500/10 rounded-full blur-[120px]" />
@@ -54,12 +54,12 @@ export default function AboutPage() {
           <div className="container mx-auto px-4 relative z-10">
             <div className="max-w-3xl mx-auto text-center">
               {/* Icon */}
-              <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 flex items-center justify-center animate-fade-in">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 flex items-center justify-center animate-fade-in">
                 <Sparkles size={40} className="text-purple-400" strokeWidth={1.5} />
               </div>
 
               {/* Title */}
-              <h1 className="text-4xl md:text-6xl font-bold mb-6 animate-slide-up">
+              <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-6 animate-slide-up">
                 <span className="block text-white">Про GoodsXP</span>
               </h1>
 
@@ -75,7 +75,7 @@ export default function AboutPage() {
         <section className="py-16">
           <div className="container mx-auto px-4">
             <div className="max-w-3xl mx-auto mb-16">
-              <div className="card p-8">
+              <div className="card p-6 sm:p-8">
                 <h2 className="text-2xl font-light mb-6 flex items-center gap-3">
                   <span className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20 border border-purple-500/30 flex items-center justify-center">
                     💎
@@ -149,7 +149,7 @@ export default function AboutPage() {
         </section>
 
         {/* ===== STATS ===== */}
-        <section className="py-16 bg-surface/50">
+        <section className="py-10 md:py-16 bg-surface/50">
           <div className="container mx-auto px-4">
             <div className="text-center mb-12">
               <h2 className="text-3xl md:text-4xl font-bold mb-4">Наші досягнення</h2>
@@ -206,7 +206,7 @@ export default function AboutPage() {
         </section>
 
         {/* ===== CTA SECTION ===== */}
-        <section className="py-20">
+        <section className="py-12 md:py-20">
           <div className="container mx-auto px-4">
             <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-purple-500/20 via-purple-500/10 to-pink-500/20 border border-purple-500/30">
               <div className="absolute inset-0 bg-gradient-to-br from-purple-500/5 to-transparent" />
@@ -221,14 +221,14 @@ export default function AboutPage() {
                 <div className="flex flex-col sm:flex-row gap-4 justify-center">
                   <Link
                     href="/catalog"
-                    className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-500 text-white font-semibold rounded-2xl transition-all duration-300 hover:shadow-[0_0_40px_rgba(168,85,247,0.5)] hover:scale-105"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-purple-600 to-pink-500 text-white font-semibold rounded-2xl transition-all duration-300 hover:shadow-[0_0_40px_rgba(168,85,247,0.5)] hover:scale-105"
                   >
                     Перейти до каталогу
                     <ArrowRight size={20} />
                   </Link>
                   <Link
                     href="/contacts"
-                    className="inline-flex items-center justify-center gap-2 px-8 py-4 border border-purple-500/30 text-white font-semibold rounded-2xl backdrop-blur-sm transition-all duration-300 hover:bg-purple-500/20 hover:scale-105"
+                    className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 border border-purple-500/30 text-white font-semibold rounded-2xl backdrop-blur-sm transition-all duration-300 hover:bg-purple-500/20 hover:scale-105"
                   >
                     Зв'язатися з нами
                   </Link>

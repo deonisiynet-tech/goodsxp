@@ -234,7 +234,7 @@ export default function CatalogContent() {
             <div className="flex flex-wrap gap-2 mb-6">
               <button
                 onClick={() => { setFeaturedOnly(false); setSelectedCategory(''); setCurrentPage(1); updateURL({ category: '', page: '', featured: '' }); }}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                className={`px-4 py-2.5 min-h-[44px] rounded-full text-sm font-medium transition-all ${
                   !selectedCategory && !featuredOnly
                     ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30'
                     : 'bg-[#1f1f23] text-[#9ca3af] border border-[#26262b] hover:border-purple-500/50'
@@ -244,7 +244,7 @@ export default function CatalogContent() {
               </button>
               <button
                 onClick={() => { setFeaturedOnly(true); setSelectedCategory(''); setCurrentPage(1); updateURL({ category: '', page: '', featured: 'true' }); }}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                className={`px-4 py-2.5 min-h-[44px] rounded-full text-sm font-medium transition-all ${
                   featuredOnly
                     ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30'
                     : 'bg-[#1f1f23] text-[#9ca3af] border border-[#26262b] hover:border-purple-500/50'
@@ -256,7 +256,7 @@ export default function CatalogContent() {
                 <button
                   key={cat.id}
                   onClick={() => { setFeaturedOnly(false); setSelectedCategory(cat.id); setCurrentPage(1); updateURL({ category: cat.id, page: '', featured: '' }); }}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
+                  className={`px-4 py-2.5 min-h-[44px] rounded-full text-sm font-medium transition-all ${
                     selectedCategory === cat.id
                       ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30'
                       : 'bg-[#1f1f23] text-[#9ca3af] border border-[#26262b] hover:border-purple-500/50'
@@ -296,7 +296,7 @@ export default function CatalogContent() {
                     setCurrentPage(1);
                     updateURL({ search: '', page: '' });
                   }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9ca3af] hover:text-white"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#9ca3af] hover:text-white min-w-[44px] min-h-[44px] flex items-center justify-center"
                 >
                   ✕
                 </button>
@@ -362,7 +362,7 @@ export default function CatalogContent() {
               <div className="mt-4 flex justify-end">
                 <button
                   onClick={resetFilters}
-                  className="text-sm text-[#9ca3af] hover:text-purple-400 transition-colors"
+                  className="text-sm text-[#9ca3af] hover:text-purple-400 transition-colors min-h-[44px]"
                 >
                   Скинути фільтри
                 </button>
@@ -381,7 +381,7 @@ export default function CatalogContent() {
 
           {/* Products Grid with Skeleton Loading */}
           {loading ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
               {Array.from({ length: 8 }).map((_, i) => (
                 <div key={i} className="animate-pulse">
                   <div className="aspect-square bg-[#1f1f23] rounded-xl mb-3" />
@@ -408,7 +408,7 @@ export default function CatalogContent() {
                   }}
                 />
               )}
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
                 {products.map((product) => (
                   <div
                     key={product.id}
@@ -430,12 +430,12 @@ export default function CatalogContent() {
                       {/* Badges */}
                       <div className="absolute top-2 left-2 flex flex-col gap-1">
                         {product.isFeatured && (
-                          <span className="px-2 py-1 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs font-bold rounded shadow-lg">
+                          <span className="px-2 py-1 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs sm:text-sm font-bold rounded shadow-lg">
                             🔥 Хіт
                           </span>
                         )}
                         {product.discountPrice && product.originalPrice && (
-                          <span className="px-2 py-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs font-bold rounded shadow-lg">
+                          <span className="px-2 py-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs sm:text-sm font-bold rounded shadow-lg">
                             -{Math.round((1 - product.discountPrice / product.originalPrice) * 100)}%
                           </span>
                         )}
@@ -473,7 +473,7 @@ export default function CatalogContent() {
                       {product.averageRating !== undefined && product.reviewCount !== undefined && product.reviewCount > 0 && (
                         <div className="flex items-center gap-1 mb-2">
                           <Star size={14} className="fill-yellow-500 text-yellow-500" />
-                          <span className="text-xs text-[#9ca3af]">
+                          <span className="text-xs sm:text-sm text-[#9ca3af]">
                             {product.averageRating.toFixed(1)} ({product.reviewCount})
                           </span>
                         </div>
@@ -514,7 +514,7 @@ export default function CatalogContent() {
                   <button
                     onClick={() => handlePageChange(currentPage - 1)}
                     disabled={currentPage === 1}
-                    className="p-2 rounded-lg bg-[#1f1f23] border border-[#26262b] text-[#9ca3af] hover:text-white hover:border-purple-500/50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg bg-[#1f1f23] border border-[#26262b] text-[#9ca3af] hover:text-white hover:border-purple-500/50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                   >
                     <ChevronLeft size={20} />
                   </button>
@@ -522,7 +522,7 @@ export default function CatalogContent() {
                     <button
                       key={i + 1}
                       onClick={() => handlePageChange(i + 1)}
-                      className={`w-10 h-10 rounded-lg text-sm font-medium transition-all ${
+                      className={`w-11 h-11 rounded-lg text-sm font-medium transition-all ${
                         currentPage === i + 1
                           ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30'
                           : 'bg-[#1f1f23] border border-[#26262b] text-[#9ca3af] hover:border-purple-500/50 hover:text-white'
@@ -534,7 +534,7 @@ export default function CatalogContent() {
                   <button
                     onClick={() => handlePageChange(currentPage + 1)}
                     disabled={currentPage === totalPages}
-                    className="p-2 rounded-lg bg-[#1f1f23] border border-[#26262b] text-[#9ca3af] hover:text-white hover:border-purple-500/50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
+                    className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center rounded-lg bg-[#1f1f23] border border-[#26262b] text-[#9ca3af] hover:text-white hover:border-purple-500/50 disabled:opacity-30 disabled:cursor-not-allowed transition-all"
                   >
                     <ChevronRight size={20} />
                   </button>

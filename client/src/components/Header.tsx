@@ -31,7 +31,6 @@ export default function Header() {
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
-    // Тільки на клієнті читаємо localStorage
     const storedUser = localStorage.getItem('user');
     if (storedUser) {
       setUser(JSON.parse(storedUser));
@@ -44,7 +43,6 @@ export default function Header() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // ✅ Анімація додавання в кошик
   useEffect(() => {
     if (lastAddedPosition) {
       setShowFlyAnimation(true);
@@ -57,7 +55,6 @@ export default function Header() {
   }, [lastAddedPosition, setLastAddedPosition]);
 
   const handleLogout = () => {
-    // Тільки на клієнті працюємо з localStorage і location
     if (typeof window !== 'undefined') {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
@@ -73,13 +70,13 @@ export default function Header() {
       }`}
     >
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-16 md:h-20 gap-4">
+        <div className="flex items-center justify-between h-16 md:h-20 gap-2 sm:gap-4">
           {/* Logo */}
           <Link href="/" className="shrink-0 transition-transform duration-200 hover:scale-105">
             <img
               src="/logo.png"
               alt="GoodsXP — Головна"
-              className="h-20 sm:h-24 md:h-28 lg:h-32 w-auto"
+              className="h-12 sm:h-16 md:h-20 lg:h-28 w-auto"
             />
           </Link>
 
@@ -97,8 +94,8 @@ export default function Header() {
           </nav>
 
           {/* Right Section */}
-          <div className="flex items-center gap-4 md:gap-6 shrink-0">
-            {/* ✅ Phone — visible on desktop */}
+          <div className="flex items-center gap-1 sm:gap-2 md:gap-4 lg:gap-6 shrink-0">
+            {/* Phone — desktop only */}
             <a
               href="tel:+380634010552"
               className="hidden xl:flex items-center gap-2 text-white/90 hover:text-purple-400 transition-colors duration-200"
@@ -108,15 +105,15 @@ export default function Header() {
               <span className="text-sm font-light">+380 (63) 401-05-52</span>
             </a>
 
-            {/* ✅ Wishlist */}
+            {/* Wishlist */}
             <Link
               href="/wishlist"
-              className="relative flex items-center gap-2 text-white/90 hover:text-purple-400 transition-colors duration-200"
+              className="relative flex items-center justify-center min-w-[44px] min-h-[44px] text-white/90 hover:text-purple-400 transition-colors duration-200"
             >
               <Heart size={22} strokeWidth={1.5} />
-              <span className="hidden md:inline text-sm font-light">Обране</span>
+              <span className="hidden md:inline text-sm font-light ml-1">Обране</span>
               {wishlistCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-medium shadow-lg shadow-red-500/30">
+                <span className="absolute top-1 right-1 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-medium shadow-lg shadow-red-500/30">
                   {wishlistCount}
                 </span>
               )}
@@ -125,12 +122,12 @@ export default function Header() {
             {/* Cart */}
             <Link
               href="/cart"
-              className="relative flex items-center gap-2 text-white/90 hover:text-purple-400 transition-colors duration-200"
+              className="relative flex items-center justify-center min-w-[44px] min-h-[44px] text-white/90 hover:text-purple-400 transition-colors duration-200"
             >
               <ShoppingCart size={22} strokeWidth={1.5} />
-              <span className="hidden md:inline text-sm font-light">Кошик</span>
+              <span className="hidden md:inline text-sm font-light ml-1">Кошик</span>
               {itemCount > 0 && (
-                <span className="absolute -top-2 -right-2 bg-gradient-to-r from-purple-600 to-purple-400 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-medium shadow-lg shadow-purple-500/30">
+                <span className="absolute top-1 right-1 bg-gradient-to-r from-purple-600 to-purple-400 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-medium shadow-lg shadow-purple-500/30">
                   {itemCount}
                 </span>
               )}
@@ -138,36 +135,37 @@ export default function Header() {
 
             {/* User */}
             {user ? (
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
                 {user.role === 'ADMIN' && (
                   <Link
                     href={getAdminPagePath('')}
-                    className="text-sm font-light text-white/90 hover:text-purple-400 transition-colors duration-200"
+                    className="hidden md:inline text-sm font-light text-white/90 hover:text-purple-400 transition-colors duration-200"
                   >
                     Адмінка
                   </Link>
                 )}
                 <button
                   onClick={handleLogout}
-                  className="text-sm font-light text-white/90 hover:text-purple-400 transition-colors duration-200"
+                  className="flex items-center justify-center min-w-[44px] min-h-[44px] text-sm font-light text-white/90 hover:text-purple-400 transition-colors duration-200"
                 >
-                  Вийти
+                  <span className="hidden md:inline">Вийти</span>
+                  <User size={20} className="md:hidden" />
                 </button>
               </div>
             ) : (
               <Link
                 href="/login"
-                className="flex items-center gap-2 text-white/90 hover:text-purple-400 transition-colors duration-200"
+                className="flex items-center justify-center min-w-[44px] min-h-[44px] text-white/90 hover:text-purple-400 transition-colors duration-200"
               >
                 <User size={22} strokeWidth={1.5} />
-                <span className="hidden md:inline text-sm font-light">Увійти</span>
+                <span className="hidden md:inline text-sm font-light ml-1">Увійти</span>
               </Link>
             )}
 
             {/* Mobile Menu Button */}
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="lg:hidden text-white/90 hover:text-purple-400 transition-colors duration-200"
+              className="lg:hidden flex items-center justify-center min-w-[44px] min-h-[44px] text-white/90 hover:text-purple-400 transition-colors duration-200"
             >
               {mobileMenuOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
@@ -178,41 +176,48 @@ export default function Header() {
       {/* Mobile Menu */}
       {mobileMenuOpen && (
         <div className="lg:hidden bg-background/98 backdrop-blur-md border-t border-purple-500/20 animate-slide-down">
-          <nav className="container mx-auto px-4 py-6 flex flex-col gap-4">
+          <nav className="container mx-auto px-4 py-4 flex flex-col gap-1">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className="text-lg font-light text-white/90 hover:text-purple-400 transition-colors duration-200 py-2"
+                className="text-lg font-light text-white/90 hover:text-purple-400 transition-colors duration-200 py-3 min-h-[48px] flex items-center"
               >
                 {link.label}
               </Link>
             ))}
             {/* Mobile quick links */}
-            <div className="flex gap-4 pt-4 border-t border-purple-500/10">
+            <div className="flex flex-col gap-1 pt-4 mt-2 border-t border-purple-500/10">
               <Link
                 href="/wishlist"
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-2 text-muted hover:text-purple-400 transition-colors"
+                className="flex items-center gap-3 text-muted hover:text-purple-400 transition-colors py-3 min-h-[48px]"
               >
-                <Heart size={18} />
+                <Heart size={20} />
                 <span>Обране{wishlistCount > 0 ? ` (${wishlistCount})` : ''}</span>
               </Link>
               <Link
                 href="/cart"
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-2 text-muted hover:text-purple-400 transition-colors"
+                className="flex items-center gap-3 text-muted hover:text-purple-400 transition-colors py-3 min-h-[48px]"
               >
-                <ShoppingCart size={18} />
+                <ShoppingCart size={20} />
                 <span>Кошик{itemCount > 0 ? ` (${itemCount})` : ''}</span>
               </Link>
+              <a
+                href="tel:+380634010552"
+                className="flex items-center gap-3 text-muted hover:text-purple-400 transition-colors py-3 min-h-[48px]"
+              >
+                <Phone size={20} />
+                <span>+380 (63) 401-05-52</span>
+              </a>
             </div>
           </nav>
         </div>
       )}
 
-      {/* ✅ Fly to cart animation */}
+      {/* Fly to cart animation */}
       {showFlyAnimation && lastAddedPosition && (
         <FlyToCartAnimation
           startX={lastAddedPosition.x}

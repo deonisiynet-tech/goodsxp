@@ -88,7 +88,7 @@ export default function CartClient() {
           </h1>
           <button
             onClick={() => { clearCart(); }}
-            className="text-sm text-muted hover:text-red-400 transition-colors"
+            className="text-sm text-muted hover:text-red-400 transition-colors py-3 min-h-[44px] flex items-center justify-center"
           >
             Очистити кошик
           </button>
@@ -104,7 +104,7 @@ export default function CartClient() {
                   key={item.productId}
                   className="card p-4 flex flex-col sm:flex-row gap-4 items-start sm:items-center"
                 >
-                  <Link href={`/catalog/${slug}`} className="w-24 h-24 flex-shrink-0 overflow-hidden rounded-xl bg-surfaceLight relative">
+                  <Link href={`/catalog/${slug}`} className="w-20 h-20 sm:w-24 sm:h-24 flex-shrink-0 overflow-hidden rounded-xl bg-surfaceLight relative">
                     <Image
                       src={normalizeImageUrl(item.imageUrl)}
                       alt={item.title}
@@ -130,14 +130,14 @@ export default function CartClient() {
                     <div className="flex items-center border border-purple-500/20 rounded-xl overflow-hidden">
                       <button
                         onClick={() => updateQuantity(item.productId, item.quantity - 1)}
-                        className="px-3 py-2 hover:bg-purple-500/10 transition-colors text-muted hover:text-white"
+                        className="px-3 py-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-purple-500/10 transition-colors text-muted hover:text-white"
                       >
                         <Minus size={16} />
                       </button>
                       <span className="w-10 text-center text-white font-medium text-sm">{item.quantity}</span>
                       <button
                         onClick={() => updateQuantity(item.productId, item.quantity + 1)}
-                        className="px-3 py-2 hover:bg-purple-500/10 transition-colors text-muted hover:text-white"
+                        className="px-3 py-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-purple-500/10 transition-colors text-muted hover:text-white"
                       >
                         <Plus size={16} />
                       </button>
@@ -151,7 +151,7 @@ export default function CartClient() {
 
                     <button
                       onClick={() => removeItem(item.productId)}
-                      className="p-2 text-muted hover:text-red-400 transition-colors"
+                      className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center text-muted hover:text-red-400 transition-colors"
                       title="Видалити"
                     >
                       <Trash2 size={18} />
@@ -164,7 +164,7 @@ export default function CartClient() {
 
           {/* Order Summary */}
           <div className="lg:col-span-1">
-            <div className="card p-6 sticky top-24">
+            <div className="card p-4 sm:p-6 sticky top-24">
               <h2 className="text-xl font-light mb-6 flex items-center gap-2">
                 <Package size={20} className="text-purple-400" />
                 Твоє замовлення
@@ -189,7 +189,7 @@ export default function CartClient() {
 
               {getTotal() < 5000 && (
                 <div className="mb-4 p-3 bg-purple-500/5 rounded-lg border border-purple-500/10">
-                  <p className="text-xs text-muted leading-relaxed">
+                  <p className="text-xs sm:text-sm text-muted leading-relaxed">
                     💡 До безкоштовної доставки ще {(5000 - getTotal()).toLocaleString('uk-UA')} ₴
                   </p>
                 </div>

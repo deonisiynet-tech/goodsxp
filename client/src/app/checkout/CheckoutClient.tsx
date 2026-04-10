@@ -232,16 +232,16 @@ export default function CheckoutClient() {
         <h1 className="text-3xl font-light mb-8">Оформлення замовлення</h1>
 
         {/* ✅ Progress Steps */}
-        <div className="flex items-center justify-between mb-10 px-4">
+        <div className="flex items-center justify-between mb-6 sm:mb-10 px-2 sm:px-4 overflow-x-auto">
           {STEPS.map((step, i) => {
             const isActive = i === currentStep;
             const isCompleted = i < currentStep;
             const Icon = step.icon;
             return (
-              <div key={step.key} className="flex items-center flex-1 last:flex-none">
+              <div key={step.key} className="flex items-center flex-1 last:flex-none min-w-0">
                 <div className="flex flex-col items-center">
                   <div
-                    className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
+                    className={`w-11 h-11 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
                       isCompleted
                         ? 'bg-green-500 text-white'
                         : isActive
@@ -251,12 +251,12 @@ export default function CheckoutClient() {
                   >
                     {isCompleted ? <Check size={18} /> : <Icon size={18} />}
                   </div>
-                  <span className={`text-xs mt-2 ${isActive ? 'text-white' : 'text-[#9ca3af]'}`}>
+                  <span className={`text-xs sm:text-sm mt-2 ${isActive ? 'text-white' : 'text-[#9ca3af]'}`}>
                     {step.label}
                   </span>
                 </div>
                 {i < STEPS.length - 1 && (
-                  <div className={`flex-1 h-0.5 mx-3 mb-6 ${
+                  <div className={`flex-1 h-0.5 mx-1 sm:mx-3 mb-6 ${
                     isCompleted ? 'bg-green-500' : 'bg-[#26262b]'
                   }`} />
                 )}
@@ -285,7 +285,7 @@ export default function CheckoutClient() {
                           className="input-field"
                           placeholder="Іванов"
                         />
-                        {errors.surname && <p className="text-red-400 text-xs mt-1">{errors.surname.message}</p>}
+                        {errors.surname && <p className="text-red-400 text-xs sm:text-sm mt-1">{errors.surname.message}</p>}
                       </div>
                       <div>
                         <label className="block text-sm font-medium mb-1">Ім&apos;я *</label>
@@ -294,7 +294,7 @@ export default function CheckoutClient() {
                           className="input-field"
                           placeholder="Іван"
                         />
-                        {errors.firstName && <p className="text-red-400 text-xs mt-1">{errors.firstName.message}</p>}
+                        {errors.firstName && <p className="text-red-400 text-xs sm:text-sm mt-1">{errors.firstName.message}</p>}
                       </div>
                     </div>
                     <div>
@@ -314,7 +314,7 @@ export default function CheckoutClient() {
                         className="input-field"
                         placeholder="+380 (XX) XXX-XX-XX"
                       />
-                      {errors.phone && <p className="text-red-400 text-xs mt-1">{errors.phone.message}</p>}
+                      {errors.phone && <p className="text-red-400 text-xs sm:text-sm mt-1">{errors.phone.message}</p>}
                     </div>
                   </div>
                   <button
@@ -406,7 +406,7 @@ export default function CheckoutClient() {
                       />
                       <div className="flex-1">
                         <span className="font-medium text-white text-sm">Оплата при отриманні</span>
-                        <p className="text-xs text-muted mt-0.5">Накладений платіж на Новій Пошті</p>
+                        <p className="text-xs sm:text-sm text-muted mt-0.5">Накладений платіж на Новій Пошті</p>
                       </div>
                     </label>
 
@@ -425,7 +425,7 @@ export default function CheckoutClient() {
                       />
                       <div className="flex-1">
                         <span className="font-medium text-white text-sm">Повна передоплата на карту</span>
-                        <p className="text-xs text-muted mt-0.5">Переказ на банківську карту через менеджера</p>
+                        <p className="text-xs sm:text-sm text-muted mt-0.5">Переказ на банківську карту через менеджера</p>
                       </div>
                     </label>
                   </div>
@@ -480,7 +480,7 @@ export default function CheckoutClient() {
                     <ShieldCheck size={24} className="text-green-400 shrink-0" />
                     <div>
                       <p className="text-white text-sm font-medium">Безпечне оформлення</p>
-                      <p className="text-xs text-[#9ca3af]">Менеджер зв&apos;яжеться для підтвердження</p>
+                      <p className="text-xs sm:text-sm text-[#9ca3af]">Менеджер зв&apos;яжеться для підтвердження</p>
                     </div>
                   </div>
 
@@ -497,7 +497,7 @@ export default function CheckoutClient() {
                     </button>
                   </div>
 
-                  <p className="text-xs text-muted text-center mt-4">
+                  <p className="text-xs sm:text-sm text-muted text-center mt-4">
                     Натискаючи &quot;Замовити&quot;, ви погоджуєтесь з умовами доставки та оплати
                   </p>
                 </div>
@@ -559,7 +559,7 @@ export default function CheckoutClient() {
 
               {getTotal() < 5000 && (
                 <div className="mt-4 p-3 bg-purple-500/5 rounded-lg border border-purple-500/10">
-                  <p className="text-xs text-[#9ca3af] leading-relaxed">
+                  <p className="text-xs sm:text-sm text-[#9ca3af] leading-relaxed">
                     До безкоштовної доставки ще {(5000 - getTotal()).toLocaleString('uk-UA')} ₴
                   </p>
                 </div>

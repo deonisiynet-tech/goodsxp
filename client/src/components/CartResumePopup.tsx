@@ -42,11 +42,11 @@ export default function CartResumePopup() {
   if (!show || items.length === 0) return null;
 
   return (
-    <div className="fixed bottom-6 left-6 z-50 animate-slide-up max-w-xs">
+    <div className="fixed bottom-4 left-4 right-4 sm:bottom-6 sm:left-6 sm:right-auto z-50 animate-slide-up max-w-xs">
       <div className="bg-[#18181c]/95 backdrop-blur-md border border-purple-500/20 rounded-2xl p-5 shadow-2xl shadow-purple-500/10">
         <button
           onClick={handleDismiss}
-          className="absolute top-3 right-3 text-[#9ca3af] hover:text-white transition-colors"
+          className="absolute top-3 right-3 text-[#9ca3af] hover:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center p-2"
         >
           <X size={16} />
         </button>
@@ -59,7 +59,7 @@ export default function CartResumePopup() {
             <p className="text-white text-sm font-medium">
               У вас {items.length} товар у кошику
             </p>
-            <p className="text-xs text-muted mt-1">
+            <p className="text-xs sm:text-sm text-muted mt-1">
               {getTotal().toLocaleString('uk-UA')} ₴ — оформіть замовлення
             </p>
           </div>
@@ -67,7 +67,7 @@ export default function CartResumePopup() {
 
         <Link
           href="/cart"
-          className="btn-primary w-full text-sm py-2.5 flex items-center justify-center gap-2"
+          className="btn-primary w-full text-sm py-3 min-h-[44px] flex items-center justify-center gap-2"
           onClick={handleDismiss}
         >
           Перейти до кошика

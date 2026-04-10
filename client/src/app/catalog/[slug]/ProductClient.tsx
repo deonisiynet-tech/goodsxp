@@ -249,7 +249,7 @@ export default function ProductClient({ product }: { product: Product }) {
               </div>
 
               {images.length > 1 && (
-                <div className="grid grid-cols-4 md:grid-cols-6 gap-2">
+                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
                   {images.map((img, idx) => (
                     <button
                       key={idx}
@@ -291,7 +291,7 @@ export default function ProductClient({ product }: { product: Product }) {
                       toast.success('Посилання скопійовано');
                     }
                   }}
-                  className="p-2.5 rounded-xl border border-[#26262b] text-muted hover:text-white hover:border-purple-500/50 transition-all shrink-0"
+                  className="p-2.5 rounded-xl border border-[#26262b] text-muted hover:text-white hover:border-purple-500/50 transition-all shrink-0 min-w-[44px] min-h-[44px]"
                   title="Поділитися"
                 >
                   <Share2 size={20} />
@@ -338,7 +338,7 @@ export default function ProductClient({ product }: { product: Product }) {
               <div className="mb-6">
                 {product.discountPrice && product.originalPrice ? (
                   <div className="flex items-baseline gap-4">
-                    <span className="text-4xl font-bold text-white">
+                    <span className="text-3xl md:text-4xl font-bold text-white">
                       {Number(product.discountPrice).toLocaleString('uk-UA')} ₴
                     </span>
                     <span className="text-xl text-[#9ca3af] line-through">
@@ -387,7 +387,7 @@ export default function ProductClient({ product }: { product: Product }) {
 
               {/* Tabs */}
               <div className="mb-8">
-                <div className="flex gap-1 border-b border-[#26262b] mb-6">
+                <div className="flex gap-1 border-b border-[#26262b] mb-6 overflow-x-auto whitespace-nowrap flex-nowrap">
                   {[
                     { key: 'description' as const, label: 'Опис' },
                     { key: 'specs' as const, label: 'Характеристики' },
@@ -404,7 +404,7 @@ export default function ProductClient({ product }: { product: Product }) {
                           }, 100);
                         }
                       }}
-                      className={`px-4 py-3 text-sm font-medium transition-all relative ${
+                      className={`px-3 py-2 sm:px-4 text-xs sm:text-sm font-medium transition-all relative ${
                         activeTab === tab.key ? 'text-white' : 'text-[#9ca3af] hover:text-white'
                       }`}
                     >
@@ -450,15 +450,15 @@ export default function ProductClient({ product }: { product: Product }) {
               <div className="grid grid-cols-3 gap-4 mb-8">
                 <div className="flex flex-col items-center text-center p-3 bg-[#1f1f23] rounded-xl">
                   <Truck size={20} className="text-[#6366f1] mb-2" />
-                  <span className="text-xs text-[#9ca3af]">Швидка доставка</span>
+                  <span className="text-xs sm:text-sm text-[#9ca3af]">Швидка доставка</span>
                 </div>
                 <div className="flex flex-col items-center text-center p-3 bg-[#1f1f23] rounded-xl">
                   <Shield size={20} className="text-[#6366f1] mb-2" />
-                  <span className="text-xs text-[#9ca3af]">Підтримка клієнтів</span>
+                  <span className="text-xs sm:text-sm text-[#9ca3af]">Підтримка клієнтів</span>
                 </div>
                 <div className="flex flex-col items-center text-center p-3 bg-[#1f1f23] rounded-xl">
                   <RotateCcw size={20} className="text-[#6366f1] mb-2" />
-                  <span className="text-xs text-[#9ca3af]">Повернення 14 днів</span>
+                  <span className="text-xs sm:text-sm text-[#9ca3af]">Повернення 14 днів</span>
                 </div>
               </div>
 
@@ -524,7 +524,7 @@ export default function ProductClient({ product }: { product: Product }) {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value as ReviewSortOption)}
-                  className="input-field py-2 px-3 text-sm"
+                  className="input-field py-2.5 px-3 text-sm"
                 >
                   <option value="newest">Найновіші</option>
                   <option value="best">Найкращі</option>
@@ -556,7 +556,7 @@ export default function ProductClient({ product }: { product: Product }) {
                           <h4 className="font-medium text-white mb-2">{review.name}</h4>
                           {renderStars(review.rating, 14)}
                         </div>
-                        <span className="text-xs text-[#9ca3af]">
+                        <span className="text-xs sm:text-sm text-[#9ca3af]">
                           {new Date(review.createdAt).toLocaleDateString('uk-UA', {
                             day: 'numeric', month: 'numeric', year: 'numeric',
                           })}
@@ -611,7 +611,7 @@ export default function ProductClient({ product }: { product: Product }) {
                         <span className="text-base font-bold text-white">
                           {Number(rp.discountPrice).toLocaleString('uk-UA')} ₴
                         </span>
-                        <span className="text-xs text-[#9ca3af] line-through">
+                        <span className="text-xs sm:text-sm text-[#9ca3af] line-through">
                           {Number(rp.originalPrice).toLocaleString('uk-UA')} ₴
                         </span>
                       </div>

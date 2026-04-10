@@ -29,7 +29,7 @@ export default function DeliveryPage() {
           {/* Delivery Methods */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-12">
             {/* Нова Пошта */}
-            <div className="card p-8 border border-purple-500/20 hover:border-purple-500/40 transition-colors duration-200">
+            <div className="card p-6 sm:p-8 border border-purple-500/20 hover:border-purple-500/40 transition-colors duration-200">
               <div className="flex items-start gap-4 mb-6">
                 <div className="w-14 h-14 rounded-xl bg-purple-500/10 flex items-center justify-center shrink-0">
                   <Truck className="w-7 h-7 text-purple-400" strokeWidth={1.5} />
@@ -66,7 +66,7 @@ export default function DeliveryPage() {
             </div>
 
             {/* Кур'єрська доставка */}
-            <div className="card p-8 border border-purple-500/20 hover:border-purple-500/40 transition-colors duration-200">
+            <div className="card p-6 sm:p-8 border border-purple-500/20 hover:border-purple-500/40 transition-colors duration-200">
               <div className="flex items-start gap-4 mb-6">
                 <div className="w-14 h-14 rounded-xl bg-purple-500/10 flex items-center justify-center shrink-0">
                   <Home className="w-7 h-7 text-purple-400" strokeWidth={1.5} />
@@ -106,7 +106,7 @@ export default function DeliveryPage() {
           {/* Additional Info */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
             {/* Як оформити доставку */}
-            <div className="card p-8">
+            <div className="card p-6 sm:p-8">
               <h2 className="text-xl font-light mb-6">Як оформити доставку?</h2>
               <ol className="space-y-4">
                 {[
@@ -126,7 +126,7 @@ export default function DeliveryPage() {
             </div>
 
             {/* Важлива інформація */}
-            <div className="card p-8">
+            <div className="card p-6 sm:p-8">
               <h2 className="text-xl font-light mb-6">Важлива інформація</h2>
               <ul className="space-y-3">
                 {[
@@ -146,7 +146,7 @@ export default function DeliveryPage() {
           </div>
 
           {/* ✅ FAQ */}
-          <div className="card p-8">
+          <div className="card p-6 sm:p-8">
             <h2 className="text-xl font-light mb-6">Часті запитання</h2>
             <div className="space-y-4">
               {[

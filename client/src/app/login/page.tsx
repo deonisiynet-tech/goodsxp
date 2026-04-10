@@ -56,13 +56,13 @@ export default function LoginPage() {
         {/* ✅ Back arrow */}
         <Link
           href="/"
-          className="inline-flex items-center gap-2 text-muted hover:text-purple-400 transition-colors mb-6"
+          className="inline-flex items-center gap-2 text-muted hover:text-purple-400 transition-colors mb-6 min-h-[44px] flex items-center gap-2"
         >
           <ArrowLeft size={18} />
           <span className="text-sm">На головну</span>
         </Link>
 
-        <div className="card p-8">
+        <div className="card p-6 sm:p-8">
           <h1 className="text-2xl font-light text-center mb-8">Вхід в систему</h1>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -97,7 +97,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-white transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted hover:text-white transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center p-2.5"
                 >
                   {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
                 </button>

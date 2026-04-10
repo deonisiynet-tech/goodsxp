@@ -156,7 +156,7 @@ export default function ContactsPage() {
       
       <main className="flex-1 pt-20">
         {/* ===== HERO SECTION ===== */}
-        <section className="relative py-20 overflow-hidden">
+        <section className="relative py-12 md:py-20 overflow-hidden">
           {/* Background */}
           <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-purple-500/10" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-primary/10 rounded-full blur-[120px]" />
@@ -164,12 +164,12 @@ export default function ContactsPage() {
           <div className="container mx-auto px-4 relative z-10">
             <div className="max-w-3xl mx-auto text-center">
               {/* Icon */}
-              <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-primary/20 to-purple-500/20 border border-primary/30 flex items-center justify-center animate-fade-in">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-primary/20 to-purple-500/20 border border-primary/30 flex items-center justify-center animate-fade-in">
                 <Headphones size={40} className="text-primary" strokeWidth={1.5} />
               </div>
 
               {/* Title */}
-              <h1 className="text-4xl md:text-6xl font-bold mb-6 animate-slide-up">
+              <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-6 animate-slide-up">
                 Контакти
               </h1>
 
@@ -311,7 +311,7 @@ export default function ContactsPage() {
         </section>
 
         {/* ===== CTA SECTION ===== */}
-        <section className="py-20">
+        <section className="py-12 md:py-20">
           <div className="container mx-auto px-4">
             <div className="relative rounded-3xl overflow-hidden bg-gradient-to-br from-primary/20 via-primary/10 to-purple-500/20 border border-primary/20">
               <div className="absolute inset-0 bg-gradient-to-br from-primary/5 to-transparent" />
@@ -327,7 +327,7 @@ export default function ContactsPage() {
                   href="https://t.me/goodsxp"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-primary to-purple-400 text-background font-semibold rounded-2xl transition-all duration-300 hover:shadow-[0_0_40px_rgba(255,255,255,0.3)] hover:scale-105"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 bg-gradient-to-r from-primary to-purple-400 text-background font-semibold rounded-2xl transition-all duration-300 hover:shadow-[0_0_40px_rgba(255,255,255,0.3)] hover:scale-105"
                 >
                   <MessageCircle size={20} />
                   Написати в Telegram
