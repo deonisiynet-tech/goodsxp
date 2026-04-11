@@ -98,6 +98,10 @@ const app = express();
 // Railway provides PORT via environment variable, default to 8080 if not set
 const PORT = process.env.PORT ? Number(process.env.PORT) : 8080;
 
+// ✅ Trust proxy headers from Railway/load balancer
+// Required for express-rate-limit to correctly identify users via X-Forwarded-For
+app.set('trust proxy', true);
+
 console.log('🚀 Initializing Express app...');
 console.log('📡 Server will listen on PORT:', PORT);
 
