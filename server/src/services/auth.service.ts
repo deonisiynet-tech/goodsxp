@@ -5,6 +5,7 @@ import prisma from '../prisma/client.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { registerSchema, loginSchema } from '../utils/validators.js';
 import { sendResetPasswordEmail } from './email.service.js';
+import { getJwtSecret, getJwtExpiresIn } from '../utils/jwt.js';
 
 export class AuthService {
   async register(email: string, password: string) {
@@ -69,11 +70,8 @@ export class AuthService {
   }
 
   private generateToken(id: string, email: string, role: string) {
-    const secret = process.env.JWT_SECRET;
-    if (!secret) {
-      throw new AppError('JWT_SECRET не налаштовано. Сервер не може авторизувати запити.', 500);
-    }
-    const expiresIn = process.env.JWT_EXPIRES_IN || '7d';
+    const secret = getJwtSecret();
+    const expiresIn = getJwtExpiresIn();
 
     return jwt.sign({ id, email, role }, secret, { expiresIn } as jwt.SignOptions);
   }

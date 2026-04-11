@@ -410,6 +410,12 @@ export class ProductController {
   async getVariants(req: Request, res: Response, next: NextFunction) {
     try {
       const { productId } = req.params;
+
+      // Validate UUID format
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(productId)) {
+        return res.status(400).json({ error: 'Невірний формат productId' });
+      }
+
       const [options, variants] = await Promise.all([
         variantService.getOptions(productId),
         variantService.getVariants(productId),
@@ -425,9 +431,15 @@ export class ProductController {
     try {
       const { productId } = req.params;
       const { optionValueIds } = req.body; // string[]
-      if (!optionValueIds || !Array.isArray(optionValueIds)) {
-        return res.status(400).json({ error: 'optionValueIds — масив ID' });
+
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(productId)) {
+        return res.status(400).json({ error: 'Невірний формат productId' });
       }
+
+      if (!optionValueIds || !Array.isArray(optionValueIds) || optionValueIds.length === 0) {
+        return res.status(400).json({ error: 'optionValueIds — обов\'язковий масив ID' });
+      }
+
       const variant = await variantService.findVariantByOptions(productId, optionValueIds);
       res.json({ variant });
     } catch (error) {
@@ -442,8 +454,15 @@ export class ProductController {
     try {
       const { productId } = req.params;
       const { name } = req.body;
-      if (!name) return res.status(400).json({ error: "name обов'язковий" });
-      const option = await variantService.createOption(productId, name);
+
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(productId)) {
+        return res.status(400).json({ error: 'Невірний формат productId' });
+      }
+      if (!name || typeof name !== 'string' || !name.trim()) {
+        return res.status(400).json({ error: "name — обов'язкове рядкове значення" });
+      }
+
+      const option = await variantService.createOption(productId, name.trim());
       res.status(201).json(option);
     } catch (error) {
       next(error);
@@ -455,8 +474,12 @@ export class ProductController {
     try {
       const { optionId } = req.params;
       const { name } = req.body;
-      if (!name) return res.status(400).json({ error: "name обов'язковий" });
-      const option = await variantService.updateOption(optionId, name);
+
+      if (!name || typeof name !== 'string' || !name.trim()) {
+        return res.status(400).json({ error: "name — обов'язкове рядкове значення" });
+      }
+
+      const option = await variantService.updateOption(optionId, name.trim());
       res.json(option);
     } catch (error) {
       next(error);
@@ -479,8 +502,12 @@ export class ProductController {
     try {
       const { optionId } = req.params;
       const { value } = req.body;
-      if (!value) return res.status(400).json({ error: "value обов'язковий" });
-      const optionValue = await variantService.createOptionValue(optionId, value);
+
+      if (!value || typeof value !== 'string' || !value.trim()) {
+        return res.status(400).json({ error: "value — обов'язкове рядкове значення" });
+      }
+
+      const optionValue = await variantService.createOptionValue(optionId, value.trim());
       res.status(201).json(optionValue);
     } catch (error) {
       next(error);
@@ -503,9 +530,29 @@ export class ProductController {
     try {
       const { productId } = req.params;
       const { price, stock, image, options } = req.body;
+
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(productId)) {
+        return res.status(400).json({ error: 'Невірний формат productId' });
+      }
+
       if (price === undefined || stock === undefined || !options) {
         return res.status(400).json({ error: 'price, stock, options — обов\'язкові' });
       }
+
+      if (!Array.isArray(options) || options.length === 0) {
+        return res.status(400).json({ error: 'options — обов\'язковий масив [{ optionId, optionValueId, name, value }]' });
+      }
+
+      // Validate each option entry
+      for (let i = 0; i < options.length; i++) {
+        const opt = options[i];
+        if (!opt.optionId || !opt.optionValueId || !opt.name || !opt.value) {
+          return res.status(400).json({
+            error: `option[${i}] повинен мати { optionId, optionValueId, name, value }`,
+          });
+        }
+      }
+
       const variant = await variantService.createVariant({
         productId,
         price: Number(price),
@@ -524,6 +571,11 @@ export class ProductController {
     try {
       const { variantId } = req.params;
       const data = req.body;
+
+      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(variantId)) {
+        return res.status(400).json({ error: 'Невірний формат variantId' });
+      }
+
       const variant = await variantService.updateVariant(variantId, data);
       res.json(variant);
     } catch (error) {

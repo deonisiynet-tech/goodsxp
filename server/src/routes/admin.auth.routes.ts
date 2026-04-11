@@ -6,18 +6,9 @@ import { Role } from '@prisma/client';
 import { limitLoginAttempts } from '../middleware/loginAttempts.js';
 import { loginLogService } from '../services/login-log.service.js';
 import { twoFAService } from '../services/twoFA.service.js';
+import { getJwtSecret, getJwtExpiresIn } from '../utils/jwt.js';
 
 const router = Router();
-
-// ✅ Centralized JWT secret getter — fails fast if not configured
-function getJwtSecret(): string {
-  const secret = process.env.JWT_SECRET;
-  if (!secret) {
-    console.error('❌ JWT_SECRET is not configured!');
-    throw new Error('JWT_SECRET is not configured');
-  }
-  return secret;
-}
 
 interface AdminLoginRequest {
   email: string;
@@ -155,10 +146,11 @@ router.post('/login', limitLoginAttempts, async (req: Request, res: Response) =>
 
     // Generate JWT token
     const secret = getJwtSecret();
+    const expiresIn = getJwtExpiresIn();
     const token = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       secret,
-      { expiresIn: '7d' }
+      { expiresIn } as jwt.SignOptions
     );
 
     // Set secure cookie with improved security settings

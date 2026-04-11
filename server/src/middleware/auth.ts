@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { Role } from '@prisma/client';
 import prisma from '../prisma/client.js';
 import { ActionType } from '@prisma/client';
+import { getJwtSecret } from '../utils/jwt.js';
 
 export interface AuthRequest extends Request {
   user?: {
@@ -41,11 +42,7 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
       return res.status(401).json({ error: 'Потрібна авторизація' });
     }
 
-    const secret = process.env.JWT_SECRET;
-    if (!secret) {
-      console.error('❌ JWT_SECRET не налаштовано');
-      return res.status(500).json({ error: 'Серверна помилка конфігурації' });
-    }
+    const secret = getJwtSecret();
 
     let decoded: { id: string; email: string; role: Role };
     try {
