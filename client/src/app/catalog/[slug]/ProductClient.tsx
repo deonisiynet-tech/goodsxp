@@ -47,6 +47,8 @@ export default function ProductClient({ product }: { product: Product }) {
   const [newRating, setNewRating] = useState(5);
   const [newName, setNewName] = useState('');
   const [newComment, setNewComment] = useState('');
+  const [newPros, setNewPros] = useState('');
+  const [newCons, setNewCons] = useState('');
   const [submittingReview, setSubmittingReview] = useState(false);
   const [sortBy, setSortBy] = useState<ReviewSortOption>('newest');
   const [activeTab, setActiveTab] = useState<'description' | 'specs' | 'reviews'>('description');
@@ -125,11 +127,15 @@ export default function ProductClient({ product }: { product: Product }) {
         name: newName,
         rating: newRating,
         comment: newComment,
+        pros: newPros || undefined,
+        cons: newCons || undefined,
       });
       setReviews((prev) => [...prev, newReview]);
       setShowReviewForm(false);
       setNewName('');
       setNewComment('');
+      setNewPros('');
+      setNewCons('');
       setNewRating(5);
       toast.success('Відгук додано!');
     } catch (error: any) {
@@ -629,7 +635,37 @@ export default function ProductClient({ product }: { product: Product }) {
                         </span>
                       </div>
                       {review.comment && (
-                        <p className="text-[#9ca3af] text-sm leading-relaxed">{review.comment}</p>
+                        <p className="text-[#9ca3af] text-sm leading-relaxed mb-3">{review.comment}</p>
+                      )}
+
+                      {/* Переваги */}
+                      {review.pros && (
+                        <div className="mt-3 p-3 rounded-lg bg-emerald-500/5 border border-emerald-500/20">
+                          <div className="flex items-start gap-2">
+                            <svg className="w-4 h-4 text-emerald-400 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                            </svg>
+                            <div className="flex-1">
+                              <span className="text-xs font-semibold text-emerald-400 uppercase tracking-wide">Переваги</span>
+                              <p className="text-sm text-[#9ca3af] mt-1 leading-relaxed whitespace-pre-line">{review.pros}</p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Недоліки */}
+                      {review.cons && (
+                        <div className="mt-2 p-3 rounded-lg bg-red-500/5 border border-red-500/20">
+                          <div className="flex items-start gap-2">
+                            <svg className="w-4 h-4 text-red-400 mt-0.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                            <div className="flex-1">
+                              <span className="text-xs font-semibold text-red-400 uppercase tracking-wide">Недоліки</span>
+                              <p className="text-sm text-[#9ca3af] mt-1 leading-relaxed whitespace-pre-line">{review.cons}</p>
+                            </div>
+                          </div>
+                        </div>
                       )}
                     </div>
                   ))}
@@ -744,6 +780,30 @@ export default function ProductClient({ product }: { product: Product }) {
                   rows={4}
                   className="input-field resize-none"
                   placeholder="Ваш відгук..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-emerald-400 mb-2">
+                  ✓ Переваги <span className="text-[#6b7280] font-light">(необов&apos;язково)</span>
+                </label>
+                <textarea
+                  value={newPros}
+                  onChange={(e) => setNewPros(e.target.value)}
+                  rows={3}
+                  className="input-field resize-none"
+                  placeholder="Що вам сподобалось..."
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-red-400 mb-2">
+                  ✗ Недоліки <span className="text-[#6b7280] font-light">(необов&apos;язково)</span>
+                </label>
+                <textarea
+                  value={newCons}
+                  onChange={(e) => setNewCons(e.target.value)}
+                  rows={3}
+                  className="input-field resize-none"
+                  placeholder="Що не сподобалось..."
                 />
               </div>
               <div className="flex gap-4 pt-4">

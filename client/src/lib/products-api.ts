@@ -27,6 +27,8 @@ export interface Review {
   name: string
   rating: number
   comment: string | null
+  pros: string | null
+  cons: string | null
   createdAt: string
 }
 
@@ -227,7 +229,7 @@ export const productsApi = {
   },
 
   // Create review (by product ID)
-  createReview: async (productId: string, data: { name: string; rating: number; comment?: string }) => {
+  createReview: async (productId: string, data: { name: string; rating: number; comment?: string; pros?: string; cons?: string }) => {
     return fetchAPI(`/products/${productId}/reviews`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -236,7 +238,7 @@ export const productsApi = {
   },
 
   // Create review by slug
-  createReviewBySlug: async (slug: string, data: { name: string; rating: number; comment?: string }) => {
+  createReviewBySlug: async (slug: string, data: { name: string; rating: number; comment?: string; pros?: string; cons?: string }) => {
     return fetchAPI(`/products/slug/${slug}/reviews`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
