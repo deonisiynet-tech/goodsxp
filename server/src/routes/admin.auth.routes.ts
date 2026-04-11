@@ -167,10 +167,9 @@ router.post('/login', limitLoginAttempts, async (req: Request, res: Response) =>
     res.cookie('admin_session', token, {
       httpOnly: true,
       secure: isProduction,
-      sameSite: 'strict', // Changed from 'lax' to 'strict'
+      sameSite: 'lax', // 'lax' дозволяє cookie для навігаційних GET запитів і fetch з credentials
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
       path: '/',
-      domain: isProduction ? undefined : undefined, // Don't set domain for localhost
     });
 
     // Reset login attempts on successful login

@@ -19,20 +19,25 @@ export interface AuthRequest extends Request {
 export const authenticate = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     let token: string | undefined;
+    let tokenSource = 'none';
 
     // First check Authorization header (Bearer token)
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
       token = authHeader.split(' ')[1];
+      tokenSource = 'Bearer';
     }
 
     // If no Bearer token, check cookies (for admin session)
     if (!token && req.cookies) {
       token = req.cookies.admin_session;
+      tokenSource = 'cookie';
     }
 
     // No token found
     if (!token) {
+      console.warn(`⚠️ Auth: No token found (path: ${req.path}, method: ${req.method})`);
+      console.warn(`   Cookies present: ${Object.keys(req.cookies || {})}`);
       return res.status(401).json({ error: 'Потрібна авторизація' });
     }
 
@@ -45,7 +50,8 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
     let decoded: { id: string; email: string; role: Role };
     try {
       decoded = jwt.verify(token, secret) as { id: string; email: string; role: Role };
-    } catch (jwtError) {
+    } catch (jwtError: any) {
+      console.warn(`⚠️ Auth: JWT verify failed (${tokenSource}): ${jwtError.message}`);
       // Token expired or invalid - clear cookie if it was from cookie
       if (req.cookies?.admin_session) {
         res.clearCookie('admin_session', {
