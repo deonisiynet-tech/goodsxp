@@ -23,7 +23,7 @@ export class OrderService {
     warehouseAddress?: string | null;
     comment?: string;
     paymentMethod?: 'COD' | 'CARD';
-    items: { productId: string; quantity: number }[];
+    items: { productId: string; quantity: number; variantId?: string | null; variantOptions?: Array<{ name: string; value: string }> | null }[];
   }) {
     const validated = orderSchema.parse(data);
 
@@ -56,28 +56,62 @@ export class OrderService {
         throw new AppError('Деякі товари недоступні', 400);
       }
 
-      // Check stock availability INSIDE locked transaction (atomic)
+      // ✅ Check stock: якщо є variantId — перевіряємо variant.stock, інакше product.stock
       for (const item of validated.items) {
         const product = products.find((p) => p.id === item.productId);
         if (!product) {
-          throw new AppError(`Товар недоступний`, 400);
+          throw new AppError('Товар недоступний', 400);
         }
-        if (product.stock < item.quantity) {
-          throw new AppError(
-            `Товар "${product.title}" недоступний у кількості ${item.quantity}. Доступно: ${product.stock}`,
-            400
-          );
+
+        if (item.variantId) {
+          // Перевіряємо stock конкретного варіанту
+          const variant = await tx.productVariant.findUnique({
+            where: { id: item.variantId },
+            select: { id: true, stock: true },
+          });
+          if (!variant) {
+            throw new AppError('Обраний варіант товару недоступний', 400);
+          }
+          if (variant.stock < item.quantity) {
+            throw new AppError(
+              `Товар "${product.title}" (варіант) недоступний у кількості ${item.quantity}. Доступно: ${variant.stock}`,
+              400
+            );
+          }
+        } else {
+          // Перевіряємо базовий stock товару
+          if (product.stock < item.quantity) {
+            throw new AppError(
+              `Товар "${product.title}" недоступний у кількості ${item.quantity}. Доступно: ${product.stock}`,
+              400
+            );
+          }
         }
       }
 
-      // Calculate total price and total profit
+      // Calculate total price and total profit + precompute prices for items
       let totalPrice = 0;
       let totalProfit = 0;
+      const itemPrices: Map<string, number> = new Map(); // productId -> effectivePrice
+
       for (const item of validated.items) {
         const product = products.find((p) => p.id === item.productId)!;
-        const priceNum = Number(product.price);
-        const discountNum = product.discountPrice ? Number(product.discountPrice) : null;
-        const effectivePrice = (discountNum !== null && discountNum < priceNum) ? discountNum : priceNum;
+        let effectivePrice: number;
+
+        // Якщо є variant — використовуємо ціну варіанту
+        if (item.variantId) {
+          const variant = await tx.productVariant.findUnique({
+            where: { id: item.variantId },
+            select: { price: true },
+          });
+          effectivePrice = variant ? Number(variant.price) : Number(product.price);
+        } else {
+          const priceNum = Number(product.price);
+          const discountNum = product.discountPrice ? Number(product.discountPrice) : null;
+          effectivePrice = (discountNum !== null && discountNum < priceNum) ? discountNum : priceNum;
+        }
+
+        itemPrices.set(`${item.productId}-${item.variantId || 'default'}`, effectivePrice);
         totalPrice += effectivePrice * item.quantity;
         totalProfit += Number(product.margin ?? 0) * item.quantity;
       }
@@ -98,11 +132,12 @@ export class OrderService {
           items: {
             create: validated.items.map((item) => {
               const product = products.find((p) => p.id === item.productId)!;
-              const priceNum = Number(product.price);
-              const discountNum = product.discountPrice ? Number(product.discountPrice) : null;
-              const effectivePrice = (discountNum !== null && discountNum < priceNum) ? discountNum : priceNum;
+              const effectivePrice = itemPrices.get(`${item.productId}-${item.variantId || 'default'}`)!;
+
               return {
                 productId: item.productId,
+                variantId: item.variantId || null,
+                variantOptions: item.variantOptions ? (item.variantOptions as any) : null,
                 quantity: item.quantity,
                 price: effectivePrice,
                 margin: product.margin ?? 0,
@@ -127,14 +162,19 @@ export class OrderService {
 
       // Update stock — атомарний decrement всередині транзакції
       for (const item of validated.items) {
-        await tx.product.update({
-          where: { id: item.productId },
-          data: {
-            stock: {
-              decrement: item.quantity,
-            },
-          },
-        });
+        if (item.variantId) {
+          // Зменшуємо stock конкретного варіанту
+          await tx.productVariant.update({
+            where: { id: item.variantId },
+            data: { stock: { decrement: item.quantity } },
+          });
+        } else {
+          // Зменшуємо базовий stock товару
+          await tx.product.update({
+            where: { id: item.productId },
+            data: { stock: { decrement: item.quantity } },
+          });
+        }
       }
 
       return newOrder;

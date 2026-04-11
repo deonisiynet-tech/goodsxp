@@ -2,9 +2,9 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
-import { productsApi } from '@/lib/products-api'
+import { productsApi, variantsApi } from '@/lib/products-api'
 import toast from 'react-hot-toast'
-import { X, Upload, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { X, Upload, Trash2, ChevronLeft, ChevronRight, Plus, Package } from 'lucide-react'
 
 interface Category {
   id: string
@@ -48,6 +48,14 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
   // Categories
   const [categories, setCategories] = useState<Category[]>([]);
 
+  // Variant state
+  const [variantOptions, setVariantOptions] = useState<any[]>([]);
+  const [variants, setVariants] = useState<any[]>([]);
+  const [newOptionName, setNewOptionName] = useState('');
+  const [newOptionValue, setNewOptionValue] = useState<Record<string, string>>({});
+  const [showVariants, setShowVariants] = useState(false);
+  const [newVariant, setNewVariant] = useState({ price: 0, stock: 0, image: '', selectedOptions: {} as Record<string, string> });
+
   useEffect(() => {
     const loadCategories = async () => {
       try {
@@ -59,6 +67,133 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
     };
     loadCategories();
   }, []);
+
+  // Load variants when editing existing product
+  useEffect(() => {
+    if (product?.id) {
+      loadVariants(product.id);
+    } else {
+      setVariantOptions([]);
+      setVariants([]);
+    }
+  }, [product?.id]);
+
+  const loadVariants = async (productId: string) => {
+    try {
+      const res = await variantsApi.getVariants(productId);
+      setVariantOptions(res.options || []);
+      setVariants(res.variants || []);
+    } catch {
+      // silently fail
+    }
+  };
+
+  const handleAddOption = async () => {
+    if (!product?.id || !newOptionName.trim()) return;
+    try {
+      const option = await variantsApi.createOption(product.id, newOptionName.trim());
+      setVariantOptions((prev) => [...prev, option]);
+      setNewOptionName('');
+      toast.success('Опцію додано');
+    } catch (e: any) {
+      toast.error(e.message || 'Помилка додавання опції');
+    }
+  };
+
+  const handleDeleteOption = async (optionId: string) => {
+    if (!confirm('Видалити опцію та всі її значення?')) return;
+    try {
+      await variantsApi.deleteOption(optionId);
+      setVariantOptions((prev) => prev.filter((o) => o.id !== optionId));
+      toast.success('Опцію видалено');
+    } catch (e: any) {
+      toast.error(e.message || 'Помилка видалення');
+    }
+  };
+
+  const handleAddOptionValue = async (optionId: string) => {
+    const value = newOptionValue[optionId]?.trim();
+    if (!value) return;
+    try {
+      const optionValue = await variantsApi.createOptionValue(optionId, value);
+      setVariantOptions((prev) =>
+        prev.map((o) =>
+          o.id === optionId ? { ...o, values: [...(o.values || []), optionValue] } : o
+        )
+      );
+      setNewOptionValue((prev) => ({ ...prev, [optionId]: '' }));
+      toast.success('Значення додано');
+    } catch (e: any) {
+      toast.error(e.message || 'Помилка');
+    }
+  };
+
+  const handleDeleteOptionValue = async (optionId: string, valueId: string) => {
+    try {
+      await variantsApi.deleteOptionValue(valueId);
+      setVariantOptions((prev) =>
+        prev.map((o) =>
+          o.id === optionId
+            ? { ...o, values: (o.values || []).filter((v: any) => v.id !== valueId) }
+            : o
+        )
+      );
+      toast.success('Значення видалено');
+    } catch (e: any) {
+      toast.error(e.message || 'Помилка');
+    }
+  };
+
+  const handleCreateVariant = async () => {
+    if (!product?.id) return;
+    const selectedOptionIds = Object.entries(newVariant.selectedOptions);
+    if (selectedOptionIds.length === 0) {
+      toast.error('Оберіть хоча б одну характеристику');
+      return;
+    }
+
+    // ✅ Перевірка дублікатів — чи вже існує така комбінація
+    const newValueIds = selectedOptionIds.map(([, vid]) => vid).sort().join(',');
+    const existingDuplicate = variants.find((v) => {
+      const existingIds = (v.options || []).map((o: any) => o.optionValueId).sort().join(',');
+      return existingIds === newValueIds;
+    });
+    if (existingDuplicate) {
+      toast.error('Такий варіант вже існує');
+      return;
+    }
+
+    const options = selectedOptionIds.map(([optionId, optionValueId]) => {
+      const option = variantOptions.find((o) => o.id === optionId);
+      const value = option?.values?.find((v: any) => v.id === optionValueId);
+      return { optionId, optionValueId, name: option?.name || '', value: value?.value || '' };
+    });
+
+    try {
+      const variant = await variantsApi.createVariant(product.id, {
+        price: newVariant.price,
+        stock: newVariant.stock,
+        image: newVariant.image || null,
+        options,
+      });
+      setVariants((prev) => [...prev, variant]);
+      setNewVariant({ price: 0, stock: 0, image: '', selectedOptions: {} });
+      toast.success('Варіант створено');
+    } catch (e: any) {
+      toast.error(e.message || 'Помилка створення варіанту');
+    }
+  };
+
+  const handleDeleteVariant = async (variantId: string) => {
+    if (!confirm('Видалити варіант?')) return;
+    try {
+      await variantsApi.deleteVariant(variantId);
+      setVariants((prev) => prev.filter((v) => v.id !== variantId));
+      toast.success('Варіант видалено');
+    } catch (e: any) {
+      toast.error(e.message || 'Помилка');
+    }
+  };
 
   // All images for display = existing URLs + new URLs
   const allImages = [
@@ -576,6 +711,178 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
               )}
             </div>
           </div>
+
+          {/* ===== VARIANT MANAGEMENT ===== */}
+          {product?.id && (
+            <div className="border border-border rounded-xl p-4 bg-surface/50">
+              <button
+                type="button"
+                onClick={() => setShowVariants(!showVariants)}
+                className="flex items-center gap-2 text-sm font-semibold text-white w-full"
+              >
+                <Package size={18} className="text-purple-400" />
+                Варіанти товару
+                <span className="ml-auto text-muted text-xs">
+                  {variants.length} шт.
+                </span>
+              </button>
+
+              {showVariants && (
+                <div className="mt-4 space-y-4">
+                  {/* Add Option */}
+                  <div>
+                    <label className="block text-xs font-medium text-muted mb-1">Додати характеристику</label>
+                    <div className="flex gap-2">
+                      <input
+                        value={newOptionName}
+                        onChange={(e) => setNewOptionName(e.target.value)}
+                        placeholder="Наприклад: Колір"
+                        className="input-field text-sm py-2"
+                      />
+                      <button type="button" onClick={handleAddOption} className="btn-primary px-4 py-2 text-sm whitespace-nowrap">
+                        <Plus size={16} />
+                      </button>
+                    </div>
+
+                    {/* Option Values */}
+                    {variantOptions.map((option) => (
+                      <div key={option.id} className="mt-2 p-2 bg-[#1f1f23] rounded-lg">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-xs font-medium text-white">{option.name}</span>
+                          <button
+                            type="button"
+                            onClick={() => handleDeleteOption(option.id)}
+                            className="text-red-400 hover:text-red-300"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                        <div className="flex flex-wrap gap-1">
+                          {(option.values || []).map((v: any) => (
+                            <span
+                              key={v.id}
+                              className="text-xs bg-purple-500/20 text-purple-300 px-2 py-0.5 rounded-full flex items-center gap-1"
+                            >
+                              {v.value}
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteOptionValue(option.id, v.id)}
+                                className="text-red-400 hover:text-red-300"
+                              >
+                                ×
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                        <div className="flex gap-1 mt-1">
+                          <input
+                            value={newOptionValue[option.id] || ''}
+                            onChange={(e) => setNewOptionValue((prev) => ({ ...prev, [option.id]: e.target.value }))}
+                            placeholder="Додати значення..."
+                            className="input-field text-xs py-1.5 flex-1"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => handleAddOptionValue(option.id)}
+                            className="text-purple-400 hover:text-purple-300 text-xs px-2"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Create Variant */}
+                  {variantOptions.length > 0 && (
+                    <div className="p-3 bg-[#1f1f23] rounded-lg">
+                      <label className="block text-xs font-medium text-white mb-2">Створити варіант</label>
+                      {/* Option selectors */}
+                      {variantOptions.map((option) => (
+                        <div key={option.id} className="mb-2">
+                          <label className="block text-xs text-muted mb-0.5">{option.name}</label>
+                          <select
+                            value={newVariant.selectedOptions[option.id] || ''}
+                            onChange={(e) =>
+                              setNewVariant((prev) => ({
+                                ...prev,
+                                selectedOptions: { ...prev.selectedOptions, [option.id]: e.target.value },
+                              }))
+                            }
+                            className="input-field text-xs py-1.5"
+                          >
+                            <option value="">— Оберіть —</option>
+                            {(option.values || []).map((v: any) => (
+                              <option key={v.id} value={v.id}>{v.value}</option>
+                            ))}
+                          </select>
+                        </div>
+                      ))}
+                      <div className="grid grid-cols-2 gap-2 mt-2">
+                        <div>
+                          <label className="block text-xs text-muted mb-0.5">Ціна</label>
+                          <input
+                            type="number"
+                            value={newVariant.price || ''}
+                            onChange={(e) => setNewVariant((prev) => ({ ...prev, price: Number(e.target.value) }))}
+                            className="input-field text-xs py-1.5"
+                            placeholder="0"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-muted mb-0.5">Залишок</label>
+                          <input
+                            type="number"
+                            value={newVariant.stock || ''}
+                            onChange={(e) => setNewVariant((prev) => ({ ...prev, stock: Number(e.target.value) }))}
+                            className="input-field text-xs py-1.5"
+                            placeholder="0"
+                          />
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleCreateVariant}
+                        className="btn-primary w-full mt-2 py-2 text-xs"
+                      >
+                        Створити варіант
+                      </button>
+                    </div>
+                  )}
+
+                  {/* Existing Variants */}
+                  {variants.length > 0 && (
+                    <div>
+                      <label className="block text-xs font-medium text-white mb-2">
+                        Існуючі варіанти ({variants.length})
+                      </label>
+                      <div className="space-y-1 max-h-48 overflow-y-auto">
+                        {variants.map((v) => (
+                          <div key={v.id} className="flex items-center justify-between p-2 bg-[#1f1f23] rounded-lg text-xs">
+                            <div className="flex-1">
+                              <span className="text-white">
+                                {(v.options || []).map((o: any) => o.value).join(' / ')}
+                              </span>
+                              <span className="text-muted ml-2">
+                                — {Number(v.price).toLocaleString('uk-UA')} ₴ / {v.stock} шт.
+                              </span>
+                            </div>
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteVariant(v.id)}
+                              className="text-red-400 hover:text-red-300 ml-2"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
 
           <div className="flex items-center gap-2">
             <input

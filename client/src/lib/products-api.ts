@@ -321,3 +321,63 @@ export const productsApi = {
     })
   },
 }
+
+// ===== Variant API =====
+
+export const variantsApi = {
+  // Public
+  getVariants: async (productId: string) =>
+    fetchAPI(`/products/${productId}/variants`),
+
+  findVariant: async (productId: string, optionValueIds: string[]) =>
+    fetchAPI(`/products/${productId}/variants/find`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ optionValueIds }),
+    }),
+
+  // Admin
+  createOption: async (productId: string, name: string) =>
+    fetchAPI(`/products/${productId}/options`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    }),
+
+  updateOption: async (optionId: string, name: string) =>
+    fetchAPI(`/products/options/${optionId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name }),
+    }),
+
+  deleteOption: async (optionId: string) =>
+    fetchAPI(`/products/options/${optionId}`, { method: 'DELETE' }),
+
+  createOptionValue: async (optionId: string, value: string) =>
+    fetchAPI(`/products/options/${optionId}/values`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ value }),
+    }),
+
+  deleteOptionValue: async (valueId: string) =>
+    fetchAPI(`/products/option-values/${valueId}`, { method: 'DELETE' }),
+
+  createVariant: async (productId: string, data: { price: number; stock: number; image?: string | null; options: any[] }) =>
+    fetchAPI(`/products/${productId}/variants`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }),
+
+  updateVariant: async (variantId: string, data: any) =>
+    fetchAPI(`/products/variants/${variantId}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data),
+    }),
+
+  deleteVariant: async (variantId: string) =>
+    fetchAPI(`/products/variants/${variantId}`, { method: 'DELETE' }),
+};

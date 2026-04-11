@@ -6,6 +6,8 @@ import { productsApi, Review } from '@/lib/products-api';
 import { useCartStore } from '@/lib/store';
 import { useWishlistStore } from '@/lib/wishlist';
 import { normalizeImageUrl } from '@/lib/image-utils';
+import VariantSelector, { ProductOption, ProductVariant, VariantOption } from '@/components/VariantSelector';
+import BuyPopup from '@/components/BuyPopup';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -30,6 +32,8 @@ interface Product {
   isPopular: boolean;
   averageRating?: number;
   reviewCount?: number;
+  options?: ProductOption[];
+  variants?: ProductVariant[];
 }
 
 type ReviewSortOption = 'newest' | 'best' | 'worst';
@@ -51,6 +55,43 @@ export default function ProductClient({ product }: { product: Product }) {
   const setLastAddedPosition = useCartStore((state) => state.setLastAddedPosition);
   const wishlistToggle = useWishlistStore((state) => state.toggleItem);
   const isInWishlist = useWishlistStore((state) => state.isInWishlist);
+
+  // Variant state — variants тепер приходять з SSR (page.tsx)
+  const hasVariants = (product.options?.length ?? 0) > 0;
+  const finalOptions = product.options || [];
+  const finalVariants = product.variants || [];
+
+  const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
+  const [showBuyPopup, setShowBuyPopup] = useState(false);
+
+  // Find selected variant
+  const selectedVariant = (() => {
+    if (!hasVariants || finalVariants.length === 0) return null;
+    const selectedValueIds = Object.values(selectedOptions);
+    if (selectedValueIds.length === 0) return null;
+    for (const v of finalVariants) {
+      const vOpts = (v.options as VariantOption[]).map((o) => o.optionValueId).sort().join(',');
+      const sOpts = [...selectedValueIds].sort().join(',');
+      if (vOpts === sOpts) return v;
+    }
+    return null;
+  })();
+
+  const handleOptionSelect = (optionId: string, valueId: string) => {
+    setSelectedOptions((prev) => ({
+      ...prev,
+      [optionId]: prev[optionId] === valueId ? '' : valueId,
+    }));
+    // Reset image to main when options change
+    setSelectedImage(0);
+  };
+
+  // Effective price & stock
+  const effectivePrice = selectedVariant
+    ? Number(selectedVariant.price)
+    : (product.discountPrice && product.discountPrice < product.price ? product.discountPrice : product.price);
+
+  const effectiveStock = selectedVariant ? selectedVariant.stock : product.stock;
 
   useEffect(() => {
     loadReviews(product.slug);
@@ -112,21 +153,30 @@ export default function ProductClient({ product }: { product: Product }) {
       setLastAddedPosition({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
     }
 
-    const actualPrice = (product.discountPrice && product.discountPrice < product.price)
-      ? product.discountPrice
-      : product.price;
+    // Check variant selection
+    if (hasVariants && !selectedVariant) {
+      toast.error('Оберіть варіант товару');
+      return;
+    }
 
-    const imageList = getImageList(product);
+    const imageList = effectiveImage;
     const imageUrl = imageList.length > 0 ? imageList[0] : null;
+
+    const variantOptions = selectedVariant
+      ? (selectedVariant.options as VariantOption[]).map((o) => ({ name: o.name, value: o.value }))
+      : undefined;
 
     addItem({
       productId: product.id,
       title: product.title,
-      price: Number(actualPrice),
+      price: Number(effectivePrice),
       imageUrl,
+      variantId: selectedVariant?.id,
+      variantOptions,
+      variantImage: selectedVariant?.image || null,
     });
 
-    toast.success('Товар додано до кошика');
+    setShowBuyPopup(true);
   };
 
   const handleWishlistToggle = () => {
@@ -160,6 +210,11 @@ export default function ProductClient({ product }: { product: Product }) {
     return imageUrls;
   };
 
+  // Effective image — variant image or product images
+  const effectiveImage = selectedVariant?.image
+    ? [normalizeImageUrl(selectedVariant.image)]
+    : getImageList(product);
+
   const renderStars = (rating: number, size: number = 16) => {
     return (
       <div className="flex items-center gap-0.5">
@@ -178,7 +233,7 @@ export default function ProductClient({ product }: { product: Product }) {
     );
   };
 
-  const images = getImageList(product);
+  const images = effectiveImage;
   const safeSelectedIndex = images.length > 0
     ? Math.min(selectedImage, images.length - 1)
     : 0;
@@ -336,10 +391,10 @@ export default function ProductClient({ product }: { product: Product }) {
               </div>
 
               <div className="mb-6">
-                {product.discountPrice && product.originalPrice ? (
+                {product.discountPrice && product.originalPrice && !selectedVariant ? (
                   <div className="flex items-baseline gap-4">
                     <span className="text-3xl md:text-4xl font-bold text-white">
-                      {Number(product.discountPrice).toLocaleString('uk-UA')} ₴
+                      {Number(effectivePrice).toLocaleString('uk-UA')} ₴
                     </span>
                     <span className="text-xl text-[#9ca3af] line-through">
                       {Number(product.originalPrice).toLocaleString('uk-UA')} ₴
@@ -347,27 +402,27 @@ export default function ProductClient({ product }: { product: Product }) {
                   </div>
                 ) : (
                   <p className="text-4xl font-light text-white">
-                    {Number(product.price).toLocaleString('uk-UA')} ₴
+                    {Number(effectivePrice).toLocaleString('uk-UA')} ₴
                   </p>
                 )}
               </div>
 
               <div className="mb-6 space-y-3">
-                <div className={`flex items-center gap-2 ${product.stock > 0 ? 'text-green-400' : 'text-red-400'}`}>
+                <div className={`flex items-center gap-2 ${effectiveStock > 0 ? 'text-green-400' : 'text-red-400'}`}>
                   <Check size={20} strokeWidth={2} />
                   <span className="text-sm font-medium">
-                    {product.stock > 0 ? (
+                    {effectiveStock > 0 ? (
                       <>
                         В наявності
-                        {product.stock <= 10 && (
-                          <span className="ml-2 text-orange-400">⚡ Залишилось лише {product.stock} шт.</span>
+                        {effectiveStock <= 10 && (
+                          <span className="ml-2 text-orange-400">⚡ Залишилось лише {effectiveStock} шт.</span>
                         )}
                       </>
                     ) : 'Немає в наявності'}
                   </span>
                 </div>
 
-                {product.stock > 0 && product.stock <= 15 && (
+                {effectiveStock > 0 && effectiveStock <= 15 && (
                   <div className="flex items-center gap-2 text-orange-400">
                     <svg className="w-4 h-4 animate-pulse" fill="currentColor" viewBox="0 0 20 20">
                       <path d="M10 12a2 2 0 100-4 2 2 0 000 4z"/>
@@ -463,6 +518,17 @@ export default function ProductClient({ product }: { product: Product }) {
               </div>
 
               <div className="space-y-4 mt-auto">
+                {/* Variant Selector */}
+                {(finalOptions.length > 0 || finalVariants.length > 0) && (
+                  <VariantSelector
+                    options={finalOptions}
+                    variants={finalVariants}
+                    selectedOptions={selectedOptions}
+                    onOptionSelect={handleOptionSelect}
+                    selectedVariant={selectedVariant}
+                  />
+                )}
+
                 <div className="flex items-center gap-4">
                   <label className="text-sm font-medium text-[#9ca3af]">Кількість:</label>
                   <div className="flex items-center border border-[#26262b] rounded-xl overflow-hidden">
@@ -474,9 +540,9 @@ export default function ProductClient({ product }: { product: Product }) {
                     </button>
                     <span className="w-16 text-center text-white font-medium">{quantity}</span>
                     <button
-                      onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
+                      onClick={() => setQuantity(Math.min(effectiveStock, quantity + 1))}
                       className="px-4 py-3 bg-[#1f1f23] hover:bg-[#26262b] transition-colors"
-                      disabled={quantity >= product.stock}
+                      disabled={quantity >= effectiveStock}
                     >
                       +
                     </button>
@@ -486,11 +552,11 @@ export default function ProductClient({ product }: { product: Product }) {
                 <button
                   data-add-to-cart-btn
                   onClick={handleAddToCart}
-                  disabled={product.stock === 0}
+                  disabled={effectiveStock === 0}
                   className="btn-primary w-full py-4 text-base flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <ShoppingCart size={20} />
-                  {product.stock > 0 ? 'Додати до кошика' : 'Товар недоступний'}
+                  {effectiveStock > 0 ? 'Купити' : 'Товар недоступний'}
                 </button>
 
                 <button
@@ -700,6 +766,18 @@ export default function ProductClient({ product }: { product: Product }) {
             </form>
           </div>
         </div>
+      )}
+
+      {/* Buy Popup */}
+      {showBuyPopup && (
+        <BuyPopup
+          title={product.title}
+          price={Number(effectivePrice)}
+          imageUrl={effectiveImage[0] || null}
+          quantity={quantity}
+          variantOptions={selectedVariant ? (selectedVariant.options as VariantOption[]).map((o) => ({ name: o.name, value: o.value })) : undefined}
+          onClose={() => setShowBuyPopup(false)}
+        />
       )}
     </main>
   );

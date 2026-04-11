@@ -93,13 +93,24 @@ export default function OrdersPage() {
     if (!confirm('Ви впевнені, що хочете видалити це замовлення?')) return
 
     try {
+      // Отримуємо CSRF токен з cookies перед видаленням
+      const csrfToken = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrf_token='))
+        ?.split('=')[1]
+
       const response = await fetch(getAdminApiFullPath(`/orders/${id}`), {
         method: 'DELETE',
         credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken || '',
+        },
       })
 
       if (!response.ok) {
-        throw new Error('Failed to delete order')
+        const errorData = await response.json().catch(() => null)
+        throw new Error(errorData?.error || `Failed to delete order (${response.status})`)
       }
 
       toast.success('Замовлення видалено')

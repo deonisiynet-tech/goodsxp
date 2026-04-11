@@ -134,6 +134,11 @@ export class ProductService {
       skip,
       take: limit,
       orderBy: { [sortBy]: sortOrder },
+      include: {
+        _count: {
+          select: { variants: true },
+        },
+      },
     }) as any[];
 
     const total = await prisma.product.count({ where });
@@ -151,10 +156,12 @@ export class ProductService {
 
     const productsWithRating = products.map((product: any) => {
       const stats = ratingMap.get(product.id);
+      const hasVariants = product._count?.variants > 0;
       return {
         ...product,
         averageRating: stats ? Math.round((stats.avg as number) * 10) / 10 : 0,
         reviewCount: stats ? (stats.count as number) : 0,
+        hasVariants,
       };
     });
 

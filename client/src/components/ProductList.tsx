@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { productsApi } from '@/lib/products-api';
 import { useCartStore } from '@/lib/store';
 import { normalizeImageUrl } from '@/lib/image-utils';
@@ -22,6 +23,7 @@ interface Product {
   reviewCount?: number;
   isFeatured?: boolean;
   isPopular?: boolean;
+  hasVariants?: boolean;
 }
 
 interface ProductListProps {
@@ -33,6 +35,7 @@ interface ProductListProps {
 }
 
 export default function ProductList({ title = 'Каталог товарів', limit = 20, showAllLink = false, popular = false, featured = false }: ProductListProps) {
+  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const addItem = useCartStore((state) => state.addItem);
@@ -74,6 +77,12 @@ export default function ProductList({ title = 'Каталог товарів', l
 
   const handleAddToCart = (e: React.MouseEvent, product: Product) => {
     e.preventDefault();
+
+    // ✅ Якщо товар має варіанти — редірект на сторінку товару для вибору
+    if (product.hasVariants) {
+      router.push(`/catalog/${product.slug}`);
+      return;
+    }
 
     // Використовуємо discountPrice якщо є і вона менша за price
     const actualPrice = (product.discountPrice && product.discountPrice < product.price)

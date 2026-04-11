@@ -24,6 +24,8 @@ interface Product {
   isPopular: boolean;
   averageRating?: number;
   reviewCount?: number;
+  options?: any[];
+  variants?: any[];
 }
 
 async function fetchProductBySlug(slug: string): Promise<{ product: Product | null; redirected?: boolean; newSlug?: string }> {
@@ -31,10 +33,9 @@ async function fetchProductBySlug(slug: string): Promise<{ product: Product | nu
   try {
     const res = await fetch(`${apiUrl}/api/products/${slug}`, {
       next: { revalidate: 60 },
-      redirect: 'manual', // ✅ Не редіректити автоматично — обробимо вручну
+      redirect: 'manual',
     });
 
-    // ✅ 301 редірект — старий slug → новий
     if (res.status === 301) {
       const data = await res.json();
       return { product: data.product, redirected: true, newSlug: data.newSlug };
@@ -42,6 +43,21 @@ async function fetchProductBySlug(slug: string): Promise<{ product: Product | nu
 
     if (!res.ok) return { product: null };
     const product = await res.json();
+
+    // ✅ Завантажуємо variants + options для SSR (прибираємо flicker)
+    try {
+      const variantsRes = await fetch(`${apiUrl}/api/products/${product.id}/variants`, {
+        next: { revalidate: 60 },
+      });
+      if (variantsRes.ok) {
+        const variantsData = await variantsRes.json();
+        product.options = variantsData.options || [];
+        product.variants = variantsData.variants || [];
+      }
+    } catch {
+      // variants не критичні — якщо не завантажились, product все одно працює
+    }
+
     return { product };
   } catch {
     return { product: null };

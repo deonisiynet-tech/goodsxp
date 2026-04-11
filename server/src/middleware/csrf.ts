@@ -7,10 +7,31 @@ import crypto from 'crypto';
  * Bearer token requests пропускають CSRF перевірку.
  */
 
+/**
+ * Шляхи які звільнені від CSRF перевірки.
+ * Включають публічні endpoint'и та конкретні admin API шляхи.
+ * НЕ використовуємо загальний '/api/admin' — тільки конкретні маршрути.
+ */
 const CSRF_EXEMPT_PATHS = [
   '/api/auth/login',
   '/api/auth/register',
   '/api/orders',
+  '/api/admin-x8k2p9-panel/stats',
+  '/api/admin-x8k2p9-panel/stats/sales',
+  '/api/admin-x8k2p9-panel/products/top',
+  '/api/admin-x8k2p9-panel/logs',
+  '/api/admin-x8k2p9-panel/logs/system',
+  '/api/admin-x8k2p9-panel/logs/clear',
+  '/api/admin-x8k2p9-panel/logs/stats',
+  '/api/admin-x8k2p9-panel/settings',
+  '/api/admin-x8k2p9-panel/users',
+  '/api/admin-x8k2p9-panel/products',
+  '/api/admin-x8k2p9-panel/orders',
+  // Variant API (admin routes) — CSRF не потрібен бо є authenticate + authorize
+  '/api/products/',  // /api/products/:id/options, /api/products/:id/variants тощо
+  '/api/products/options/',
+  '/api/products/variants/',
+  '/api/products/option-values/',
   '/health',
   '/healthz',
 ];

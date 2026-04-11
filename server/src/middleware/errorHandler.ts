@@ -43,6 +43,9 @@ export const errorHandler = (
 };
 
 export const notFound = (req: Request, res: Response, next: NextFunction) => {
+  console.error(`⚠️ 404 Not Found: ${req.method} ${req.originalUrl}`);
+  console.error(`   Headers: ${JSON.stringify(req.headers?.authorization ? { auth: 'Bearer ***' } : { auth: 'none' })}`);
+  console.error(`   Cookies: ${JSON.stringify(Object.keys(req.cookies || {}))}`);
   const error = new AppError(`Маршрут не знайдено: ${req.originalUrl}`, 404);
   next(error);
 };

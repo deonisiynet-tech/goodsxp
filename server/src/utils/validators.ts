@@ -117,6 +117,13 @@ export const orderSchema = z.object({
     z.object({
       productId: z.string().uuid(),
       quantity: z.number().int().positive().min(1),
+      variantId: z.string().uuid().optional().nullable(),
+      variantOptions: z.array(
+        z.object({
+          name: z.string(),
+          value: z.string(),
+        })
+      ).optional().nullable(),
     })
   ).min(1, 'Кошик порожній'),
 }).refine((data) => {

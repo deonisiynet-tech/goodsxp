@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { ProductService } from '../services/product.service.js';
+import { VariantService } from '../services/variant.service.js';
 import { AuthRequest } from '../middleware/auth.js';
 import { processImageUpload } from '../middleware/upload.js';
 import { AdminService } from '../services/admin.service.js';
@@ -8,6 +9,7 @@ import prisma from '../prisma/client.js';
 import { productSchema, sanitizeHtml } from '../utils/validators.js';
 
 const productService = new ProductService();
+const variantService = new VariantService();
 const adminService = new AdminService();
 
 export class ProductController {
@@ -78,10 +80,38 @@ export class ProductController {
           discountPrice: true,
           imageUrl: true,
           stock: true,
+          _count: {
+            select: { variants: true },
+          },
         },
       });
 
-      res.json({ products });
+      // Додаємо hasVariants + мінімальну ціну з варіантів
+      const productsWithVariants = await Promise.all(
+        products.map(async (p) => {
+          const hasVariants = p._count.variants > 0;
+          let minPrice = Number(p.price);
+
+          if (hasVariants) {
+            const variants = await prisma.productVariant.findMany({
+              where: { productId: p.id },
+              select: { price: true },
+            });
+            if (variants.length > 0) {
+              minPrice = Math.min(...variants.map((v) => Number(v.price)));
+            }
+          }
+
+          const { _count, ...rest } = p;
+          return {
+            ...rest,
+            hasVariants,
+            minPrice: hasVariants ? minPrice : undefined,
+          };
+        })
+      );
+
+      res.json({ products: productsWithVariants });
     } catch (error) {
       next(error);
     }
@@ -370,6 +400,144 @@ export class ProductController {
         return res.status(400).json({ message: error.message });
       }
       console.error('Create review by slug error:', error);
+      next(error);
+    }
+  }
+
+  // ===== VARIANT ROUTES (Public) =====
+
+  /** GET /api/products/:productId/variants — отримати options + variants */
+  async getVariants(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { productId } = req.params;
+      const [options, variants] = await Promise.all([
+        variantService.getOptions(productId),
+        variantService.getVariants(productId),
+      ]);
+      res.json({ options, variants });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /** POST /api/products/:productId/variants/find — знайти варіант за optionValueIds */
+  async findVariant(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { productId } = req.params;
+      const { optionValueIds } = req.body; // string[]
+      if (!optionValueIds || !Array.isArray(optionValueIds)) {
+        return res.status(400).json({ error: 'optionValueIds — масив ID' });
+      }
+      const variant = await variantService.findVariantByOptions(productId, optionValueIds);
+      res.json({ variant });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  // ===== VARIANT ROUTES (Admin) =====
+
+  /** POST /api/products/:productId/options — створити опцію */
+  async createOption(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { productId } = req.params;
+      const { name } = req.body;
+      if (!name) return res.status(400).json({ error: "name обов'язковий" });
+      const option = await variantService.createOption(productId, name);
+      res.status(201).json(option);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /** PUT /api/products/options/:optionId */
+  async updateOption(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { optionId } = req.params;
+      const { name } = req.body;
+      if (!name) return res.status(400).json({ error: "name обов'язковий" });
+      const option = await variantService.updateOption(optionId, name);
+      res.json(option);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /** DELETE /api/products/options/:optionId */
+  async deleteOption(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { optionId } = req.params;
+      await variantService.deleteOption(optionId);
+      res.json({ message: 'Опцію видалено' });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /** POST /api/products/options/:optionId/values — створити значення */
+  async createOptionValue(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { optionId } = req.params;
+      const { value } = req.body;
+      if (!value) return res.status(400).json({ error: "value обов'язковий" });
+      const optionValue = await variantService.createOptionValue(optionId, value);
+      res.status(201).json(optionValue);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /** DELETE /api/products/option-values/:valueId */
+  async deleteOptionValue(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { valueId } = req.params;
+      await variantService.deleteOptionValue(valueId);
+      res.json({ message: 'Значення видалено' });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /** POST /api/products/:productId/variants — створити варіант */
+  async createVariant(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { productId } = req.params;
+      const { price, stock, image, options } = req.body;
+      if (price === undefined || stock === undefined || !options) {
+        return res.status(400).json({ error: 'price, stock, options — обов\'язкові' });
+      }
+      const variant = await variantService.createVariant({
+        productId,
+        price: Number(price),
+        stock: Number(stock),
+        image: image || null,
+        options,
+      });
+      res.status(201).json(variant);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /** PUT /api/products/variants/:variantId — оновити варіант */
+  async updateVariant(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { variantId } = req.params;
+      const data = req.body;
+      const variant = await variantService.updateVariant(variantId, data);
+      res.json(variant);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  /** DELETE /api/products/variants/:variantId — видалити варіант */
+  async deleteVariant(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { variantId } = req.params;
+      await variantService.deleteVariant(variantId);
+      res.json({ message: 'Варіант видалено' });
+    } catch (error) {
       next(error);
     }
   }

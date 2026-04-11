@@ -130,6 +130,8 @@ export default function CheckoutClient() {
         items: items.map((item) => ({
           productId: item.productId,
           quantity: item.quantity,
+          variantId: item.variantId || null,
+          variantOptions: item.variantOptions || null,
         })),
       };
 
