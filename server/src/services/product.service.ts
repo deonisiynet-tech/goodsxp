@@ -461,7 +461,7 @@ export class ProductService {
     });
   }
 
-  async createReview(productId: string, data: { name: string; rating: number; comment?: string }) {
+  async createReview(productId: string, data: { name: string; rating: number; comment?: string; pros?: string; cons?: string }) {
     const product = await prisma.product.findUnique({ where: { id: productId } });
     if (!product) {
       throw new Error('Товар не знайдено');
@@ -487,12 +487,24 @@ export class ProductService {
       sanitizedComment = data.comment.trim().slice(0, 2000);
     }
 
+    // ✅ Validate and sanitize pros/cons (optional)
+    let sanitizedPros: string | undefined = undefined;
+    if (data.pros) {
+      sanitizedPros = data.pros.trim().slice(0, 1000) || undefined;
+    }
+    let sanitizedCons: string | undefined = undefined;
+    if (data.cons) {
+      sanitizedCons = data.cons.trim().slice(0, 1000) || undefined;
+    }
+
     const review = await prisma.review.create({
       data: {
         productId,
         name: sanitizedName,
         rating: data.rating,
         comment: sanitizedComment,
+        pros: sanitizedPros,
+        cons: sanitizedCons,
       },
     });
 

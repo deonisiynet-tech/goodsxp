@@ -342,7 +342,7 @@ export class ProductController {
   async createReview(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const { name, rating, comment } = req.body;
+      const { name, rating, comment, pros, cons } = req.body;
 
       // Validate rating
       const ratingNum = Number(rating);
@@ -350,7 +350,7 @@ export class ProductController {
         return res.status(400).json({ message: 'Рейтинг має бути від 1 до 5' });
       }
 
-      const review = await productService.createReview(id, { name, rating: ratingNum, comment });
+      const review = await productService.createReview(id, { name, rating: ratingNum, comment, pros, cons });
       res.status(201).json(review);
     } catch (error: any) {
       if (error.message.includes('не знайдено') || error.message.includes('Товар')) {
@@ -381,7 +381,7 @@ export class ProductController {
   async createReviewBySlug(req: Request, res: Response, next: NextFunction) {
     try {
       const { slug } = req.params;
-      const { name, rating, comment } = req.body;
+      const { name, rating, comment, pros, cons } = req.body;
 
       // Validate rating
       const ratingNum = Number(rating);
@@ -390,7 +390,7 @@ export class ProductController {
       }
 
       const result = await productService.getBySlug(slug);
-      const review = await productService.createReview(result.product.id, { name, rating: ratingNum, comment });
+      const review = await productService.createReview(result.product.id, { name, rating: ratingNum, comment, pros, cons });
       res.status(201).json(review);
     } catch (error: any) {
       if (error.message.includes('не знайдено') || error.message.includes('Товар')) {

@@ -144,6 +144,8 @@ model Review {
   name      String
   rating    Int
   comment   String?
+  pros      String?  // Переваги (текст, розділений комами або новими рядками)
+  cons      String?  // Недоліки (текст, розділений комами або новими рядками)
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   userId    String?
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
