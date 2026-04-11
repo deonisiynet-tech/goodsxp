@@ -108,29 +108,33 @@ export default function Header() {
             {/* Wishlist */}
             <Link
               href="/wishlist"
-              className="relative flex items-center justify-center min-w-[44px] min-h-[44px] text-white/90 hover:text-purple-400 transition-colors duration-200"
+              className="flex items-center gap-1 text-white/90 hover:text-purple-400 transition-colors duration-200"
             >
-              <Heart size={22} strokeWidth={1.5} />
-              <span className="hidden md:inline text-sm font-light ml-1">Обране</span>
-              {wishlistCount > 0 && (
-                <span className="absolute top-1 right-1 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-medium shadow-lg shadow-red-500/30">
-                  {wishlistCount}
-                </span>
-              )}
+              <span className="relative inline-flex items-center justify-center min-w-[44px] min-h-[44px]">
+                <Heart size={22} strokeWidth={1.5} />
+                {wishlistCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-gradient-to-r from-red-500 to-pink-500 text-white text-[10px] min-w-[18px] h-[18px] rounded-full flex items-center justify-center font-medium shadow-lg shadow-red-500/30 px-1">
+                    {wishlistCount}
+                  </span>
+                )}
+              </span>
+              <span className="hidden md:inline text-sm font-light">Обране</span>
             </Link>
 
             {/* Cart */}
             <Link
               href="/cart"
-              className="relative flex items-center justify-center min-w-[44px] min-h-[44px] text-white/90 hover:text-purple-400 transition-colors duration-200"
+              className="flex items-center gap-1 text-white/90 hover:text-purple-400 transition-colors duration-200"
             >
-              <ShoppingCart size={22} strokeWidth={1.5} />
-              <span className="hidden md:inline text-sm font-light ml-1">Кошик</span>
-              {itemCount > 0 && (
-                <span className="absolute top-1 right-1 bg-gradient-to-r from-purple-600 to-purple-400 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center font-medium shadow-lg shadow-purple-500/30">
-                  {itemCount}
-                </span>
-              )}
+              <span className="relative inline-flex items-center justify-center min-w-[44px] min-h-[44px]">
+                <ShoppingCart size={22} strokeWidth={1.5} />
+                {itemCount > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-gradient-to-r from-purple-600 to-purple-400 text-white text-[10px] min-w-[18px] h-[18px] rounded-full flex items-center justify-center font-medium shadow-lg shadow-purple-500/30 px-1">
+                    {itemCount}
+                  </span>
+                )}
+              </span>
+              <span className="hidden md:inline text-sm font-light">Кошик</span>
             </Link>
 
             {/* User */}

@@ -15,42 +15,58 @@ export interface AuthRequest extends Request {
 
 /**
  * Authenticate user - supports both Bearer token and Cookie
- * Enhanced security: validates user exists on every request
+ * Strategy:
+ * 1. Try Bearer token if present
+ * 2. If Bearer fails but cookie exists → try cookie as fallback
+ * 3. If no tokens at all → 401
+ * This handles stale localStorage tokens gracefully while keeping cookie sessions alive.
  */
 export const authenticate = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    let token: string | undefined;
-    let tokenSource = 'none';
+    const secret = getJwtSecret();
 
-    // First check Authorization header (Bearer token)
+    // Collect available tokens
     const authHeader = req.headers.authorization;
-    if (authHeader && authHeader.startsWith('Bearer ')) {
-      token = authHeader.split(' ')[1];
-      tokenSource = 'Bearer';
-    }
+    const bearerToken = (authHeader && authHeader.startsWith('Bearer '))
+      ? authHeader.split(' ')[1]
+      : undefined;
+    const cookieToken = req.cookies?.admin_session;
 
-    // If no Bearer token, check cookies (for admin session)
-    if (!token && req.cookies) {
-      token = req.cookies.admin_session;
-      tokenSource = 'cookie';
-    }
-
-    // No token found
-    if (!token) {
+    // No tokens at all
+    if (!bearerToken && !cookieToken) {
       console.warn(`⚠️ Auth: No token found (path: ${req.path}, method: ${req.method})`);
-      console.warn(`   Cookies present: ${Object.keys(req.cookies || {})}`);
       return res.status(401).json({ error: 'Потрібна авторизація' });
     }
 
-    const secret = getJwtSecret();
+    /** Try to verify a token, return decoded or null */
+    const tryVerify = (t: string | undefined): { id: string; email: string; role: Role } | null => {
+      if (!t) return null;
+      try {
+        return jwt.verify(t, secret) as { id: string; email: string; role: Role };
+      } catch {
+        return null;
+      }
+    };
 
-    let decoded: { id: string; email: string; role: Role };
-    try {
-      decoded = jwt.verify(token, secret) as { id: string; email: string; role: Role };
-    } catch (jwtError: any) {
-      console.warn(`⚠️ Auth: JWT verify failed (${tokenSource}): ${jwtError.message}`);
-      // Token expired or invalid - clear cookie if it was from cookie
-      if (req.cookies?.admin_session) {
+    let decoded: { id: string; email: string; role: Role } | null = null;
+
+    // Step 1: Try Bearer token
+    if (bearerToken) {
+      decoded = tryVerify(bearerToken);
+      if (!decoded) {
+        console.warn(`⚠️ Auth: JWT Bearer token invalid, trying cookie fallback...`);
+      }
+    }
+
+    // Step 2: If Bearer failed, try cookie
+    if (!decoded && cookieToken) {
+      decoded = tryVerify(cookieToken);
+    }
+
+    // Step 3: All tokens invalid
+    if (!decoded) {
+      // Clear stale cookie if present
+      if (cookieToken) {
         res.clearCookie('admin_session', {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',
@@ -68,8 +84,7 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
     });
 
     if (!user) {
-      // User deleted but token still valid - clear cookie
-      if (req.cookies?.admin_session) {
+      if (cookieToken) {
         res.clearCookie('admin_session', {
           httpOnly: true,
           secure: process.env.NODE_ENV === 'production',

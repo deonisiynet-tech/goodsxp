@@ -197,6 +197,7 @@ router.post('/login', limitLoginAttempts, async (req: Request, res: Response) =>
     res.json({
       success: true,
       requiresTwoFA: false,
+      token, // ✅ Return JWT token so frontend can store it in localStorage
       user: {
         id: user.id,
         email: user.email,

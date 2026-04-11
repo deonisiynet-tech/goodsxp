@@ -61,6 +61,11 @@ function LoginForm() {
 
       setSuccess('Успішний вхід! Перенаправлення...')
 
+      // ✅ Store JWT token in localStorage for API client auth
+      if (result.token) {
+        localStorage.setItem('token', result.token)
+      }
+
       // Redirect after short delay
       setTimeout(() => {
         router.push(from)
