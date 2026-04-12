@@ -211,28 +211,37 @@ export class ProductService {
 
     // ✅ Якщо не знайдено — шукаємо в редіректах
     if (!product) {
-      const redirect = await prisma.productSlugRedirect.findUnique({
-        where: { oldSlug: slug },
-      });
+      try {
+        const redirect = await prisma.productSlugRedirect.findUnique({
+          where: { oldSlug: slug },
+        });
 
-      if (redirect) {
-        // Знайшли редірект — отримуємо товар по новому slug
-        product = await prisma.product.findFirst({
-          where: { slug: redirect.newSlug },
-        }) as any;
+        if (redirect) {
+          // Знайшли редірект — отримуємо товар по новому slug
+          product = await prisma.product.findFirst({
+            where: { slug: redirect.newSlug },
+          }) as any;
 
-        if (!product) {
-          throw new AppError('Товар не знайдено', 404);
+          if (!product) {
+            throw new AppError('Товар не знайдено', 404);
+          }
+
+          return {
+            product: {
+              ...product,
+              ...withDiscountPercent(product),
+              ...(await this.getProductRating(product.id)),
+            },
+            redirectedFrom: slug,
+          };
         }
-
-        return {
-          product: {
-            ...product,
-            ...withDiscountPercent(product),
-            ...(await this.getProductRating(product.id)),
-          },
-          redirectedFrom: slug,
-        };
+      } catch (err: any) {
+        // Таблиця ProductSlugRedirect ще не існує — пропускаємо редіректи
+        if (err.code === 'P2021' || err.code === 'P2022') {
+          // continue — таблиці немає, просто шукаємо по slug
+        } else {
+          throw err;
+        }
       }
 
       throw new AppError('Товар не знайдено', 404);
@@ -337,15 +346,22 @@ export class ProductService {
 
       // ✅ Якщо slug змінився — зберігаємо редірект
       if (existing.slug !== newSlug) {
-        await prisma.productSlugRedirect.upsert({
-          where: { oldSlug: existing.slug },
-          update: { newSlug },
-          create: {
-            oldSlug: existing.slug,
-            newSlug,
-            productId: id,
-          },
-        });
+        try {
+          await prisma.productSlugRedirect.upsert({
+            where: { oldSlug: existing.slug },
+            update: { newSlug },
+            create: {
+              oldSlug: existing.slug,
+              newSlug,
+              productId: id,
+            },
+          });
+        } catch (err: any) {
+          // Таблиця ProductSlugRedirect ще не існує — просто оновлюємо slug
+          if (err.code !== 'P2021' && err.code !== 'P2022') {
+            throw err;
+          }
+        }
 
         updateData.slug = newSlug;
       }
