@@ -187,3 +187,41 @@
 .leaflet-control-attribution a {
   color: #a855f7;
 }
+
+/* Product description formatting */
+.description-content p {
+  margin-bottom: 0.75rem;
+  line-height: 1.7;
+}
+
+.description-content p:last-child {
+  margin-bottom: 0;
+}
+
+.description-content ul {
+  margin: 0.5rem 0 0.75rem 1.25rem;
+  list-style: none;
+  padding-left: 0;
+}
+
+.description-content ul li {
+  position: relative;
+  padding-left: 1rem;
+  margin-bottom: 0.35rem;
+  line-height: 1.6;
+}
+
+.description-content ul li::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0.55rem;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #a855f7;
+}
+
+.description-content br {
+  line-height: 1.7;
+}

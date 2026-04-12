@@ -47,6 +47,7 @@ function sanitizeHtml(input: string): string {
  * Проста санітизація — тільки видалення тегів без escaping
  * Використовується коли треба зберегти читабельний текст
  * ✅ Рекурсивна — видаляє nested теги
+ * ✅ Зберігає переноси рядків
  */
 function sanitizeHtmlText(input: string): string {
   if (!input || typeof input !== 'string') return '';
@@ -62,6 +63,33 @@ function sanitizeHtmlText(input: string): string {
 }
 
 /**
+ * Санітизація опису товару — зберігає переноси рядків, видаляє HTML.
+ * Форматування застосовується на фронтенді через formatDescription().
+ */
+function sanitizeProductDescription(input: string): string {
+  if (!input || typeof input !== 'string') return '';
+
+  // Remove HTML tags but preserve line breaks
+  let result = input;
+  for (let i = 0; i < 10; i++) {
+    const prev = result;
+    result = result.replace(/<[^>]*>/g, '');
+    if (result === prev) break;
+  }
+
+  // Convert <br> and </p> to actual newlines before stripping
+  result = result
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n\n')
+    .replace(/<p[^>]*>/gi, '');
+
+  // Strip any remaining tags
+  result = result.replace(/<[^>]*>/g, '');
+
+  return result.trim();
+}
+
+/**
  * Санітизація спеціальних символів для Telegram HTML
  * Екранує < > & щоб унеможливити XSS через Telegram повідомлення
  */
@@ -72,7 +100,7 @@ function escapeForTelegramHtml(input: string): string {
     .replace(/>/g, '&gt;');
 }
 
-export { sanitizeHtml, sanitizeHtmlText, escapeForTelegramHtml };
+export { sanitizeHtml, sanitizeHtmlText, sanitizeProductDescription, escapeForTelegramHtml };
 
 export const registerSchema = z.object({
   email: z.string().email('Некоректний email'),
@@ -86,7 +114,7 @@ export const loginSchema = z.object({
 
 export const productSchema = z.object({
   title: z.string().min(1, 'Назва обов\'язкова').max(200).transform(sanitizeHtml),
-  description: z.string().min(1, 'Опис обов\'язковий').max(5000).transform(sanitizeHtml),
+  description: z.string().min(1, 'Опис обов\'язковий').max(5000).transform(sanitizeProductDescription),
   price: z.coerce.number().positive('Ціна має бути додатною'),
   margin: z.coerce.number().min(0, 'Маржа не може бути менше 0').optional().default(0),
   categoryId: z.string().uuid().optional().nullable(),

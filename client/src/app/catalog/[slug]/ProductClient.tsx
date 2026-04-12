@@ -7,6 +7,7 @@ import { useCartStore } from '@/lib/store';
 import { useWishlistStore } from '@/lib/wishlist';
 import { normalizeImageUrl } from '@/lib/image-utils';
 import VariantSelector, { ProductOption, ProductVariant, VariantOption } from '@/components/VariantSelector';
+import DescriptionRenderer from '@/components/DescriptionRenderer';
 import BuyPopup from '@/components/BuyPopup';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
@@ -501,13 +502,11 @@ export default function ProductClient({ product }: { product: Product }) {
                 </div>
 
                 {activeTab === 'description' && (
-                  <div className="text-[#9ca3af] leading-relaxed">
-                    {product.description ? (
-                      <p>{product.description}</p>
-                    ) : (
-                      <p className="text-[#9ca3af]">Опис товару скоро з&apos;явиться. Зверніться до менеджера для отримання деталей.</p>
-                    )}
-                  </div>
+                  product.description ? (
+                    <DescriptionRenderer description={product.description} />
+                  ) : (
+                    <p className="text-[#9ca3af]">Опис товару скоро з&apos;явиться. Зверніться до менеджера для отримання деталей.</p>
+                  )
                 )}
 
                 {activeTab === 'specs' && (
