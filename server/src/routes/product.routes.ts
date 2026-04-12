@@ -15,6 +15,9 @@ router.get('/', controller.getAll);
 router.post('/batch', controller.getBatch); // Batch fetch by IDs — MUST be before /:slug
 router.get('/id/:id', controller.getById);
 
+// Search autocomplete — MUST be before /:slug
+router.get('/search', controller.searchSuggestions);
+
 // Variant routes (public) — MUST be before /:slug to avoid conflicts
 router.get('/:productId/variants', controller.getVariants);
 router.post('/:productId/variants/find', controller.findVariant);

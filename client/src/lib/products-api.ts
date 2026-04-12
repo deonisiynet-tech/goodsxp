@@ -146,6 +146,11 @@ export const productsApi = {
     return fetchAPI('/products/categories');
   },
 
+  // Search autocomplete suggestions
+  searchSuggestions: async (query: string) => {
+    return fetchAPI(`/products/search?q=${encodeURIComponent(query)}`);
+  },
+
   // Get all products (public)
   getAll: async (params?: {
     page?: number

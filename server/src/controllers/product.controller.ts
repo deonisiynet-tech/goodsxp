@@ -23,6 +23,37 @@ export class ProductController {
     }
   }
 
+  /** GET /api/products/search?q=... — autocomplete search suggestions */
+  async searchSuggestions(req: Request, res: Response, next: NextFunction) {
+    try {
+      const q = (req.query.q as string)?.trim();
+      if (!q || q.length < 2) {
+        return res.json({ suggestions: [] });
+      }
+
+      const products = await prisma.product.findMany({
+        where: {
+          isActive: true,
+          title: { contains: q, mode: 'insensitive' },
+        },
+        select: {
+          id: true,
+          slug: true,
+          title: true,
+          price: true,
+          discountPrice: true,
+          imageUrl: true,
+        },
+        orderBy: { title: 'asc' },
+        take: 6,
+      });
+
+      res.json({ suggestions: products });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async getRelated(req: Request, res: Response, next: NextFunction) {
     try {
       const { productId } = req.params;

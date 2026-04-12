@@ -64,6 +64,11 @@ export default function CatalogContent() {
   const [featuredOnly, setFeaturedOnly] = useState(false);
   const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page') || '1'));
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const suggestionsTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
   const addItem = useCartStore((state) => state.addItem);
   const gridRef = useRef<HTMLDivElement>(null);
 
@@ -91,6 +96,44 @@ export default function CatalogContent() {
       if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
     };
   }, [search]);
+
+  // Fetch autocomplete suggestions with debounce
+  useEffect(() => {
+    if (suggestionsTimeoutRef.current) clearTimeout(suggestionsTimeoutRef.current);
+
+    if (search.trim().length < 2) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    suggestionsTimeoutRef.current = setTimeout(async () => {
+      try {
+        const res = await productsApi.searchSuggestions(search.trim());
+        setSuggestions(res.suggestions || []);
+        setShowSuggestions((res.suggestions || []).length > 0);
+        setHighlightedIndex(-1);
+      } catch {
+        setSuggestions([]);
+        setShowSuggestions(false);
+      }
+    }, 300);
+
+    return () => {
+      if (suggestionsTimeoutRef.current) clearTimeout(suggestionsTimeoutRef.current);
+    };
+  }, [search]);
+
+  // Close suggestions on outside click
+  useEffect(() => {
+    const handleClick = (e: MouseEvent) => {
+      if (suggestionsRef.current && !suggestionsRef.current.contains(e.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    return () => document.removeEventListener('mousedown', handleClick);
+  }, []);
 
   // Update URL params
   const updateURL = useCallback((newParams: Record<string, string>) => {
@@ -194,6 +237,42 @@ export default function CatalogContent() {
     toast.success('Товар додано до кошика');
   };
 
+  const handleSelectSuggestion = (slug: string, title: string) => {
+    setSearch(title);
+    setDebouncedSearch(title);
+    setShowSuggestions(false);
+    router.push(`/catalog/${slug}`);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (!showSuggestions || suggestions.length === 0) {
+      if (e.key === 'Enter') {
+        updateURL({ search: debouncedSearch, page: '' });
+        setCurrentPage(1);
+      }
+      return;
+    }
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setHighlightedIndex((prev) => Math.min(prev + 1, suggestions.length - 1));
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setHighlightedIndex((prev) => Math.max(prev - 1, 0));
+    } else if (e.key === 'Enter' && highlightedIndex >= 0) {
+      e.preventDefault();
+      const selected = suggestions[highlightedIndex];
+      handleSelectSuggestion(selected.slug, selected.title);
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      updateURL({ search: debouncedSearch, page: '' });
+      setCurrentPage(1);
+      setShowSuggestions(false);
+    }
+  };
+
   const handleSortChange = (field: string, value: string) => {
     setCurrentPage(1);
     updateURL({ [field]: value, page: '' });
@@ -273,26 +352,28 @@ export default function CatalogContent() {
 
           {/* Search and Filters Toggle */}
           <div className="flex flex-col md:flex-row gap-4 mb-8">
-            <div className="relative flex-1">
+            <div className="relative flex-1" ref={suggestionsRef}>
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9ca3af]" size={20} />
               <input
                 type="text"
                 placeholder="Пошук товарів..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    updateURL({ search: debouncedSearch, page: '' });
-                    setCurrentPage(1);
-                  }
-                }}
+                onFocus={() => { if (suggestions.length > 0) setShowSuggestions(true); }}
+                onKeyDown={handleKeyDown}
                 className="input-field pl-12"
+                autoComplete="off"
+                role="combobox"
+                aria-expanded={showSuggestions}
+                aria-haspopup="listbox"
               />
               {search && (
                 <button
                   onClick={() => {
                     setSearch('');
                     setDebouncedSearch('');
+                    setSuggestions([]);
+                    setShowSuggestions(false);
                     setCurrentPage(1);
                     updateURL({ search: '', page: '' });
                   }}
@@ -300,6 +381,52 @@ export default function CatalogContent() {
                 >
                   ✕
                 </button>
+              )}
+
+              {/* Autocomplete Dropdown */}
+              {showSuggestions && suggestions.length > 0 && (
+                <div
+                  className="absolute z-50 mt-2 w-full bg-[#18181c] border border-[#26262b] rounded-xl shadow-2xl shadow-purple-500/10 overflow-hidden"
+                  role="listbox"
+                >
+                  {suggestions.map((product, index) => (
+                    <button
+                      key={product.id}
+                      onClick={() => handleSelectSuggestion(product.slug, product.title)}
+                      onMouseEnter={() => setHighlightedIndex(index)}
+                      className={`w-full flex items-center gap-3 px-4 py-3 text-left transition-colors ${
+                        index === highlightedIndex
+                          ? 'bg-purple-500/10 border-l-2 border-purple-500'
+                          : 'hover:bg-[#1f1f23] border-l-2 border-transparent'
+                      }`}
+                      role="option"
+                      aria-selected={index === highlightedIndex}
+                    >
+                      {/* Thumbnail */}
+                      <div className="w-10 h-10 rounded-lg overflow-hidden bg-[#1f1f23] shrink-0">
+                        {product.imageUrl ? (
+                          <img
+                            src={product.imageUrl.startsWith('http') ? product.imageUrl : product.imageUrl}
+                            alt=""
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-[#6b7280]">
+                            <Search size={14} />
+                          </div>
+                        )}
+                      </div>
+                      {/* Title */}
+                      <span className="flex-1 text-sm text-white truncate">{product.title}</span>
+                      {/* Price */}
+                      <span className="text-sm font-medium text-purple-400 shrink-0">
+                        {product.discountPrice
+                          ? Number(product.discountPrice).toLocaleString('uk-UA')
+                          : Number(product.price).toLocaleString('uk-UA')} ₴
+                      </span>
+                    </button>
+                  ))}
+                </div>
               )}
             </div>
             <button
