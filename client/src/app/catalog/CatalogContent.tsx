@@ -416,14 +416,32 @@ export default function CatalogContent() {
                           </div>
                         )}
                       </div>
-                      {/* Title */}
-                      <span className="flex-1 text-sm text-white truncate">{product.title}</span>
+                      {/* Title + Discount badge */}
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm text-white truncate block">{product.title}</span>
+                        {product.discountPrice && product.originalPrice && (
+                          <span className="text-[10px] font-semibold text-green-400">
+                            -{Math.round((1 - product.discountPrice / product.originalPrice) * 100)}% знижка
+                          </span>
+                        )}
+                      </div>
                       {/* Price */}
-                      <span className="text-sm font-medium text-purple-400 shrink-0">
-                        {product.discountPrice
-                          ? Number(product.discountPrice).toLocaleString('uk-UA')
-                          : Number(product.price).toLocaleString('uk-UA')} ₴
-                      </span>
+                      <div className="text-right shrink-0">
+                        {product.discountPrice && product.originalPrice ? (
+                          <>
+                            <span className="text-xs text-[#6b7280] line-through block">
+                              {Number(product.originalPrice).toLocaleString('uk-UA')} ₴
+                            </span>
+                            <span className="text-sm font-bold text-green-400 block">
+                              {Number(product.discountPrice).toLocaleString('uk-UA')} ₴
+                            </span>
+                          </>
+                        ) : (
+                          <span className="text-sm font-medium text-purple-400">
+                            {Number(product.price).toLocaleString('uk-UA')} ₴
+                          </span>
+                        )}
+                      </div>
                     </button>
                   ))}
                 </div>

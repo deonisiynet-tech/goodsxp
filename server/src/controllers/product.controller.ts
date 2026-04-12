@@ -41,6 +41,7 @@ export class ProductController {
           slug: true,
           title: true,
           price: true,
+          originalPrice: true,
           discountPrice: true,
           imageUrl: true,
         },
