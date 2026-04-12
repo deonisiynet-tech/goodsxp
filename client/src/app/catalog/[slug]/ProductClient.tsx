@@ -13,7 +13,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import {
   ShoppingCart, Check, ChevronLeft, ChevronRight, Star, Send,
-  Truck, Shield, RotateCcw, Heart, Share2,
+  Truck, Shield, RotateCcw, Heart, Share2, Trash2,
 } from 'lucide-react';
 
 interface Product {
@@ -53,6 +53,7 @@ export default function ProductClient({ product }: { product: Product }) {
   const [sortBy, setSortBy] = useState<ReviewSortOption>('newest');
   const [activeTab, setActiveTab] = useState<'description' | 'specs' | 'reviews'>('description');
   const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
+  const [isAdmin, setIsAdmin] = useState(false);
   const addItem = useCartStore((state) => state.addItem);
   const setLastAddedPosition = useCartStore((state) => state.setLastAddedPosition);
   const wishlistToggle = useWishlistStore((state) => state.toggleItem);
@@ -98,6 +99,17 @@ export default function ProductClient({ product }: { product: Product }) {
   useEffect(() => {
     loadReviews(product.slug);
     loadRelated(product.id);
+
+    // Check if current user is admin
+    if (typeof window !== 'undefined') {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        try {
+          const user = JSON.parse(storedUser);
+          setIsAdmin(user?.role === 'ADMIN');
+        } catch { /* ignore */ }
+      }
+    }
   }, [product, sortBy]);
 
   const loadRelated = async (productId: string) => {
@@ -142,6 +154,17 @@ export default function ProductClient({ product }: { product: Product }) {
       toast.error(error.message || 'Помилка при додаванні відгуку');
     } finally {
       setSubmittingReview(false);
+    }
+  };
+
+  const handleDeleteReview = async (reviewId: string) => {
+    if (!confirm('Видалити цей відгук?')) return;
+    try {
+      await productsApi.deleteReview(reviewId);
+      setReviews((prev) => prev.filter((r) => r.id !== reviewId));
+      toast.success('Відгук видалено');
+    } catch (error: any) {
+      toast.error(error.message || 'Помилка видалення відгуку');
     }
   };
 
@@ -628,11 +651,22 @@ export default function ProductClient({ product }: { product: Product }) {
                           <h4 className="font-medium text-white mb-2">{review.name}</h4>
                           {renderStars(review.rating, 14)}
                         </div>
-                        <span className="text-xs sm:text-sm text-[#9ca3af]">
-                          {new Date(review.createdAt).toLocaleDateString('uk-UA', {
-                            day: 'numeric', month: 'numeric', year: 'numeric',
-                          })}
-                        </span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs sm:text-sm text-[#9ca3af]">
+                            {new Date(review.createdAt).toLocaleDateString('uk-UA', {
+                              day: 'numeric', month: 'numeric', year: 'numeric',
+                            })}
+                          </span>
+                          {isAdmin && (
+                            <button
+                              onClick={() => handleDeleteReview(review.id)}
+                              className="p-1 text-[#6b7280] hover:text-red-400 transition-colors"
+                              title="Видалити відгук"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
+                        </div>
                       </div>
                       {review.comment && (
                         <p className="text-[#9ca3af] text-sm leading-relaxed mb-3">{review.comment}</p>

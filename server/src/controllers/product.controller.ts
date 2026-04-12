@@ -404,6 +404,25 @@ export class ProductController {
     }
   }
 
+  // ===== REVIEW DELETE (Admin only — must be after admin auth middleware) =====
+
+  /** DELETE /api/products/reviews/:reviewId — видалити відгук (admin) */
+  async deleteReview(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { reviewId } = req.params;
+      if (!reviewId || reviewId === 'undefined' || reviewId === 'null') {
+        return res.status(400).json({ error: 'reviewId обов\'язковий' });
+      }
+      await productService.deleteReview(reviewId);
+      res.json({ message: 'Відгук видалено' });
+    } catch (error: any) {
+      if (error.message.includes('не знайдено')) {
+        return res.status(404).json({ message: error.message });
+      }
+      next(error);
+    }
+  }
+
   // ===== VARIANT ROUTES (Public) =====
 
   /** GET /api/products/:productId/variants — отримати options + variants */

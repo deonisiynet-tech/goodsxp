@@ -45,6 +45,9 @@ router.post('/:productId/variants', controller.createVariant);
 router.put('/variants/:variantId', controller.updateVariant);
 router.delete('/variants/:variantId', controller.deleteVariant);
 
+// Review delete (admin only — MUST be before /:id to avoid conflicts)
+router.delete('/reviews/:reviewId', controller.deleteReview);
+
 // Product CRUD — MUST be after variant routes to avoid conflicts
 router.put('/:id', uploadMiddleware, controller.update);
 router.delete('/:id', controller.delete);

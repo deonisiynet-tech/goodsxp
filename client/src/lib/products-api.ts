@@ -322,6 +322,10 @@ export const productsApi = {
       method: 'DELETE',
     })
   },
+
+  // Delete review (admin)
+  deleteReview: async (reviewId: string) =>
+    fetchAPI(`/products/reviews/${reviewId}`, { method: 'DELETE' }),
 }
 
 // ===== Variant API =====

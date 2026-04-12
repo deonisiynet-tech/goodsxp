@@ -540,4 +540,26 @@ export class ProductService {
 
     return review;
   }
+
+  async deleteReview(reviewId: string) {
+    const review = await prisma.review.findUnique({ where: { id: reviewId } });
+    if (!review) throw new AppError('Відгук не знайдено', 404);
+
+    await prisma.review.delete({ where: { id: reviewId } });
+
+    // Recalculate product rating
+    const stats = await prisma.review.aggregate({
+      where: { productId: review.productId },
+      _avg: { rating: true },
+      _count: { rating: true },
+    });
+
+    const avgRating = stats._avg.rating ?? 0;
+    await prisma.product.update({
+      where: { id: review.productId },
+      data: { rating: Math.round(avgRating * 100) / 100 },
+    });
+
+    return { message: 'Відгук видалено' };
+  }
 }
