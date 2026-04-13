@@ -176,27 +176,48 @@ app.use(cors({
 
 // Helmet - Security headers
 // In development, Next.js requires 'unsafe-eval' for HMR and hot module replacement.
-// In production, we use strict CSP with nonce for inline scripts.
+// In production, we use strict CSP — no unsafe-inline, no unsafe-eval in scripts.
 const isProd = process.env.NODE_ENV === 'production';
 
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
+
+      // 🔒 Scripts: ONLY same-origin. No unsafe-inline, no unsafe-eval in production.
+      // Next.js standalone bundles all JS into files — inline scripts not needed.
       scriptSrc: isProd
-        ? ["'self'"] // Production: strict CSP, no inline eval
-        : ["'self'", "'unsafe-eval'"], // Dev: Next.js HMR needs eval
-      styleSrc: ["'self'", "'unsafe-inline'"], // Next.js emits inline styles (CSS-in-JS)
-      imgSrc: ["'self'", "data:", "https:", "blob:"],
+        ? ["'self'"]
+        : ["'self'", "'unsafe-eval'"], // Dev: HMR needs eval
+
+      // 🔒 Styles: 'unsafe-inline' required because Next.js styled-jsx emits <style> tags.
+      // This is a known, unavoidable limitation of Next.js architecture.
+      styleSrc: ["'self'", "'unsafe-inline'"],
+
+      // 🔒 Images: Explicit domain allowlist instead of wildcard 'https:'.
+      // Only trusted CDN sources permitted.
+      imgSrc: isProd
+        ? ["'self'", "data:", "blob:", "https://res.cloudinary.com", "https://images.unsplash.com"]
+        : ["'self'", "data:", "https:", "blob:"], // Dev: permissive for debugging
+
+      // 🔒 Connections: Same-origin for API calls. Cloudinary needed for client-side uploads.
       connectSrc: isProd
-        ? ["'self'", "https:", "*.cloudinary.com"] // Production: only trusted external
+        ? ["'self'", "https://res.cloudinary.com"]
         : ["'self'", "https:", "http:", "ws:", "wss:"], // Dev: allow WS for HMR
+
+      // 🔒 Fonts: Only same-origin and data URIs
       fontSrc: ["'self'", "data:"],
+
+      // 🔒 Objects/frames: Block all
       objectSrc: ["'none'"],
       frameSrc: ["'none'"],
       frameAncestors: ["'none'"],
+
+      // 🔒 Base URI and form actions: Only same-origin
       baseUri: ["'self'"],
       formAction: ["'self'"],
+
+      // 🔒 In production, force all HTTP → HTTPS
       upgradeInsecureRequests: isProd ? [] : null,
     },
   },
