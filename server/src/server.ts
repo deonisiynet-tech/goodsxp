@@ -98,9 +98,10 @@ const app = express();
 // Railway provides PORT via environment variable, default to 8080 if not set
 const PORT = process.env.PORT ? Number(process.env.PORT) : 8080;
 
-// ✅ Trust proxy headers from Railway/load balancer
-// Required for express-rate-limit to correctly identify users via X-Forwarded-For
-app.set('trust proxy', true);
+// 🔒 SECURITY: Trust only ONE proxy layer (Railway's router).
+// 'true' allows anyone to spoof X-Forwarded-For and bypass rate limiting.
+// '1' means trust exactly one proxy hop — this is Railway's load balancer.
+app.set('trust proxy', 1);
 
 console.log('🚀 Initializing Express app...');
 console.log('📡 Server will listen on PORT:', PORT);
