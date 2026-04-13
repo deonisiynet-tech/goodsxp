@@ -175,20 +175,29 @@ app.use(cors({
 }));
 
 // Helmet - Security headers
+// In development, Next.js requires 'unsafe-eval' for HMR and hot module replacement.
+// In production, we use strict CSP with nonce for inline scripts.
+const isProd = process.env.NODE_ENV === 'production';
+
 app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"], // Next.js потребує в dev режимі
-      styleSrc: ["'self'", "'unsafe-inline'"],
+      scriptSrc: isProd
+        ? ["'self'"] // Production: strict CSP, no inline eval
+        : ["'self'", "'unsafe-eval'"], // Dev: Next.js HMR needs eval
+      styleSrc: ["'self'", "'unsafe-inline'"], // Next.js emits inline styles (CSS-in-JS)
       imgSrc: ["'self'", "data:", "https:", "blob:"],
-      connectSrc: ["'self'", "https:"],
+      connectSrc: isProd
+        ? ["'self'", "https:", "*.cloudinary.com"] // Production: only trusted external
+        : ["'self'", "https:", "http:", "ws:", "wss:"], // Dev: allow WS for HMR
       fontSrc: ["'self'", "data:"],
       objectSrc: ["'none'"],
       frameSrc: ["'none'"],
       frameAncestors: ["'none'"],
       baseUri: ["'self'"],
       formAction: ["'self'"],
+      upgradeInsecureRequests: isProd ? [] : null,
     },
   },
   crossOriginEmbedderPolicy: false,
@@ -202,6 +211,12 @@ app.use((req, res, next) => {
   res.setHeader('X-Frame-Options', 'DENY');
   res.setHeader('X-XSS-Protection', '1; mode=block');
   res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+
+  // ✅ Permissions-Policy — restrict browser features
+  res.setHeader('Permissions-Policy',
+    'geolocation=(), camera=(), microphone=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()'
+  );
+
   if (process.env.NODE_ENV === 'production') {
     res.setHeader('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   }
@@ -217,6 +232,20 @@ app.use(cookieParser());
 
 // Block admin scanning attempts
 app.use(blockAdminScanning);
+
+// 🔒 SECURITY: Block access to .env files and other sensitive files
+app.use((req, res, next) => {
+  const sensitivePatterns = [
+    /\.env$/, /\.env\./, /\.env\.local$/, /\.env\.production$/,
+    /\.git/, /\.htaccess/, /\.htpasswd/,
+    /\/\.well-known/,
+  ];
+  const urlPath = req.path.toLowerCase();
+  if (sensitivePatterns.some(pattern => pattern.test(urlPath))) {
+    return res.status(404).send('Not Found');
+  }
+  next();
+});
 
 // ==================================
 // Static Files
@@ -280,10 +309,13 @@ app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 // CSRF для адмінських маршрутів (cookie-based auth)
 app.use(`${adminApiPrefix}`, csrfProtection);
+// ✅ Rate limiting для admin CRUD — запобігає спаму
+app.use(`${adminApiPrefix}`, adminRateLimiter);
 app.use(`${adminApiPrefix}`, adminRoutes);           // Admin only - requires auth
 app.use('/api/upload', uploadRoutes);
 app.use('/api/nova-poshta', apiRateLimiter, novaPoshtaRoutes); // ✅ Rate limited
-app.use('/api/analytics', analyticsRoutes);   // Analytics endpoints
+// ✅ Rate limited — prevents DoS via heartbeat spam
+app.use('/api/analytics', apiRateLimiter, analyticsRoutes);
 
 console.log(`🔒 Admin API prefix: ${adminApiPrefix}`);
 

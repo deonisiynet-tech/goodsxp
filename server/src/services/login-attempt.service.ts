@@ -1,11 +1,30 @@
 import getRedisClient from '../prisma/redis.js';
 
 // In-memory fallback when Redis is not available
-const memoryStore = new Map<string, { count: number; blockedUntil: number | null }>();
+const memoryStore = new Map<string, { count: number; blockedUntil: number | null; lastAccess: number }>();
 
 const MAX_ATTEMPTS = 10;
 const BLOCK_DURATION_MS = 15 * 60 * 1000; // 15 minutes
 const RESET_DURATION_MS = 30 * 60 * 1000; // Reset counter after 30 minutes
+const MAX_MEMORY_ENTRIES = 10000; // 🔒 Prevent memory exhaustion DoS
+
+/**
+ * 🔒 Periodic cleanup — delete expired entries every 5 minutes.
+ * Prevents memory exhaustion from spoofed IP attacks.
+ */
+const cleanupInterval = setInterval(() => {
+  const now = Date.now();
+  for (const [ip, data] of memoryStore.entries()) {
+    // Delete if expired and not blocked
+    const isExpired = now - data.lastAccess > RESET_DURATION_MS * 2;
+    const isUnblocked = data.blockedUntil && now >= data.blockedUntil;
+    if (isExpired || isUnblocked) {
+      memoryStore.delete(ip);
+    }
+  }
+}, 5 * 60 * 1000);
+// Don't block process exit
+cleanupInterval.unref();
 
 export class LoginAttemptService {
   private getKey(ip: string): string {
@@ -79,8 +98,21 @@ export class LoginAttemptService {
     }
 
     // In-memory fallback
-    let data = memoryStore.get(ip) || { count: 0, blockedUntil: null };
+    let data = memoryStore.get(ip) || { count: 0, blockedUntil: null, lastAccess: Date.now() };
+
+    // 🔒 Prevent memory exhaustion — limit max entries
+    if (!memoryStore.has(ip) && memoryStore.size >= MAX_MEMORY_ENTRIES) {
+      // Evict oldest expired entry
+      for (const [k, v] of memoryStore.entries()) {
+        if (v.blockedUntil === null || Date.now() >= v.blockedUntil) {
+          memoryStore.delete(k);
+          break;
+        }
+      }
+    }
+
     data.count += 1;
+    data.lastAccess = Date.now();
 
     if (data.count >= MAX_ATTEMPTS) {
       data.blockedUntil = Date.now() + BLOCK_DURATION_MS;
@@ -103,7 +135,7 @@ export class LoginAttemptService {
     // Auto-reset after reset duration
     setTimeout(() => {
       const current = memoryStore.get(ip);
-      if (current) {
+      if (current && current.lastAccess <= Date.now() - RESET_DURATION_MS) {
         current.count = 0;
         memoryStore.set(ip, current);
       }
@@ -124,6 +156,13 @@ export class LoginAttemptService {
     } else {
       memoryStore.delete(ip);
     }
+  }
+
+  /**
+   * 🔒 Get memory store size (for monitoring)
+   */
+  getMemoryStoreSize(): number {
+    return memoryStore.size;
   }
 
   /**

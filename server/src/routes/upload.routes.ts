@@ -16,9 +16,70 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// ✅ File type validation
-const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/svg+xml'];
+// ✅ File type validation — MIME types + magic bytes
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+// SVG allowed but handled separately (text-based, needs extra validation)
+const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg'];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+
+/**
+ * 🔒 Validate file by magic bytes (file signature) — not just client-supplied MIME.
+ * Checks first bytes of file against known image signatures.
+ */
+function validateFileMagic(filePath: string, fileName: string): { valid: boolean; error?: string } {
+  try {
+    if (!fs.existsSync(filePath)) {
+      return { valid: false, error: 'Файл не знайдено' };
+    }
+
+    const buffer = Buffer.alloc(16);
+    const fd = fs.openSync(filePath, 'r');
+    fs.readSync(fd, buffer, 0, 16, 0);
+    fs.closeSync(fd);
+
+    const ext = path.extname(fileName).toLowerCase();
+
+    // Validate extension is allowed
+    if (!ALLOWED_EXTENSIONS.includes(ext)) {
+      return { valid: false, error: `Непідтримуваний тип файлу: ${ext}` };
+    }
+
+    // Check magic bytes
+    if (ext === '.jpg' || ext === '.jpeg') {
+      // JPEG: starts with FF D8 FF
+      if (buffer[0] !== 0xFF || buffer[1] !== 0xD8 || buffer[2] !== 0xFF) {
+        return { valid: false, error: 'Файл не є дійсним JPEG зображенням' };
+      }
+    } else if (ext === '.png') {
+      // PNG: 89 50 4E 47
+      if (buffer[0] !== 0x89 || buffer[1] !== 0x50 || buffer[2] !== 0x4E || buffer[3] !== 0x47) {
+        return { valid: false, error: 'Файл не є дійсним PNG зображенням' };
+      }
+    } else if (ext === '.webp') {
+      // WebP: starts with "RIFF" and has "WEBP" at offset 8
+      const riff = buffer.toString('ascii', 0, 4);
+      const webp = buffer.toString('ascii', 8, 12);
+      if (riff !== 'RIFF' || webp !== 'WEBP') {
+        return { valid: false, error: 'Файл не є дійсним WebP зображенням' };
+      }
+    } else if (ext === '.gif') {
+      // GIF: 47 49 46 38
+      if (buffer[0] !== 0x47 || buffer[1] !== 0x49 || buffer[2] !== 0x46 || buffer[3] !== 0x38) {
+        return { valid: false, error: 'Файл не є дійсним GIF зображенням' };
+      }
+    } else if (ext === '.svg') {
+      // SVG: text-based — validate content doesn't contain scripts
+      const content = fs.readFileSync(filePath, 'utf-8').toLowerCase();
+      if (content.includes('<script') || content.includes('javascript:') || content.includes('onerror=')) {
+        return { valid: false, error: 'SVG файли з JavaScript заборонені' };
+      }
+    }
+
+    return { valid: true };
+  } catch {
+    return { valid: false, error: 'Помилка перевірки файлу' };
+  }
+}
 
 // Configure file upload middleware — ✅ auth required
 router.use(authenticate);
@@ -35,7 +96,7 @@ router.use(fileUpload({
 /**
  * POST /api/upload
  * Upload one or multiple images to Cloudinary
- * 
+ *
  * Request: formData.append("files", file) or formData.append("file", file)
  * Response: { success: true, urls: [...], files: [...] }
  */
@@ -70,8 +131,8 @@ router.post('/', async (req, res) => {
       if (fieldFiles) {
         const fileArray = Array.isArray(fieldFiles) ? fieldFiles : [fieldFiles];
         for (const f of fileArray as any[]) {
-          // ✅ Validate MIME type
-          if (!ALLOWED_MIME_TYPES.includes(f.mimetype)) {
+          // ✅ Validate MIME type (client-supplied, additional check)
+          if (!ALLOWED_MIME_TYPES.includes(f.mimetype) && f.mimetype !== 'image/svg+xml') {
             return res.status(400).json({
               error: `Непідтримуваний тип файлу: ${f.mimetype}. Дозволені: JPEG, PNG, WebP, GIF, SVG`,
             });
@@ -95,10 +156,9 @@ router.post('/', async (req, res) => {
     // Validate files
     if (files.length === 0) {
       console.error('❌ No files found in request');
+      // 🔒 SECURITY: Don't leak internal field names
       return res.status(400).json({
-        error: 'No files provided',
-        message: 'Файли не знайдено. Використовуйте formData.append("files", file)',
-        receivedFields: req.files ? Object.keys(req.files) : [],
+        error: 'Файли не знайдено. Використовуйте formData.append("files", file)',
       });
     }
 
@@ -123,14 +183,15 @@ router.post('/', async (req, res) => {
       console.log(`⬆️ Uploading ${i + 1}/${files.length}: ${fileName} (${(file.size / 1024 / 1024).toFixed(2)} MB)`);
 
       try {
-        // Validate file type
-        if (!file.mimetype.startsWith('image/')) {
-          throw new Error(`Файл "${fileName}" не є зображенням (type: ${file.mimetype})`);
+        // 🔒 Validate magic bytes before processing
+        const magicCheck = validateFileMagic(file.tempFilePath, fileName);
+        if (!magicCheck.valid) {
+          throw new Error(magicCheck.error || 'Файл не пройшов перевірку');
         }
 
         // Check if temp file exists
         if (!fs.existsSync(file.tempFilePath)) {
-          throw new Error(`Тимчасовий файл не знайдено: ${file.tempFilePath}`);
+          throw new Error(`Тимчасовий файл не знайдено`);
         }
 
         // Upload to Cloudinary
@@ -166,7 +227,7 @@ router.post('/', async (req, res) => {
         try {
           fs.unlinkSync(file.tempFilePath);
         } catch (e) {
-          console.warn(`⚠️ Could not delete temp file: ${file.tempFilePath}`);
+          console.warn(`⚠️ Could not delete temp file`);
         }
 
       } catch (uploadError: any) {

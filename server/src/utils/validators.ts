@@ -144,7 +144,9 @@ export const orderSchema = z.object({
   items: z.array(
     z.object({
       productId: z.string().uuid(),
-      quantity: z.number().int().positive().min(1),
+      // 🔒 SECURITY: quantity must be positive AND capped at 999 per item
+      // Prevents extremely stock-depletion attacks and integer overflow
+      quantity: z.number().int().min(1).max(999, 'Кількість не може перевищувати 999'),
       variantId: z.string().uuid().optional().nullable(),
       variantOptions: z.array(
         z.object({
@@ -153,7 +155,7 @@ export const orderSchema = z.object({
         })
       ).optional().nullable(),
     })
-  ).min(1, 'Кошик порожній'),
+  ).min(1, 'Кошик порожній').max(50, 'Занадто багато товарів в одному замовленні'),
 }).refine((data) => {
   // Перевірка: або address, або city+warehouse мають бути заповнені
   return (data.address && data.address.length > 0) ||

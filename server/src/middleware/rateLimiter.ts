@@ -40,19 +40,22 @@ export const apiRateLimiter = rateLimit({
 });
 
 /**
- * Строгий rate limiter для чувствительных операций
+ * 🔒 Строгий rate limiter для чувствительных операций
  * (регистрация, логин, отправка отзывов, создание заказов)
- * 3 запроса в минуту
+ * ✅ 100 запросов за 15 минут на IP — баланс между безопасностью и UX
  */
 export const strictRateLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 3, // 3 requests per window
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // 100 requests per 15 minutes
   message: {
     error: 'Занадто багато запитів. Спробуйте пізніше.',
-    retryAfter: 60,
+    retryAfter: 900,
   },
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => {
+    return req.ip || req.connection.remoteAddress || 'unknown';
+  },
 });
 
 /**
@@ -77,5 +80,23 @@ export const orderRateLimiter = rateLimit({
       error: 'Занадто багато замовлень. Зачекайте кілька хвилин.',
       retryAfter: 300,
     });
+  },
+});
+
+/**
+ * 🔒 Rate limiter для reviews — запобігання спаму відгуків
+ * 20 відгуків за 15 хвилин на IP
+ */
+export const reviewRateLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 20, // 20 reviews per 15 minutes
+  message: {
+    error: 'Занадто багато відгуків. Спробуйте пізніше.',
+    retryAfter: 900,
+  },
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => {
+    return req.ip || req.connection.remoteAddress || 'unknown';
   },
 });

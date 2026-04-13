@@ -109,9 +109,16 @@ export class AdminService {
       throw new AppError('Користувача не знайдено', 404);
     }
 
+    // ✅ SECURITY: Не повертаємо password hash у відповіді
     return prisma.user.update({
       where: { id },
       data: { role },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        createdAt: true,
+      },
     });
   }
 
@@ -129,9 +136,16 @@ export class AdminService {
 
     const hashedPassword = await bcrypt.hash(newPassword, 12);
 
+    // ✅ SECURITY: Не повертаємо password hash у відповіді
     return prisma.user.update({
       where: { id },
       data: { password: hashedPassword },
+      select: {
+        id: true,
+        email: true,
+        role: true,
+        createdAt: true,
+      },
     });
   }
 

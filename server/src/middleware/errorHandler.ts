@@ -19,15 +19,23 @@ export const errorHandler = (
   res: Response,
   next: NextFunction
 ) => {
-  console.error('Error:', err);
+  // 🔒 SECURITY: В production не логуємо повну помилку (може містити sensitive data)
+  if (process.env.NODE_ENV === 'development') {
+    console.error('Error:', err);
+  } else {
+    console.error('Error:', err instanceof AppError ? err.message : 'Internal server error');
+  }
 
   if (err instanceof ZodError) {
     return res.status(400).json({
       error: 'Помилка валідації',
-      details: err.errors.map((e) => ({
-        field: e.path.join('.'),
-        message: e.message,
-      })),
+      // 🔒 SECURITY: In production, return generic validation errors
+      details: process.env.NODE_ENV === 'development'
+        ? err.errors.map((e) => ({
+            field: e.path.join('.'),
+            message: e.message,
+          }))
+        : [{ message: 'Невірний формат даних' }],
     });
   }
 
@@ -37,6 +45,7 @@ export const errorHandler = (
     });
   }
 
+  // 🔒 SECURITY: В production не розкриваємо деталі помилок клієнту
   return res.status(500).json({
     error: process.env.NODE_ENV === 'development' ? err.message : 'Внутрішня помилка сервера',
   });

@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { Role } from '@prisma/client';
 import { limitLoginAttempts } from '../middleware/loginAttempts.js';
+import { strictRateLimiter } from '../middleware/rateLimiter.js';
 import { loginLogService } from '../services/login-log.service.js';
 import { twoFAService } from '../services/twoFA.service.js';
 import { getJwtSecret, getJwtExpiresIn } from '../utils/jwt.js';
@@ -194,10 +195,11 @@ router.post('/login', limitLoginAttempts, async (req: Request, res: Response) =>
       console.warn('⚠️ AdminLog not available:', logError.message);
     }
 
+    // 🔒 SECURITY: Token returned only in httpOnly cookie, NOT in body.
+    // This prevents XSS from stealing the token via localStorage.
     res.json({
       success: true,
       requiresTwoFA: false,
-      token, // ✅ Return JWT token so frontend can store it in localStorage
       user: {
         id: user.id,
         email: user.email,
@@ -317,7 +319,7 @@ router.get('/me', async (req: Request, res: Response) => {
  * GET /api/admin/auth/2fa/status
  * Check 2FA status for current admin
  */
-router.get('/2fa/status', async (req: Request, res: Response) => {
+router.get('/2fa/status', strictRateLimiter, async (req: Request, res: Response) => {
   try {
     const token = req.cookies?.admin_session;
 
@@ -350,7 +352,7 @@ router.get('/2fa/status', async (req: Request, res: Response) => {
  * POST /api/admin/auth/2fa/generate
  * Generate 2FA secret for current admin
  */
-router.post('/2fa/generate', async (req: Request, res: Response) => {
+router.post('/2fa/generate', strictRateLimiter, async (req: Request, res: Response) => {
   try {
     const token = req.cookies?.admin_session;
 
@@ -381,7 +383,7 @@ router.post('/2fa/generate', async (req: Request, res: Response) => {
  * POST /api/admin/auth/2fa/enable
  * Enable 2FA for current admin (after verifying token)
  */
-router.post('/2fa/enable', async (req: Request, res: Response) => {
+router.post('/2fa/enable', strictRateLimiter, async (req: Request, res: Response) => {
   try {
     const { token: twoFAToken } = req.body;
 
@@ -414,7 +416,7 @@ router.post('/2fa/enable', async (req: Request, res: Response) => {
  * POST /api/admin/auth/2fa/disable
  * Disable 2FA for current admin
  */
-router.post('/2fa/disable', async (req: Request, res: Response) => {
+router.post('/2fa/disable', strictRateLimiter, async (req: Request, res: Response) => {
   try {
     const { token: twoFAToken } = req.body;
 

@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import { Role } from '@prisma/client';
 import prisma from '../prisma/client.js';
 import { ActionType } from '@prisma/client';
-import { getJwtSecret } from '../utils/jwt.js';
+import { getJwtSecret, JWT_ALGORITHM, getTokenVersion } from '../utils/jwt.js';
 
 export interface AuthRequest extends Request {
   user?: {
@@ -20,10 +20,16 @@ export interface AuthRequest extends Request {
  * 2. If Bearer fails but cookie exists → try cookie as fallback
  * 3. If no tokens at all → 401
  * This handles stale localStorage tokens gracefully while keeping cookie sessions alive.
+ *
+ * 🔒 SECURITY:
+ * - Enforces HS256 algorithm (prevents JWT algorithm confusion attacks)
+ * - Validates token version (allows server-side token revocation)
+ * - Checks user exists on every request
  */
 export const authenticate = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const secret = getJwtSecret();
+    const serverTokenVersion = getTokenVersion();
 
     // Collect available tokens
     const authHeader = req.headers.authorization;
@@ -38,17 +44,33 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
       return res.status(401).json({ error: 'Потрібна авторизація' });
     }
 
-    /** Try to verify a token, return decoded or null */
-    const tryVerify = (t: string | undefined): { id: string; email: string; role: Role } | null => {
+    /**
+     * 🔒 Try to verify a token with enforced HS256 algorithm and token version check.
+     */
+    const tryVerify = (t: string | undefined): { id: string; email: string; role: Role; v?: number } | null => {
       if (!t) return null;
       try {
-        return jwt.verify(t, secret) as { id: string; email: string; role: Role };
+        // 🔒 Enforce HS256 — prevents algorithm confusion / "none" algorithm attacks
+        const decoded = jwt.verify(t, secret, { algorithms: [JWT_ALGORITHM] }) as {
+          id: string;
+          email: string;
+          role: Role;
+          v?: number;
+        };
+
+        // 🔒 Token version check — if server version > token version, token is revoked
+        if (decoded.v !== undefined && decoded.v < serverTokenVersion) {
+          console.warn(`⚠️ Auth: Token version ${decoded.v} < server version ${serverTokenVersion} — token revoked`);
+          return null;
+        }
+
+        return decoded;
       } catch {
         return null;
       }
     };
 
-    let decoded: { id: string; email: string; role: Role } | null = null;
+    let decoded: { id: string; email: string; role: Role; v?: number } | null = null;
 
     // Step 1: Try Bearer token
     if (bearerToken) {

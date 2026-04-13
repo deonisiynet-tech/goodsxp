@@ -80,7 +80,16 @@ export class AdminController {
 
   async deleteUser(req: AuthRequest, res: Response, next: NextFunction) {
     try {
-      const result = await adminService.deleteUser(req.params.id);
+      const targetId = req.params.id;
+
+      // 🔒 SECURITY: Prevent admin self-deletion
+      if (req.user?.id === targetId) {
+        return res.status(400).json({
+          error: 'Неможливо видалити свій власний акаунт',
+        });
+      }
+
+      const result = await adminService.deleteUser(targetId);
 
       await adminService.logAction({
         adminId: req.user!.id,

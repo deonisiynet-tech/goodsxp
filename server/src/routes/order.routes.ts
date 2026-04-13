@@ -10,14 +10,17 @@ const controller = new OrderController();
 // Public routes — ✅ спеціальний rate limiter для замовлень (5 за 5 хв)
 router.post('/', orderRateLimiter, controller.create);
 
+// ✅ Protected: звичайний користувач бачить свої замовлення
+router.get('/my', authenticate, controller.getMyOrders);
+
+// ✅ Protected: only admin or order owner can view single order
+router.get('/:id', authenticate, controller.getById);
+
 // Admin routes — MUST be before /:id to avoid route conflict
 router.use(authenticate, authorize(Role.ADMIN));
 router.get('/admin/all', controller.getAll);
 router.get('/admin/stats', controller.getStats);
 router.patch('/:id/status', controller.updateStatus);
 router.delete('/:id', controller.delete);
-
-// ✅ Protected: only admin or order owner can view
-router.get('/:id', authenticate, controller.getById);
 
 export default router;

@@ -62,14 +62,28 @@ export const uploadToCloudinary = async (filePath: string): Promise<string> => {
 
 export const saveImageLocally = async (file: any): Promise<string> => {
   const uploadsDir = path.join(process.cwd(), 'uploads');
-  
+
   // Create uploads directory if it doesn't exist
   if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
   }
 
-  const fileName = `${uuidv4()}${path.extname(file.name)}`;
+  // 🔒 SECURITY: Only allow safe image extensions — never .js, .php, .html etc.
+  const ext = path.extname(file.name).toLowerCase();
+  const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg'];
+  if (!ALLOWED_EXTENSIONS.includes(ext)) {
+    throw new AppError('Непідтримуваний тип файлу', 400);
+  }
+
+  // 🔒 Use UUID + safe extension (ignore original filename to prevent path traversal)
+  const fileName = `${uuidv4()}${ext}`;
   const filePath = path.join(uploadsDir, fileName);
+
+  // 🔒 Validate magic bytes before saving locally
+  const magicCheck = validateFileMagic(file.tempFilePath, file.name);
+  if (!magicCheck.valid) {
+    throw new AppError(magicCheck.error || 'Файл не пройшов перевірку', 400);
+  }
 
   return new Promise((resolve, reject) => {
     file.mv(filePath, (err: any) => {
@@ -78,6 +92,48 @@ export const saveImageLocally = async (file: any): Promise<string> => {
     });
   });
 };
+
+/**
+ * 🔒 Magic bytes validator — reused from upload.routes.ts
+ */
+function validateFileMagic(filePath: string, fileName: string): { valid: boolean; error?: string } {
+  try {
+    if (!filePath || !fs.existsSync(filePath)) {
+      return { valid: false, error: 'Файл не знайдено' };
+    }
+
+    const buffer = Buffer.alloc(16);
+    const fd = fs.openSync(filePath, 'r');
+    fs.readSync(fd, buffer, 0, 16, 0);
+    fs.closeSync(fd);
+
+    const ext = path.extname(fileName).toLowerCase();
+
+    if (ext === '.jpg' || ext === '.jpeg') {
+      if (buffer[0] !== 0xFF || buffer[1] !== 0xD8 || buffer[2] !== 0xFF) {
+        return { valid: false, error: 'Файл не є дійсним JPEG зображенням' };
+      }
+    } else if (ext === '.png') {
+      if (buffer[0] !== 0x89 || buffer[1] !== 0x50 || buffer[2] !== 0x4E || buffer[3] !== 0x47) {
+        return { valid: false, error: 'Файл не є дійсним PNG зображенням' };
+      }
+    } else if (ext === '.webp') {
+      const riff = buffer.toString('ascii', 0, 4);
+      const webp = buffer.toString('ascii', 8, 12);
+      if (riff !== 'RIFF' || webp !== 'WEBP') {
+        return { valid: false, error: 'Файл не є дійсним WebP зображенням' };
+      }
+    } else if (ext === '.gif') {
+      if (buffer[0] !== 0x47 || buffer[1] !== 0x49 || buffer[2] !== 0x46 || buffer[3] !== 0x38) {
+        return { valid: false, error: 'Файл не є дійсним GIF зображенням' };
+      }
+    }
+
+    return { valid: true };
+  } catch {
+    return { valid: false, error: 'Помилка перевірки файлу' };
+  }
+}
 
 export const processImageUpload = async (file: any): Promise<string> => {
   if (!file) return '';

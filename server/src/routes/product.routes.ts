@@ -3,6 +3,7 @@ import { ProductController } from '../controllers/product.controller.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { uploadMiddleware } from '../middleware/upload.js';
 import { strictRateLimiter, apiRateLimiter } from '../middleware/rateLimiter.js';
+import { reviewRateLimiter } from '../middleware/rateLimiter.js';
 import { Role } from '@prisma/client';
 
 const router = Router();
@@ -27,11 +28,11 @@ router.get('/:slug', controller.getBySlug);
 
 // Review routes (by product ID) — ✅ rate limited to prevent spam
 router.get('/:id/reviews', controller.getReviews);
-router.post('/:id/reviews', strictRateLimiter, controller.createReview);
+router.post('/:id/reviews', reviewRateLimiter, controller.createReview);
 
 // Review routes (by product slug) - for frontend convenience — ✅ rate limited
 router.get('/slug/:slug/reviews', controller.getReviewsBySlug);
-router.post('/slug/:slug/reviews', strictRateLimiter, controller.createReviewBySlug);
+router.post('/slug/:slug/reviews', reviewRateLimiter, controller.createReviewBySlug);
 
 // Admin routes
 router.use(authenticate, authorize(Role.ADMIN));

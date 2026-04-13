@@ -14,6 +14,7 @@ interface OrderFilters {
 
 export class OrderService {
   async create(data: {
+    userId?: string;
     name: string;
     phone: string;
     email?: string | null;
@@ -32,7 +33,8 @@ export class OrderService {
       throw new AppError('Кошик порожній', 400);
     }
 
-    // Створюємо замовлення в транзакції з атомарною перевіркою stock
+    // 🔒 SECURITY: Ціни завантажуються ВИКЛЮЧНО з БД, ігнорується будь-яка ціна з frontend.
+    // SELECT ... FOR_UPDATE блокує рядки на рівні БД для запобігання race conditions.
     const order = await prisma.$transaction(async (tx) => {
       // ✅ SELECT ... FOR UPDATE — блокуємо рядки продуктів на рівні БД
       // Запобігає race condition: інша транзакція чекатиме поки ця завершиться
@@ -64,17 +66,33 @@ export class OrderService {
         }
 
         if (item.variantId) {
-          // Перевіряємо stock конкретного варіанту
-          const variant = await tx.productVariant.findUnique({
-            where: { id: item.variantId },
-            select: { id: true, stock: true },
-          });
-          if (!variant) {
+          // 🔒 FOR UPDATE — блокуємо рядок варіанту на рівні БД
+          // Запобігає race condition при одночасному замовленні одного варіанту
+          const variant = await tx.$queryRaw<Array<{
+            id: string;
+            stock: number;
+            "productId": string;
+          }>>`
+            SELECT id, stock, "productId"
+            FROM "ProductVariant"
+            WHERE id = ${item.variantId}
+            FOR UPDATE
+          `;
+
+          if (variant.length === 0) {
             throw new AppError('Обраний варіант товару недоступний', 400);
           }
-          if (variant.stock < item.quantity) {
+
+          const v = variant[0];
+
+          // 🔒 SECURITY: Verify variant belongs to the specified product.
+          if (v.productId !== item.productId) {
+            throw new AppError('Варіант не відповідає товару', 400);
+          }
+
+          if (v.stock < item.quantity) {
             throw new AppError(
-              `Товар "${product.title}" (варіант) недоступний у кількості ${item.quantity}. Доступно: ${variant.stock}`,
+              `Товар "${product.title}" (варіант) недоступний у кількості ${item.quantity}. Доступно: ${v.stock}`,
               400
             );
           }
@@ -119,6 +137,7 @@ export class OrderService {
       // Create order
       const newOrder = await tx.order.create({
         data: {
+          userId: data.userId || null,
           name: validated.name,
           phone: validated.phone,
           email: validated.email,
@@ -230,6 +249,65 @@ export class OrderService {
     }
 
     return order;
+  }
+
+  /** Отримати замовлення конкретного користувача (IDOR-safe) */
+  async getMyOrders(userId: string, filters: { page?: number; limit?: number; status?: string }) {
+    const { page = 1, limit = 20, status } = filters;
+    const skip = (page - 1) * limit;
+
+    const where: any = {
+      userId, // ✅ Тільки замовлення цього користувача
+      deletedAt: null,
+    };
+    if (status) where.status = status;
+
+    const [orders, total] = await Promise.all([
+      prisma.order.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: { createdAt: 'desc' },
+        select: {
+          id: true,
+          orderNumber: true,
+          name: true,
+          phone: true,
+          email: true,
+          totalPrice: true,
+          status: true,
+          paymentMethod: true,
+          createdAt: true,
+          updatedAt: true,
+          items: {
+            select: {
+              id: true,
+              productId: true,
+              quantity: true,
+              price: true,
+              product: {
+                select: {
+                  id: true,
+                  title: true,
+                  imageUrl: true,
+                },
+              },
+            },
+          },
+        },
+      }),
+      prisma.order.count({ where }),
+    ]);
+
+    return {
+      orders,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async getAll(filters: OrderFilters) {

@@ -10,11 +10,15 @@ import crypto from 'crypto';
 /**
  * Шляхи які звільнені від CSRF перевірки.
  * Включають публічні endpoint'и та конкретні admin API шляхи.
- * НЕ використовуємо загальний '/api/admin' — тільки конкретні маршрути.
+ *
+ * 🔒 SECURITY: Removed overly broad '/api/products/' exempt —
+ * only specific public paths are exempt, state-changing admin paths require CSRF.
  */
 const CSRF_EXEMPT_PATHS = [
   '/api/auth/login',
   '/api/auth/register',
+  '/api/auth/forgot-password',
+  '/api/auth/reset-password',
   '/api/orders',
   '/api/admin-x8k2p9-panel/stats',
   '/api/admin-x8k2p9-panel/stats/sales',
@@ -23,15 +27,7 @@ const CSRF_EXEMPT_PATHS = [
   '/api/admin-x8k2p9-panel/logs/system',
   '/api/admin-x8k2p9-panel/logs/clear',
   '/api/admin-x8k2p9-panel/logs/stats',
-  '/api/admin-x8k2p9-panel/settings',
-  '/api/admin-x8k2p9-panel/users',
-  '/api/admin-x8k2p9-panel/products',
-  '/api/admin-x8k2p9-panel/orders',
-  // Variant API (admin routes) — CSRF не потрібен бо є authenticate + authorize
-  '/api/products/',  // /api/products/:id/options, /api/products/:id/variants тощо
-  '/api/products/options/',
-  '/api/products/variants/',
-  '/api/products/option-values/',
+  '/api/admin-x8k2p9-panel/settings/storeEnabled',
   '/health',
   '/healthz',
 ];
@@ -90,7 +86,10 @@ export function csrfProtection(req: Request, res: Response, next: NextFunction) 
 
   const storedToken = req.cookies?.csrf_token;
 
-  if (!csrfToken || !storedToken || csrfToken !== storedToken) {
+  // 🔒 SECURITY: Timing-safe comparison prevents timing attacks
+  if (!csrfToken || !storedToken ||
+      csrfToken.length !== storedToken.length ||
+      !crypto.timingSafeEqual(Buffer.from(csrfToken), Buffer.from(storedToken))) {
     return res.status(403).json({
       error: 'CSRF token validation failed',
       message: 'Недійсний CSRF токен. Оновіть сторінку та спробуйте знову.',

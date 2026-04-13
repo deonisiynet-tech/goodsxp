@@ -12,15 +12,18 @@ export class OrderController {
     try {
       const { name, phone, email, address, city, warehouse, warehouseAddress, comment, paymentMethod, items } = req.body;
 
+      // ✅ Якщо користувач авторизований — прив'язуємо замовлення до його акаунта
+      const authReq = req as AuthRequest;
+      const userId = authReq.user ? authReq.user.id : undefined;
+
       // ✅ Retry логіка для race condition при піковому навантаженні
-      // Якщо два користувачи одночасно замовляють останній товар — один отримає помилку
-      // Даємо 2 спроби з невеликою затримкою
       const MAX_RETRIES = 2;
       let lastError: any;
 
       for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
         try {
           const order = await orderService.create({
+            userId,
             name,
             phone,
             email,
@@ -70,7 +73,8 @@ export class OrderController {
 
       // Перевірка: користувач може бачити тільки своє замовлення, адмін — будь-яке
       if (req.user) {
-        if (req.user.role !== 'ADMIN' && order.email !== req.user.email) {
+        // ✅ IDOR prevention: перевіряємо userId, а не email
+        if (req.user.role !== 'ADMIN' && order.userId !== req.user.id) {
           return res.status(403).json({ error: 'Недостатньо прав для перегляду цього замовлення' });
         }
       } else {
@@ -84,9 +88,36 @@ export class OrderController {
     }
   }
 
+  /** Отримати замовлення поточного авторизованого користувача */
+  async getMyOrders(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const userId = req.user!.id;
+      const { page, limit, status } = req.query;
+      const result = await orderService.getMyOrders(userId, {
+        page: page ? Number(page) : 1,
+        limit: limit ? Number(limit) : 20,
+        status: status as string,
+      });
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async getAll(req: Request, res: Response, next: NextFunction) {
     try {
       const { page, limit, status, email } = req.query;
+
+      // ✅ IDOR prevention: звичайні користувачі не мають доступу до всіх замовлень
+      // Тільки адмін може бачити всі замовлення
+      const authReq = req as AuthRequest;
+      if (!authReq.user) {
+        return res.status(401).json({ error: 'Потрібна авторизація' });
+      }
+      if (authReq.user.role !== 'ADMIN') {
+        return res.status(403).json({ error: 'Недостатньо прав для перегляду всіх замовлень' });
+      }
+
       const result = await orderService.getAll({
         page: page ? Number(page) : 1,
         limit: limit ? Number(limit) : 20,

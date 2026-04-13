@@ -5,7 +5,7 @@ import prisma from '../prisma/client.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { registerSchema, loginSchema } from '../utils/validators.js';
 import { sendResetPasswordEmail } from './email.service.js';
-import { getJwtSecret, getJwtExpiresIn } from '../utils/jwt.js';
+import { getJwtSecret, getJwtExpiresIn, getTokenVersion } from '../utils/jwt.js';
 
 export class AuthService {
   async register(email: string, password: string) {
@@ -72,8 +72,13 @@ export class AuthService {
   private generateToken(id: string, email: string, role: string) {
     const secret = getJwtSecret();
     const expiresIn = getJwtExpiresIn();
+    const tokenVersion = getTokenVersion();
 
-    return jwt.sign({ id, email, role }, secret, { expiresIn } as jwt.SignOptions);
+    // 🔒 Include token version `v` for revocation support
+    return jwt.sign({ id, email, role, v: tokenVersion }, secret, {
+      expiresIn,
+      algorithm: 'HS256', // 🔒 Explicitly enforce HS256
+    } as jwt.SignOptions);
   }
 
   async getProfile(userId: string) {

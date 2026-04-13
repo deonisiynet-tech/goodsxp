@@ -1,6 +1,6 @@
 import prisma from '../prisma/client.js';
 import { AppError } from '../middleware/errorHandler.js';
-import { productSchema, productUpdateSchema, paginationSchema } from '../utils/validators.js';
+import { productSchema, productUpdateSchema, paginationSchema, sanitizeHtmlText } from '../utils/validators.js';
 import { Prisma } from '@prisma/client';
 
 /**
@@ -96,6 +96,7 @@ export class ProductService {
   }
 
   async getByCategory(categoryId: string, limit: number = 4, excludeId?: string) {
+    // 🔒 SECURITY: Explicit select — exclude `margin` from public API
     const products = await prisma.product.findMany({
       where: {
         isActive: true,
@@ -104,6 +105,19 @@ export class ProductService {
       },
       take: limit,
       orderBy: { createdAt: 'desc' },
+      select: {
+        id: true,
+        title: true,
+        price: true,
+        originalPrice: true,
+        discountPrice: true,
+        imageUrl: true,
+        slug: true,
+        stock: true,
+        isFeatured: true,
+        isPopular: true,
+        rating: true,
+      },
     });
 
     return products;
@@ -129,14 +143,43 @@ export class ProductService {
       ...(filters.maxPrice && { price: { lte: filters.maxPrice } }),
     };
 
+    // 🔒 SECURITY: Explicit select — exclude `margin` (business secret) from public API
     const products = await prisma.product.findMany({
       where,
       skip,
       take: limit,
       orderBy: { [sortBy]: sortOrder },
-      include: {
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        price: true,
+        categoryId: true,
+        rating: true,
+        originalPrice: true,
+        discountPrice: true,
+        isFeatured: true,
+        isPopular: true,
+        imageUrl: true,
+        images: true,
+        stock: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+        slug: true,
+        variants: {
+          select: {
+            id: true,
+            price: true,
+            stock: true,
+            image: true,
+            options: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
         _count: {
-          select: { variants: true },
+          select: { variants: true, reviews: true },
         },
       },
     }) as any[];
@@ -177,8 +220,54 @@ export class ProductService {
   }
 
   async getById(id: string) {
+    // 🔒 SECURITY: Explicit select — exclude `margin` (business secret) from public API
     const product = await prisma.product.findUnique({
       where: { id },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        price: true,
+        categoryId: true,
+        rating: true,
+        originalPrice: true,
+        discountPrice: true,
+        isFeatured: true,
+        isPopular: true,
+        imageUrl: true,
+        images: true,
+        stock: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+        slug: true,
+        variants: {
+          select: {
+            id: true,
+            price: true,
+            stock: true,
+            image: true,
+            options: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
+        reviews: {
+          select: {
+            id: true,
+            name: true,
+            rating: true,
+            comment: true,
+            pros: true,
+            cons: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+        _count: {
+          select: { variants: true },
+        },
+      },
     }) as any;
 
     if (!product) {
@@ -204,9 +293,42 @@ export class ProductService {
   }
 
   async getBySlug(slug: string): Promise<{ product: any; redirectedFrom?: string }> {
+    // 🔒 SECURITY: Explicit select — exclude `margin` (business secret) from public API
+    const productSelect = {
+      id: true,
+      title: true,
+      description: true,
+      price: true,
+      categoryId: true,
+      rating: true,
+      originalPrice: true,
+      discountPrice: true,
+      isFeatured: true,
+      isPopular: true,
+      imageUrl: true,
+      images: true,
+      stock: true,
+      isActive: true,
+      createdAt: true,
+      updatedAt: true,
+      slug: true,
+      variants: {
+        select: {
+          id: true,
+          price: true,
+          stock: true,
+          image: true,
+          options: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      },
+    };
+
     // Спочатку шукаємо по поточному slug
     let product = await prisma.product.findFirst({
       where: { slug },
+      select: productSelect,
     }) as any;
 
     // ✅ Якщо не знайдено — шукаємо в редіректах
@@ -220,6 +342,7 @@ export class ProductService {
           // Знайшли редірект — отримуємо товар по новому slug
           product = await prisma.product.findFirst({
             where: { slug: redirect.newSlug },
+            select: productSelect,
           }) as any;
 
           if (!product) {
@@ -488,29 +611,29 @@ export class ProductService {
       throw new Error('Рейтинг має бути від 1 до 5');
     }
 
-    // ✅ Validate and sanitize name
+    // ✅ Validate and sanitize name — XSS protection
     if (!data.name || typeof data.name !== 'string') {
       throw new Error("Ім'я обов'язкове");
     }
-    const sanitizedName = data.name.trim().slice(0, 100);
+    const sanitizedName = sanitizeHtmlText(data.name.trim()).slice(0, 100);
     if (sanitizedName.length < 1) {
       throw new Error("Ім'я занадто коротке");
     }
 
-    // ✅ Validate and sanitize comment
+    // ✅ Validate and sanitize comment — XSS protection
     let sanitizedComment: string | undefined = undefined;
     if (data.comment) {
-      sanitizedComment = data.comment.trim().slice(0, 2000);
+      sanitizedComment = sanitizeHtmlText(data.comment.trim()).slice(0, 2000);
     }
 
-    // ✅ Validate and sanitize pros/cons (optional)
+    // ✅ Validate and sanitize pros/cons — XSS protection
     let sanitizedPros: string | undefined = undefined;
     if (data.pros) {
-      sanitizedPros = data.pros.trim().slice(0, 1000) || undefined;
+      sanitizedPros = sanitizeHtmlText(data.pros.trim()).slice(0, 1000) || undefined;
     }
     let sanitizedCons: string | undefined = undefined;
     if (data.cons) {
-      sanitizedCons = data.cons.trim().slice(0, 1000) || undefined;
+      sanitizedCons = sanitizeHtmlText(data.cons.trim()).slice(0, 1000) || undefined;
     }
 
     const review = await prisma.review.create({
