@@ -604,20 +604,36 @@ export class ProductService {
         break;
     }
 
-    // If pagination is requested
-    if (page && limit) {
-      const skip = (page - 1) * limit;
-      const [reviews, total] = await Promise.all([
-        prisma.review.findMany({
-          where: { productId },
-          orderBy,
-          skip,
-          take: limit,
+    // Helper: fetch reviews with or without images (fallback if ReviewImage table doesn't exist yet)
+    const fetchReviewsWithImages = async (findManyArgs: any) => {
+      try {
+        // Try with images
+        return await prisma.review.findMany({
+          ...findManyArgs,
           include: {
             images: {
               orderBy: { createdAt: 'asc' },
             },
           },
+        });
+      } catch (err: any) {
+        // P2021/P2022 = table doesn't exist yet — fallback to reviews without images
+        if (err.code === 'P2021' || err.code === 'P2022' || err.code === 'P1001') {
+          return prisma.review.findMany(findManyArgs);
+        }
+        throw err;
+      }
+    };
+
+    // If pagination is requested
+    if (page && limit) {
+      const skip = (page - 1) * limit;
+      const [reviews, total] = await Promise.all([
+        fetchReviewsWithImages({
+          where: { productId },
+          orderBy,
+          skip,
+          take: limit,
         }),
         prisma.review.count({ where: { productId } }),
       ]);
@@ -626,14 +642,9 @@ export class ProductService {
     }
 
     // No pagination — return all (backward compatibility)
-    const reviews = await prisma.review.findMany({
+    const reviews = await fetchReviewsWithImages({
       where: { productId },
       orderBy,
-      include: {
-        images: {
-          orderBy: { createdAt: 'asc' },
-        },
-      },
     });
 
     const total = reviews.length;
@@ -676,28 +687,45 @@ export class ProductService {
       sanitizedCons = sanitizeHtmlText(data.cons.trim()).slice(0, 1000) || undefined;
     }
 
-    const review = await prisma.review.create({
-      data: {
-        productId,
-        name: sanitizedName,
-        rating: data.rating,
-        comment: sanitizedComment,
-        pros: sanitizedPros,
-        cons: sanitizedCons,
-        images: data.images && data.images.length > 0
-          ? {
-              create: data.images.map((img) => ({
-                imageUrl: img.imageUrl,
-              })),
-            }
-          : undefined,
-      },
-      include: {
-        images: {
-          orderBy: { createdAt: 'asc' },
+    const createData: any = {
+      productId,
+      name: sanitizedName,
+      rating: data.rating,
+      comment: sanitizedComment,
+      pros: sanitizedPros,
+      cons: sanitizedCons,
+    };
+
+    if (data.images && data.images.length > 0) {
+      createData.images = {
+        create: data.images.map((img) => ({
+          imageUrl: img.imageUrl,
+        })),
+      };
+    }
+
+    let review: any;
+    try {
+      review = await prisma.review.create({
+        data: createData,
+        include: {
+          images: {
+            orderBy: { createdAt: 'asc' },
+          },
         },
-      },
-    });
+      });
+    } catch (err: any) {
+      // Table doesn't exist — fallback without images
+      if (err.code === 'P2021' || err.code === 'P2022') {
+        review = await prisma.review.create({
+          data: createData,
+        });
+        // Attach empty images array for consistency
+        review.images = [];
+      } else {
+        throw err;
+      }
+    }
 
     // Update product average rating
     const stats = await prisma.review.aggregate({
