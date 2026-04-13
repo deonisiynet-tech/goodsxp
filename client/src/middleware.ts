@@ -72,7 +72,7 @@ export async function middleware(request: NextRequest) {
   // ✅ ОТРИМУЄМО статус магазину через внутрішній API
   // Використовуємо origin поточного запиту замість 127.0.0.1
   // Це працює в будь-якому оточенні (Railway, Docker, localhost)
-  const adminPanelPath = process.env.ADMIN_PANEL_PATH || '/admin-x8k2p9-panel';
+  let adminPanelPath = process.env.ADMIN_PANEL_PATH || '/admin-x8k2p9-panel';
 
   // 🔒 SECURITY: Validate ADMIN_PANEL_PATH to prevent SSRF
   if (!/^\/[a-zA-Z0-9_-]+$/.test(adminPanelPath)) {
