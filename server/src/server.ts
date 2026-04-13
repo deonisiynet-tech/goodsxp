@@ -185,10 +185,11 @@ app.use(helmet({
     directives: {
       defaultSrc: ["'self'"],
 
-      // 🔒 Scripts: ONLY same-origin. No unsafe-inline, no unsafe-eval in production.
-      // Next.js standalone bundles all JS into files — inline scripts not needed.
+      // 🔒 Scripts: Next.js App Router generates inline scripts for hydration,
+      // __next_f data transfer, and RSC payloads. 'unsafe-inline' is REQUIRED.
+      // Cloudflare Web Analytics (beacon.min.js) is injected at the CDN level.
       scriptSrc: isProd
-        ? ["'self'"]
+        ? ["'self'", "'unsafe-inline'", "https://static.cloudflareinsights.com"]
         : ["'self'", "'unsafe-eval'"], // Dev: HMR needs eval
 
       // 🔒 Styles: 'unsafe-inline' required because Next.js styled-jsx emits <style> tags.
@@ -201,9 +202,10 @@ app.use(helmet({
         ? ["'self'", "data:", "blob:", "https://res.cloudinary.com", "https://images.unsplash.com"]
         : ["'self'", "data:", "https:", "blob:"], // Dev: permissive for debugging
 
-      // 🔒 Connections: Same-origin for API calls. Cloudinary needed for client-side uploads.
+      // 🔒 Connections: Same-origin for API calls. Cloudinary for uploads.
+      // Cloudflare analytics sends beacon data back to their endpoint.
       connectSrc: isProd
-        ? ["'self'", "https://res.cloudinary.com"]
+        ? ["'self'", "https://res.cloudinary.com", "https://static.cloudflareinsights.com"]
         : ["'self'", "https:", "http:", "ws:", "wss:"], // Dev: allow WS for HMR
 
       // 🔒 Fonts: Only same-origin and data URIs
