@@ -363,9 +363,14 @@ export class ProductController {
   async getReviews(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const { sortBy } = req.query as { sortBy?: 'newest' | 'best' | 'worst' };
-      const reviews = await productService.getReviews(id, { sortBy });
-      res.json({ reviews });
+      const { sortBy, page, limit } = req.query as { sortBy?: 'newest' | 'best' | 'worst'; page?: string; limit?: string };
+
+      const options: { sortBy?: 'newest' | 'best' | 'worst'; page?: number; limit?: number } = { sortBy };
+      if (page) options.page = Number(page);
+      if (limit) options.limit = Number(limit);
+
+      const result = await productService.getReviews(id, options);
+      res.json(result);
     } catch (error) {
       next(error);
     }
@@ -374,7 +379,7 @@ export class ProductController {
   async createReview(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const { name, rating, comment, pros, cons } = req.body;
+      const { name, rating, comment, pros, cons, images } = req.body;
 
       // Validate rating
       const ratingNum = Number(rating);
@@ -382,7 +387,46 @@ export class ProductController {
         return res.status(400).json({ message: 'Рейтинг має бути від 1 до 5' });
       }
 
-      const review = await productService.createReview(id, { name, rating: ratingNum, comment, pros, cons });
+      // Process uploaded review images
+      const reviewImages: { imageUrl: string }[] = [];
+      if (req.files?.reviewImages) {
+        const files = Array.isArray(req.files.reviewImages)
+          ? req.files.reviewImages
+          : [req.files.reviewImages];
+
+        // Max 5 images
+        const limitedFiles = files.slice(0, 5);
+
+        for (const file of limitedFiles) {
+          const uploadedUrl = await processImageUpload(file);
+          if (uploadedUrl) {
+            reviewImages.push({ imageUrl: uploadedUrl });
+          }
+        }
+      }
+
+      // Also support images from JSON body (FormData)
+      if (reviewImages.length === 0 && images) {
+        try {
+          const parsedImages = typeof images === 'string' ? JSON.parse(images) : images;
+          if (Array.isArray(parsedImages)) {
+            reviewImages.push(
+              ...parsedImages.slice(0, 5).map((url: string) => ({ imageUrl: url }))
+            );
+          }
+        } catch (e) {
+          console.error('Error parsing review images JSON:', e);
+        }
+      }
+
+      const review = await productService.createReview(id, {
+        name,
+        rating: ratingNum,
+        comment,
+        pros,
+        cons,
+        images: reviewImages.length > 0 ? reviewImages : undefined,
+      });
       res.status(201).json(review);
     } catch (error: any) {
       if (error.message.includes('не знайдено') || error.message.includes('Товар')) {
@@ -400,11 +444,16 @@ export class ProductController {
   async getReviewsBySlug(req: Request, res: Response, next: NextFunction) {
     try {
       const { slug } = req.params;
-      const { sortBy } = req.query as { sortBy?: 'newest' | 'best' | 'worst' };
+      const { sortBy, page, limit } = req.query as { sortBy?: 'newest' | 'best' | 'worst'; page?: string; limit?: string };
 
       const result = await productService.getBySlug(slug);
-      const reviews = await productService.getReviews(result.product.id, { sortBy });
-      res.json({ reviews });
+
+      const options: { sortBy?: 'newest' | 'best' | 'worst'; page?: number; limit?: number } = { sortBy };
+      if (page) options.page = Number(page);
+      if (limit) options.limit = Number(limit);
+
+      const reviewsResult = await productService.getReviews(result.product.id, options);
+      res.json(reviewsResult);
     } catch (error) {
       next(error);
     }
@@ -413,7 +462,7 @@ export class ProductController {
   async createReviewBySlug(req: Request, res: Response, next: NextFunction) {
     try {
       const { slug } = req.params;
-      const { name, rating, comment, pros, cons } = req.body;
+      const { name, rating, comment, pros, cons, images } = req.body;
 
       // Validate rating
       const ratingNum = Number(rating);
@@ -421,8 +470,47 @@ export class ProductController {
         return res.status(400).json({ message: 'Рейтинг має бути від 1 до 5' });
       }
 
-      const result = await productService.getBySlug(slug);
-      const review = await productService.createReview(result.product.id, { name, rating: ratingNum, comment, pros, cons });
+      // Process uploaded review images
+      const reviewImages: { imageUrl: string }[] = [];
+      if (req.files?.reviewImages) {
+        const files = Array.isArray(req.files.reviewImages)
+          ? req.files.reviewImages
+          : [req.files.reviewImages];
+
+        // Max 5 images
+        const limitedFiles = files.slice(0, 5);
+
+        for (const file of limitedFiles) {
+          const uploadedUrl = await processImageUpload(file);
+          if (uploadedUrl) {
+            reviewImages.push({ imageUrl: uploadedUrl });
+          }
+        }
+      }
+
+      // Also support images from JSON body (FormData)
+      if (reviewImages.length === 0 && images) {
+        try {
+          const parsedImages = typeof images === 'string' ? JSON.parse(images) : images;
+          if (Array.isArray(parsedImages)) {
+            reviewImages.push(
+              ...parsedImages.slice(0, 5).map((url: string) => ({ imageUrl: url }))
+            );
+          }
+        } catch (e) {
+          console.error('Error parsing review images JSON:', e);
+        }
+      }
+
+      const productResult = await productService.getBySlug(slug);
+      const review = await productService.createReview(productResult.product.id, {
+        name,
+        rating: ratingNum,
+        comment,
+        pros,
+        cons,
+        images: reviewImages.length > 0 ? reviewImages : undefined,
+      });
       res.status(201).json(review);
     } catch (error: any) {
       if (error.message.includes('не знайдено') || error.message.includes('Товар')) {

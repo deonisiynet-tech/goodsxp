@@ -149,11 +149,22 @@ model Review {
   createdAt DateTime @default(now()) @db.Timestamptz(6)
   userId    String?
   product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  images    ReviewImage[]
 
   @@index([productId])
   @@index([createdAt])
   @@index([rating])
   @@index([userId])
+}
+
+model ReviewImage {
+  id        String   @id @default(uuid())
+  reviewId  String
+  imageUrl  String
+  createdAt DateTime @default(now()) @db.Timestamptz(6)
+  review    Review   @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@index([reviewId])
 }
 
 model Order {

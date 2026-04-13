@@ -82,6 +82,16 @@ interface ReviewSortOptions {
   sortBy?: 'newest' | 'best' | 'worst';
 }
 
+interface ReviewPaginationOptions {
+  sortBy?: 'newest' | 'best' | 'worst';
+  page?: number;
+  limit?: number;
+}
+
+interface ReviewImageInput {
+  imageUrl: string;
+}
+
 export class ProductService {
   async getAllCategories() {
     return prisma.category.findMany({
@@ -576,8 +586,8 @@ export class ProductService {
     };
   }
 
-  async getReviews(productId: string, options: ReviewSortOptions = {}) {
-    const { sortBy = 'newest' } = options;
+  async getReviews(productId: string, options: ReviewPaginationOptions = {}) {
+    const { sortBy = 'newest', page, limit } = options;
 
     let orderBy: Prisma.ReviewOrderByWithRelationInput;
 
@@ -594,13 +604,43 @@ export class ProductService {
         break;
     }
 
-    return prisma.review.findMany({
+    // If pagination is requested
+    if (page && limit) {
+      const skip = (page - 1) * limit;
+      const [reviews, total] = await Promise.all([
+        prisma.review.findMany({
+          where: { productId },
+          orderBy,
+          skip,
+          take: limit,
+          include: {
+            images: {
+              orderBy: { createdAt: 'asc' },
+            },
+          },
+        }),
+        prisma.review.count({ where: { productId } }),
+      ]);
+
+      return { reviews, total };
+    }
+
+    // No pagination — return all (backward compatibility)
+    const reviews = await prisma.review.findMany({
       where: { productId },
       orderBy,
+      include: {
+        images: {
+          orderBy: { createdAt: 'asc' },
+        },
+      },
     });
+
+    const total = reviews.length;
+    return { reviews, total };
   }
 
-  async createReview(productId: string, data: { name: string; rating: number; comment?: string; pros?: string; cons?: string }) {
+  async createReview(productId: string, data: { name: string; rating: number; comment?: string; pros?: string; cons?: string; images?: ReviewImageInput[] }) {
     const product = await prisma.product.findUnique({ where: { id: productId } });
     if (!product) {
       throw new Error('Товар не знайдено');
@@ -644,6 +684,18 @@ export class ProductService {
         comment: sanitizedComment,
         pros: sanitizedPros,
         cons: sanitizedCons,
+        images: data.images && data.images.length > 0
+          ? {
+              create: data.images.map((img) => ({
+                imageUrl: img.imageUrl,
+              })),
+            }
+          : undefined,
+      },
+      include: {
+        images: {
+          orderBy: { createdAt: 'asc' },
+        },
       },
     });
 

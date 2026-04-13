@@ -28,11 +28,11 @@ router.get('/:slug', controller.getBySlug);
 
 // Review routes (by product ID) — ✅ rate limited to prevent spam
 router.get('/:id/reviews', controller.getReviews);
-router.post('/:id/reviews', reviewRateLimiter, controller.createReview);
+router.post('/:id/reviews', reviewRateLimiter, uploadMiddleware, controller.createReview);
 
 // Review routes (by product slug) - for frontend convenience — ✅ rate limited
 router.get('/slug/:slug/reviews', controller.getReviewsBySlug);
-router.post('/slug/:slug/reviews', reviewRateLimiter, controller.createReviewBySlug);
+router.post('/slug/:slug/reviews', reviewRateLimiter, uploadMiddleware, controller.createReviewBySlug);
 
 // Admin routes
 router.use(authenticate, authorize(Role.ADMIN));
