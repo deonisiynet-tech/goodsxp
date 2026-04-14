@@ -21,6 +21,13 @@ export interface Product {
   reviewCount?: number
 }
 
+export interface ReviewImage {
+  id: string
+  reviewId: string
+  imageUrl: string
+  createdAt: string
+}
+
 export interface Review {
   id: string
   productId: string
@@ -30,6 +37,22 @@ export interface Review {
   pros: string | null
   cons: string | null
   createdAt: string
+  images?: ReviewImage[]
+}
+
+export interface ReviewsResponse {
+  reviews: Review[]
+  total: number
+}
+
+export interface ReviewCreateInput {
+  productId: string
+  name: string
+  rating: number
+  comment?: string
+  pros?: string
+  cons?: string
+  images?: File[]
 }
 
 // API client for Express server
@@ -220,34 +243,84 @@ export const productsApi = {
   },
 
   // Get product reviews (by product ID)
-  getReviews: async (productId: string, sortBy?: 'newest' | 'best' | 'worst') => {
+  getReviews: async (productId: string, sortBy?: 'newest' | 'best' | 'worst', page?: number, limit?: number): Promise<ReviewsResponse> => {
     const params = new URLSearchParams()
     if (sortBy) params.append('sortBy', sortBy)
+    if (page) params.append('page', String(page))
+    if (limit) params.append('limit', String(limit))
     return fetchAPI(`/products/${productId}/reviews?${params.toString()}`)
   },
 
   // Get product reviews by slug
-  getReviewsBySlug: async (slug: string, sortBy?: 'newest' | 'best' | 'worst') => {
+  getReviewsBySlug: async (slug: string, sortBy?: 'newest' | 'best' | 'worst', page?: number, limit?: number): Promise<ReviewsResponse> => {
     const params = new URLSearchParams()
     if (sortBy) params.append('sortBy', sortBy)
+    if (page) params.append('page', String(page))
+    if (limit) params.append('limit', String(limit))
     return fetchAPI(`/products/slug/${slug}/reviews?${params.toString()}`)
   },
 
-  // Create review (by product ID)
-  createReview: async (productId: string, data: { name: string; rating: number; comment?: string; pros?: string; cons?: string }) => {
-    return fetchAPI(`/products/${productId}/reviews`, {
+  // Create review (by product ID) — supports FormData for image uploads
+  createReview: async (data: ReviewCreateInput) => {
+    // Use FormData if images are present
+    if (data.images && data.images.length > 0) {
+      const formData = new FormData()
+      formData.append('productId', data.productId)
+      formData.append('name', data.name)
+      formData.append('rating', String(data.rating))
+      if (data.comment) formData.append('text', data.comment)
+      if (data.pros) formData.append('pros', data.pros)
+      if (data.cons) formData.append('cons', data.cons)
+      data.images.forEach((file) => formData.append('images[]', file))
+
+      return fetchAPI('/reviews', {
+        method: 'POST',
+        body: formData,
+      })
+    }
+
+    // No images — use JSON
+    return fetchAPI('/reviews', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
+      body: JSON.stringify({
+        productId: data.productId,
+        name: data.name,
+        rating: data.rating,
+        text: data.comment,
+        pros: data.pros,
+        cons: data.cons,
+      }),
     })
   },
 
-  // Create review by slug
-  createReviewBySlug: async (slug: string, data: { name: string; rating: number; comment?: string; pros?: string; cons?: string }) => {
+  // Create review by slug — supports FormData for image uploads
+  createReviewBySlug: async (slug: string, data: { name: string; rating: number; comment?: string; pros?: string; cons?: string; images?: File[] }) => {
+    // Use FormData if images are present
+    if (data.images && data.images.length > 0) {
+      const formData = new FormData()
+      formData.append('name', data.name)
+      formData.append('rating', String(data.rating))
+      if (data.comment) formData.append('text', data.comment)
+      if (data.pros) formData.append('pros', data.pros)
+      if (data.cons) formData.append('cons', data.cons)
+      data.images.forEach((file) => formData.append('images[]', file))
+
+      return fetchAPI(`/products/slug/${slug}/reviews`, {
+        method: 'POST',
+        body: formData,
+      })
+    }
+
+    // No images — use JSON
     return fetchAPI(`/products/slug/${slug}/reviews`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
+      body: JSON.stringify({
+        name: data.name,
+        rating: data.rating,
+        text: data.comment,
+        pros: data.pros,
+        cons: data.cons,
+      }),
     })
   },
 

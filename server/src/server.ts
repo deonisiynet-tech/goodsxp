@@ -76,6 +76,7 @@ const nextHandle = nextApp.getRequestHandler();
 console.log('📥 Importing API routes...');
 import authRoutes from './routes/auth.routes.js';
 import productRoutes from './routes/product.routes.js';
+import reviewRoutes from './routes/review.routes.js';
 import orderRoutes from './routes/order.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import uploadRoutes from './routes/upload.routes.js';
@@ -329,6 +330,7 @@ app.use(`${adminApiPrefix}/auth/2fa/generate`, csrfProtection);
 app.use(`${adminApiPrefix}/auth/2fa/enable`, csrfProtection);
 app.use(`${adminApiPrefix}/auth/2fa/disable`, csrfProtection);
 app.use(`${adminApiPrefix}/auth`, adminRateLimiter, adminAuthRoutes);  // Admin auth with hidden path
+app.use('/api/reviews', reviewRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/orders', orderRoutes);
 // CSRF для адмінських маршрутів (cookie-based auth)

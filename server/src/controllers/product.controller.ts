@@ -6,11 +6,152 @@ import { processImageUpload } from '../middleware/upload.js';
 import { AdminService } from '../services/admin.service.js';
 import { ActionType } from '@prisma/client';
 import prisma from '../prisma/client.js';
+import { AppError } from '../middleware/errorHandler.js';
 import { productSchema, sanitizeHtml } from '../utils/validators.js';
+import path from 'path';
 
 const productService = new ProductService();
 const variantService = new VariantService();
 const adminService = new AdminService();
+
+const MAX_REVIEW_IMAGES = 5;
+const MAX_REVIEW_IMAGE_SIZE = 5 * 1024 * 1024;
+const REVIEW_ALLOWED_MIME_TYPES = new Set([
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+]);
+const REVIEW_ALLOWED_EXTENSIONS = new Set(['.jpg', '.jpeg', '.png', '.webp']);
+
+type ReviewSortOption = 'newest' | 'best' | 'worst';
+
+type ReviewUploadFile = {
+  name: string;
+  mimetype?: string;
+  size: number;
+  truncated?: boolean;
+};
+
+function getReviewFormFiles(req: Request): ReviewUploadFile[] {
+  const uploadedFiles = req.files as Record<string, any> | undefined;
+
+  return [uploadedFiles?.reviewImages, uploadedFiles?.images, uploadedFiles?.['images[]']]
+    .filter(Boolean)
+    .flatMap((entry) => (Array.isArray(entry) ? entry : [entry]));
+}
+
+function validateReviewFormFiles(files: ReviewUploadFile[]) {
+  if (files.length > MAX_REVIEW_IMAGES) {
+    throw new AppError(`Можна прикріпити максимум ${MAX_REVIEW_IMAGES} фото`, 400);
+  }
+
+  for (const file of files) {
+    const extension = path.extname(file.name || '').toLowerCase();
+    const mimeType = (file.mimetype || '').toLowerCase();
+
+    if (!REVIEW_ALLOWED_MIME_TYPES.has(mimeType)) {
+      throw new AppError('Дозволено тільки JPG, PNG або WebP зображення', 400);
+    }
+
+    if (!REVIEW_ALLOWED_EXTENSIONS.has(extension)) {
+      throw new AppError('Формат файлу не підтримується. Доступні: JPG, PNG, WebP', 400);
+    }
+
+    if (file.truncated || file.size > MAX_REVIEW_IMAGE_SIZE) {
+      throw new AppError('Кожне фото повинно бути не більше 5MB', 400);
+    }
+  }
+}
+
+function parseReviewImageUrls(rawImages: unknown): { imageUrl: string }[] {
+  if (!rawImages) {
+    return [];
+  }
+
+  let parsedImages = rawImages;
+
+  if (typeof rawImages === 'string') {
+    try {
+      parsedImages = JSON.parse(rawImages);
+    } catch {
+      parsedImages = rawImages
+        .split(',')
+        .map((item) => item.trim())
+        .filter(Boolean);
+    }
+  }
+
+  if (!Array.isArray(parsedImages)) {
+    return [];
+  }
+
+  if (parsedImages.length > MAX_REVIEW_IMAGES) {
+    throw new AppError(`Можна прикріпити максимум ${MAX_REVIEW_IMAGES} фото`, 400);
+  }
+
+  return parsedImages
+    .map((value) => (typeof value === 'string' ? value.trim() : ''))
+    .filter(Boolean)
+    .map((imageUrl) => ({ imageUrl }));
+}
+
+async function uploadReviewImages(req: Request): Promise<{ imageUrl: string }[]> {
+  const files = getReviewFormFiles(req);
+
+  if (files.length === 0) {
+    return parseReviewImageUrls(req.body.images ?? req.body['images[]']);
+  }
+
+  validateReviewFormFiles(files);
+
+  const uploadedUrls = await Promise.all(
+    files.map(async (file: any) => {
+      const imageUrl = await processImageUpload(file);
+      return imageUrl ? { imageUrl } : null;
+    })
+  );
+
+  return uploadedUrls.filter((image): image is { imageUrl: string } => Boolean(image));
+}
+
+async function createReviewForProduct(productId: string, req: Request) {
+  const ratingNum = Number(req.body.rating);
+  const reviewAuthorName = typeof req.body.name === 'string' ? req.body.name.trim() : '';
+
+  if (!productId?.trim()) {
+    throw new AppError('productId обовʼязковий', 400);
+  }
+
+  if (!ratingNum || ratingNum < 1 || ratingNum > 5) {
+    throw new AppError('Рейтинг має бути від 1 до 5', 400);
+  }
+
+  if (!reviewAuthorName) {
+    throw new AppError("Ім'я обов'язкове", 400);
+  }
+
+  const productExists = await prisma.product.findUnique({
+    where: { id: productId },
+    select: { id: true },
+  });
+
+  if (!productExists) {
+    throw new AppError('Товар не знайдено', 404);
+  }
+
+  const comment = typeof req.body.text === 'string' ? req.body.text : req.body.comment;
+  const reviewImages = await uploadReviewImages(req);
+
+  return productService.createReview(productId, {
+    name: reviewAuthorName,
+    rating: ratingNum,
+    comment,
+    pros: req.body.pros,
+    cons: req.body.cons,
+    images: reviewImages.length > 0 ? reviewImages : undefined,
+  });
+}
 
 export class ProductController {
   // Public routes
@@ -363,9 +504,9 @@ export class ProductController {
   async getReviews(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const { sortBy, page, limit } = req.query as { sortBy?: 'newest' | 'best' | 'worst'; page?: string; limit?: string };
+      const { sortBy, page, limit } = req.query as { sortBy?: ReviewSortOption; page?: string; limit?: string };
 
-      const options: { sortBy?: 'newest' | 'best' | 'worst'; page?: number; limit?: number } = { sortBy };
+      const options: { sortBy?: ReviewSortOption; page?: number; limit?: number } = { sortBy };
       if (page) options.page = Number(page);
       if (limit) options.limit = Number(limit);
 
@@ -379,7 +520,8 @@ export class ProductController {
   async createReview(req: Request, res: Response, next: NextFunction) {
     try {
       const { id } = req.params;
-      const { name, rating, comment, pros, cons, images } = req.body;
+      const review = await createReviewForProduct(id, req);
+      /*
 
       // Validate rating
       const ratingNum = Number(rating);
@@ -427,6 +569,7 @@ export class ProductController {
         cons,
         images: reviewImages.length > 0 ? reviewImages : undefined,
       });
+      */
       res.status(201).json(review);
     } catch (error: any) {
       if (error.message.includes('не знайдено') || error.message.includes('Товар')) {
@@ -441,14 +584,38 @@ export class ProductController {
   }
 
   // Review methods by slug — делегує до основних методів через ID
+  async createReviewFromBody(req: Request, res: Response, next: NextFunction) {
+    try {
+      const review = await createReviewForProduct(req.body.productId, req);
+      res.status(201).json(review);
+    } catch (error: any) {
+      if (error instanceof AppError) {
+        return res.status(error.statusCode).json({ message: error.message });
+      }
+      if (error.message?.includes('РЅРµ Р·РЅР°Р№РґРµРЅРѕ') || error.message?.includes('РўРѕРІР°СЂ')) {
+        return res.status(404).json({ message: error.message });
+      }
+      if (
+        error.message?.includes('Р РµР№С‚РёРЅРі')
+        || error.message?.includes('Р†Рј')
+      ) {
+        return res.status(400).json({ message: error.message });
+      }
+      if (typeof error.message === 'string') {
+        return res.status(400).json({ message: error.message });
+      }
+      next(error);
+    }
+  }
+
   async getReviewsBySlug(req: Request, res: Response, next: NextFunction) {
     try {
       const { slug } = req.params;
-      const { sortBy, page, limit } = req.query as { sortBy?: 'newest' | 'best' | 'worst'; page?: string; limit?: string };
+      const { sortBy, page, limit } = req.query as { sortBy?: ReviewSortOption; page?: string; limit?: string };
 
       const result = await productService.getBySlug(slug);
 
-      const options: { sortBy?: 'newest' | 'best' | 'worst'; page?: number; limit?: number } = { sortBy };
+      const options: { sortBy?: ReviewSortOption; page?: number; limit?: number } = { sortBy };
       if (page) options.page = Number(page);
       if (limit) options.limit = Number(limit);
 
@@ -503,14 +670,7 @@ export class ProductController {
       }
 
       const productResult = await productService.getBySlug(slug);
-      const review = await productService.createReview(productResult.product.id, {
-        name,
-        rating: ratingNum,
-        comment,
-        pros,
-        cons,
-        images: reviewImages.length > 0 ? reviewImages : undefined,
-      });
+      const review = await createReviewForProduct(productResult.product.id, req);
       res.status(201).json(review);
     } catch (error: any) {
       if (error.message.includes('не знайдено') || error.message.includes('Товар')) {

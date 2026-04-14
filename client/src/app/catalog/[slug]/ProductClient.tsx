@@ -1,20 +1,22 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { productsApi, Review } from '@/lib/products-api';
+import { productsApi, Review, ReviewImage } from '@/lib/products-api';
 import { useCartStore } from '@/lib/store';
 import { useWishlistStore } from '@/lib/wishlist';
 import { normalizeImageUrl } from '@/lib/image-utils';
 import VariantSelector, { ProductOption, ProductVariant, VariantOption } from '@/components/VariantSelector';
 import DescriptionRenderer from '@/components/DescriptionRenderer';
 import BuyPopup from '@/components/BuyPopup';
+import ReviewSkeleton from '@/components/ReviewSkeleton';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 import Link from 'next/link';
 import {
   ShoppingCart, Check, ChevronLeft, ChevronRight, Star, Send,
   Truck, Shield, RotateCcw, Heart, Share2, Trash2,
+  Upload, X, ImageIcon, ZoomIn, Loader2,
 } from 'lucide-react';
 
 interface Product {
@@ -44,17 +46,33 @@ export default function ProductClient({ product }: { product: Product }) {
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(true);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [newRating, setNewRating] = useState(5);
   const [newName, setNewName] = useState('');
   const [newComment, setNewComment] = useState('');
   const [newPros, setNewPros] = useState('');
   const [newCons, setNewCons] = useState('');
+  const [newReviewImages, setNewReviewImages] = useState<File[]>([]);
+  const [newReviewImagePreviews, setNewReviewImagePreviews] = useState<string[]>([]);
   const [submittingReview, setSubmittingReview] = useState(false);
   const [sortBy, setSortBy] = useState<ReviewSortOption>('newest');
   const [activeTab, setActiveTab] = useState<'description' | 'specs' | 'reviews'>('description');
   const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
+
+  // Pagination state
+  const REVIEWS_PER_PAGE = 5;
+  const [reviewsPage, setReviewsPage] = useState(1);
+  const [reviewsTotal, setReviewsTotal] = useState(0);
+  const [hasMoreReviews, setHasMoreReviews] = useState(false);
+
+  // Image preview modal
+  const [previewImageUrl, setPreviewImageUrl] = useState<string | null>(null);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const reviewPreviewUrlsRef = useRef<string[]>([]);
+
   const addItem = useCartStore((state) => state.addItem);
   const setLastAddedPosition = useCartStore((state) => state.setLastAddedPosition);
   const wishlistToggle = useWishlistStore((state) => state.toggleItem);
@@ -122,34 +140,60 @@ export default function ProductClient({ product }: { product: Product }) {
     }
   };
 
-  const loadReviews = async (slug: string) => {
+  const loadReviews = async (slug: string, page = 1, append = false) => {
+    if (!append) {
+      setReviewsLoading(true);
+      setReviewsPage(1);
+    }
+
     try {
-      const response = await productsApi.getReviewsBySlug(slug, sortBy);
-      setReviews(response.reviews || []);
+      const response = await productsApi.getReviewsBySlug(slug, sortBy, page, REVIEWS_PER_PAGE);
+      setReviewsTotal(response.total || 0);
+
+      if (append) {
+        setReviews((prev) => [...prev, ...(response.reviews || [])]);
+        setReviewsPage(page);
+      } else {
+        setReviews(response.reviews || []);
+      }
+
+      setHasMoreReviews((response.reviews?.length || 0) > 0 && (page * REVIEWS_PER_PAGE) < (response.total || 0));
     } catch {
       // Reviews are non-critical — just show empty state
-      setReviews([]);
+      if (!append) setReviews([]);
+    } finally {
+      setReviewsLoading(false);
     }
+  };
+
+  const loadMoreReviews = () => {
+    const nextPage = reviewsPage + 1;
+    loadReviews(product.slug, nextPage, true);
   };
 
   const submitReview = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmittingReview(true);
     try {
-      const newReview = await productsApi.createReviewBySlug(product.slug, {
+      const newReview = await productsApi.createReview({
+        productId: product.id,
         name: newName,
         rating: newRating,
         comment: newComment,
         pros: newPros || undefined,
         cons: newCons || undefined,
+        images: newReviewImages.length > 0 ? newReviewImages : undefined,
       });
-      setReviews((prev) => [...prev, newReview]);
+      // Reset first page and reload reviews to include the new one
+      setReviews((prev) => [newReview, ...prev]);
+      setReviewsTotal((prev) => prev + 1);
       setShowReviewForm(false);
       setNewName('');
       setNewComment('');
       setNewPros('');
       setNewCons('');
       setNewRating(5);
+      resetReviewImages();
       toast.success('Відгук додано!');
     } catch (error: any) {
       toast.error(error.message || 'Помилка при додаванні відгуку');
@@ -167,6 +211,100 @@ export default function ProductClient({ product }: { product: Product }) {
     } catch (error: any) {
       toast.error(error.message || 'Помилка видалення відгуку');
     }
+  };
+
+  // Review image handlers
+  const MAX_REVIEW_IMAGES = 5;
+  const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+  const ALLOWED_IMAGE_TYPES = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+
+  const resetReviewImages = () => {
+    reviewPreviewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    reviewPreviewUrlsRef.current = [];
+    setNewReviewImages([]);
+    setNewReviewImagePreviews([]);
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const handleReviewImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+
+    const currentCount = newReviewImages.length;
+    const remainingSlots = MAX_REVIEW_IMAGES - currentCount;
+
+    if (remainingSlots <= 0) {
+      toast.error(`Максимум ${MAX_REVIEW_IMAGES} фото`);
+      return;
+    }
+
+    if (files.length > remainingSlots) {
+      toast.error(`Можна додати ще тільки ${remainingSlots} фото`);
+    }
+
+    const validFiles: File[] = [];
+    const validPreviews: string[] = [];
+
+    for (const file of files.slice(0, remainingSlots)) {
+      // Check type
+      if (!ALLOWED_IMAGE_TYPES.includes(file.type)) {
+        toast.error(`${file.name} — непідтримуваний формат. Дозволено: JPG, PNG, WebP`);
+        continue;
+      }
+
+      // Check size
+      if (file.size > MAX_IMAGE_SIZE) {
+        toast.error(`${file.name} — завеликий файл (макс. 5MB)`);
+        continue;
+      }
+
+      validFiles.push(file);
+      validPreviews.push(URL.createObjectURL(file));
+    }
+
+    if (validFiles.length > 0) {
+      setNewReviewImages((prev) => [...prev, ...validFiles]);
+      setNewReviewImagePreviews((prev) => {
+        const nextPreviews = [...prev, ...validPreviews];
+        reviewPreviewUrlsRef.current = nextPreviews;
+        return nextPreviews;
+      });
+    }
+
+    // Reset input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const removeReviewImage = (index: number) => {
+    setNewReviewImages((prev) => prev.filter((_, i) => i !== index));
+    setNewReviewImagePreviews((prev) => {
+      const nextPreviews = [...prev];
+      const [removedPreview] = nextPreviews.splice(index, 1);
+      if (removedPreview) {
+        URL.revokeObjectURL(removedPreview);
+      }
+      reviewPreviewUrlsRef.current = nextPreviews;
+      return nextPreviews;
+    });
+  };
+
+  // Cleanup previews on unmount
+  useEffect(() => {
+    return () => {
+      reviewPreviewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, []);
+
+  const openImagePreview = (imageUrl: string) => {
+    setPreviewImageUrl(imageUrl);
+  };
+
+  const closeImagePreview = () => {
+    setPreviewImageUrl(null);
   };
 
   const scrollToReviews = () => {
@@ -612,7 +750,9 @@ export default function ProductClient({ product }: { product: Product }) {
           {/* Reviews Section */}
           <div id="reviews-section" className="mt-16 border-t border-[#26262b] pt-12">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
-              <h2 className="text-3xl font-light text-white">Відгуки</h2>
+              <h2 className="text-3xl font-light text-white">
+                Відгуки {reviewsTotal > 0 && <span className="text-[#9ca3af] text-xl">({reviewsTotal})</span>}
+              </h2>
               <div className="flex items-center gap-4">
                 <label className="text-sm text-[#9ca3af]">Сортування:</label>
                 <select
@@ -627,7 +767,14 @@ export default function ProductClient({ product }: { product: Product }) {
               </div>
             </div>
 
-            {reviews.length === 0 ? (
+            {/* Loading skeleton */}
+            {reviewsLoading ? (
+              <div className="space-y-4 mb-8">
+                {[1, 2, 3, 4].map((i) => (
+                  <ReviewSkeleton key={i} />
+                ))}
+              </div>
+            ) : reviews.length === 0 ? (
               <div className="text-center py-12 bg-[#18181c] rounded-2xl border border-[#26262b]">
                 <p className="text-[#9ca3af] mb-6">
                   Відгуків поки немає. Будьте першим, хто залишить відгук.
@@ -700,9 +847,48 @@ export default function ProductClient({ product }: { product: Product }) {
                           </div>
                         </div>
                       )}
+
+                      {/* Фото відгуку */}
+                      {review.images && review.images.length > 0 && (
+                        <div className="mt-3 flex flex-wrap gap-2">
+                          {review.images.map((img) => (
+                            <button
+                              key={img.id}
+                              onClick={() => openImagePreview(img.imageUrl)}
+                              className="group relative w-16 h-16 sm:w-20 sm:h-20 rounded-lg overflow-hidden border border-[#26262b] hover:border-[#6366f1] transition-colors shrink-0"
+                            >
+                              <Image
+                                src={img.imageUrl}
+                                alt="Фото з відгуку"
+                                fill
+                                className="object-cover group-hover:scale-105 transition-transform"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display = 'none';
+                                }}
+                              />
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                <ZoomIn size={16} className="text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                              </div>
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
                   ))}
                 </div>
+
+                {/* Показати ще */}
+                {hasMoreReviews && (
+                  <div className="flex justify-center mb-8">
+                    <button
+                      onClick={loadMoreReviews}
+                      className="btn-secondary inline-flex items-center gap-2"
+                    >
+                      Показати ще відгуки
+                    </button>
+                  </div>
+                )}
+
                 <button
                   onClick={() => setShowReviewForm(true)}
                   className="btn-primary inline-flex items-center gap-2"
@@ -839,6 +1025,63 @@ export default function ProductClient({ product }: { product: Product }) {
                   placeholder="Що не сподобалось..."
                 />
               </div>
+
+              {/* Photo upload */}
+              <div>
+                <label className="block text-sm font-medium text-[#9ca3af] mb-2">
+                  Додати фото <span className="text-[#6b7280] font-light">(макс. 5, JPG/PNG/WebP, до 5MB)</span>
+                </label>
+                <div className="mb-3 flex items-center justify-between rounded-xl border border-[#26262b] bg-[#131317] px-3 py-2 text-xs text-[#9ca3af]">
+                  <span className="inline-flex items-center gap-2">
+                    <ImageIcon size={14} />
+                    Фото зʼявиться одразу після вибору
+                  </span>
+                  <span className="rounded-full border border-[#26262b] bg-[#18181c] px-2.5 py-1 font-medium text-white">
+                    {newReviewImages.length}/{MAX_REVIEW_IMAGES}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  {/* Existing previews */}
+                  {newReviewImagePreviews.map((preview, index) => (
+                    <div key={index} className="relative w-20 h-20 rounded-lg overflow-hidden border border-[#26262b] group">
+                      <Image
+                        src={preview}
+                        alt={`Прев'ю ${index + 1}`}
+                        fill
+                        className="object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeReviewImage(index)}
+                        className="absolute top-1 right-1 p-1 bg-[#0f0f12]/80 backdrop-blur-sm rounded-full text-white hover:bg-red-500/80 transition-colors opacity-0 group-hover:opacity-100"
+                      >
+                        <X size={12} />
+                      </button>
+                    </div>
+                  ))}
+
+                  {/* Upload button */}
+                  {newReviewImages.length < MAX_REVIEW_IMAGES && (
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex h-24 w-24 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[#3f3f46] bg-[#131317] text-[#6b7280] transition-all duration-300 hover:border-[#6366f1]/50 hover:bg-[#18181c] hover:text-[#9ca3af]"
+                    >
+                      <Upload size={18} />
+                      <span className="text-[10px]">+ Фото</span>
+                    </button>
+                  )}
+                </div>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                  multiple
+                  onChange={handleReviewImageSelect}
+                  className="hidden"
+                />
+              </div>
+
               <div className="flex gap-4 pt-4">
                 <button
                   type="submit"
@@ -857,6 +1100,36 @@ export default function ProductClient({ product }: { product: Product }) {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Image Preview Modal */}
+      {previewImageUrl && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4">
+          <div
+            className="absolute inset-0 bg-[#0f0f12]/90 backdrop-blur-sm"
+            onClick={closeImagePreview}
+          />
+          <div className="relative max-w-4xl max-h-[90vh] w-full">
+            <button
+              onClick={closeImagePreview}
+              className="absolute -top-12 right-0 p-2 text-white hover:text-[#6366f1] transition-colors"
+            >
+              <X size={28} />
+            </button>
+            <div className="relative w-full h-full flex items-center justify-center">
+              <Image
+                src={previewImageUrl}
+                alt="Прев'ю фото"
+                width={1200}
+                height={1200}
+                className="max-w-full max-h-[85vh] object-contain rounded-lg"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = 'https://via.placeholder.com/800?text=No+Image';
+                }}
+              />
+            </div>
           </div>
         </div>
       )}
