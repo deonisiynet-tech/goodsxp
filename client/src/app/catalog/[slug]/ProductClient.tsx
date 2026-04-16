@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
-import { productsApi, Review, ReviewImage } from '@/lib/products-api';
+import { productsApi, ProductSpecification, Review } from '@/lib/products-api';
 import { useCartStore } from '@/lib/store';
 import { useWishlistStore } from '@/lib/wishlist';
 import { normalizeImageUrl } from '@/lib/image-utils';
@@ -37,6 +37,7 @@ interface Product {
   reviewCount?: number;
   options?: ProductOption[];
   variants?: ProductVariant[];
+  specifications?: ProductSpecification[];
 }
 
 type ReviewSortOption = 'newest' | 'best' | 'worst';
@@ -57,7 +58,7 @@ export default function ProductClient({ product }: { product: Product }) {
   const [newReviewImagePreviews, setNewReviewImagePreviews] = useState<string[]>([]);
   const [submittingReview, setSubmittingReview] = useState(false);
   const [sortBy, setSortBy] = useState<ReviewSortOption>('newest');
-  const [activeTab, setActiveTab] = useState<'description' | 'specs' | 'reviews'>('description');
+  const [activeTab, setActiveTab] = useState<'description' | 'reviews'>('description');
   const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -82,6 +83,8 @@ export default function ProductClient({ product }: { product: Product }) {
   const hasVariants = (product.options?.length ?? 0) > 0;
   const finalOptions = product.options || [];
   const finalVariants = product.variants || [];
+  const specifications = product.specifications || [];
+  const hasSpecifications = specifications.length > 0;
 
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>({});
   const [showBuyPopup, setShowBuyPopup] = useState(false);
@@ -613,7 +616,6 @@ export default function ProductClient({ product }: { product: Product }) {
                 <div className="flex gap-1 border-b border-[#26262b] mb-6 overflow-x-auto whitespace-nowrap flex-nowrap">
                   {[
                     { key: 'description' as const, label: 'Опис' },
-                    { key: 'specs' as const, label: 'Характеристики' },
                     { key: 'reviews' as const, label: `Відгуки (${product.reviewCount || 0})` },
                   ].map((tab) => (
                     <button
@@ -640,28 +642,31 @@ export default function ProductClient({ product }: { product: Product }) {
                 </div>
 
                 {activeTab === 'description' && (
-                  product.description ? (
-                    <DescriptionRenderer description={product.description} />
-                  ) : (
-                    <p className="text-[#9ca3af]">Опис товару скоро з&apos;явиться. Зверніться до менеджера для отримання деталей.</p>
-                  )
-                )}
+                  <div className="space-y-6">
+                    {product.description ? (
+                      <DescriptionRenderer description={product.description} />
+                    ) : (
+                      <p className="text-[#9ca3af]">Опис товару скоро з&apos;явиться. Зверніться до менеджера для отримання деталей.</p>
+                    )}
 
-                {activeTab === 'specs' && (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                    {[
-                      ['Тип товару', 'Електроніка'],
-                      ['Гарантія', '12 місяців'],
-                      ['Доставка', 'Нова Пошта, 1–3 дні'],
-                      ['Повернення', '14 днів'],
-                      ['Оплата', 'При отриманні / Онлайн'],
-                      ['Стан', 'Новий'],
-                    ].map(([label, value]) => (
-                      <div key={label} className="flex justify-between p-3 bg-[#1f1f23] rounded-lg">
-                        <span className="text-[#9ca3af] text-sm">{label}</span>
-                        <span className="text-white text-sm font-medium">{value}</span>
-                      </div>
-                    ))}
+                    {hasSpecifications && (
+                      <section className="overflow-hidden rounded-2xl border border-[#26262b] bg-[#18181c]">
+                        <div className="border-b border-[#26262b] px-4 py-3 sm:px-5">
+                          <h3 className="text-lg font-medium text-white">Характеристики</h3>
+                        </div>
+                        <div className="divide-y divide-[#26262b]">
+                          {specifications.map((specification) => (
+                            <div
+                              key={specification.id || `${specification.key}-${specification.value}`}
+                              className="grid grid-cols-1 gap-2 px-4 py-3 sm:grid-cols-[minmax(0,220px)_1fr] sm:px-5"
+                            >
+                              <span className="break-words text-sm text-[#9ca3af]">{specification.key}</span>
+                              <span className="break-words text-sm font-medium text-white">{specification.value}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </section>
+                    )}
                   </div>
                 )}
 
@@ -950,156 +955,183 @@ export default function ProductClient({ product }: { product: Product }) {
 
       {/* Review Form Modal */}
       {showReviewForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 p-3 sm:p-4">
           <div
             className="absolute inset-0 bg-[#0f0f12]/80 backdrop-blur-sm"
             onClick={() => setShowReviewForm(false)}
           />
-          <div className="relative bg-[#18181c] border border-[#6366f1]/30 rounded-2xl p-8 max-w-md w-full shadow-2xl shadow-[#6366f1]/20 animate-fade-in">
-            <h3 className="text-2xl font-light text-white mb-6">Залишити відгук</h3>
-            <form onSubmit={submitReview} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-[#9ca3af] mb-2">Рейтинг</label>
-                <div className="flex gap-2">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      key={star}
-                      type="button"
-                      onClick={() => setNewRating(star)}
-                      className="transition-transform hover:scale-110"
-                    >
-                      <Star
-                        size={32}
-                        className={`${
-                          star <= newRating
-                            ? 'fill-yellow-500 text-yellow-500'
-                            : 'fill-gray-600 text-gray-600'
-                        }`}
-                      />
-                    </button>
-                  ))}
+          <div className="relative z-10 flex h-full items-end justify-center sm:items-center">
+            <div className="relative flex max-h-[90vh] w-full max-w-2xl flex-col overflow-hidden rounded-2xl border border-[#6366f1]/30 bg-[#18181c] shadow-2xl shadow-[#6366f1]/20 animate-fade-in">
+              <div className="flex items-center justify-between border-b border-[#26262b] bg-[#18181c]/95 px-4 py-4 backdrop-blur sm:px-6">
+                <div>
+                  <h3 className="text-xl font-light text-white sm:text-2xl">Залишити відгук</h3>
+                  <p className="mt-1 text-xs text-[#9ca3af] sm:text-sm">
+                    Додайте оцінку, текст і до 5 фото у форматах JPG, PNG або WebP.
+                  </p>
                 </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#9ca3af] mb-2">Ім&apos;я</label>
-                <input
-                  type="text"
-                  value={newName}
-                  onChange={(e) => setNewName(e.target.value)}
-                  required
-                  className="input-field"
-                  placeholder="Ваше ім&apos;я"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-[#9ca3af] mb-2">Коментар</label>
-                <textarea
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  rows={4}
-                  className="input-field resize-none"
-                  placeholder="Ваш відгук..."
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-emerald-400 mb-2">
-                  ✓ Переваги <span className="text-[#6b7280] font-light">(необов&apos;язково)</span>
-                </label>
-                <textarea
-                  value={newPros}
-                  onChange={(e) => setNewPros(e.target.value)}
-                  rows={3}
-                  className="input-field resize-none"
-                  placeholder="Що вам сподобалось..."
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-red-400 mb-2">
-                  ✗ Недоліки <span className="text-[#6b7280] font-light">(необов&apos;язково)</span>
-                </label>
-                <textarea
-                  value={newCons}
-                  onChange={(e) => setNewCons(e.target.value)}
-                  rows={3}
-                  className="input-field resize-none"
-                  placeholder="Що не сподобалось..."
-                />
-              </div>
-
-              {/* Photo upload */}
-              <div>
-                <label className="block text-sm font-medium text-[#9ca3af] mb-2">
-                  Додати фото <span className="text-[#6b7280] font-light">(макс. 5, JPG/PNG/WebP, до 5MB)</span>
-                </label>
-                <div className="mb-3 flex items-center justify-between rounded-xl border border-[#26262b] bg-[#131317] px-3 py-2 text-xs text-[#9ca3af]">
-                  <span className="inline-flex items-center gap-2">
-                    <ImageIcon size={14} />
-                    Фото зʼявиться одразу після вибору
-                  </span>
-                  <span className="rounded-full border border-[#26262b] bg-[#18181c] px-2.5 py-1 font-medium text-white">
-                    {newReviewImages.length}/{MAX_REVIEW_IMAGES}
-                  </span>
-                </div>
-                <div className="flex flex-wrap gap-3">
-                  {/* Existing previews */}
-                  {newReviewImagePreviews.map((preview, index) => (
-                    <div key={index} className="relative w-20 h-20 rounded-lg overflow-hidden border border-[#26262b] group">
-                      <Image
-                        src={preview}
-                        alt={`Прев'ю ${index + 1}`}
-                        fill
-                        className="object-cover"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeReviewImage(index)}
-                        className="absolute top-1 right-1 p-1 bg-[#0f0f12]/80 backdrop-blur-sm rounded-full text-white hover:bg-red-500/80 transition-colors opacity-0 group-hover:opacity-100"
-                      >
-                        <X size={12} />
-                      </button>
-                    </div>
-                  ))}
-
-                  {/* Upload button */}
-                  {newReviewImages.length < MAX_REVIEW_IMAGES && (
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="flex h-24 w-24 flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[#3f3f46] bg-[#131317] text-[#6b7280] transition-all duration-300 hover:border-[#6366f1]/50 hover:bg-[#18181c] hover:text-[#9ca3af]"
-                    >
-                      <Upload size={18} />
-                      <span className="text-[10px]">+ Фото</span>
-                    </button>
-                  )}
-                </div>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept="image/jpeg,image/jpg,image/png,image/webp"
-                  multiple
-                  onChange={handleReviewImageSelect}
-                  className="hidden"
-                />
-              </div>
-
-              <div className="flex gap-4 pt-4">
-                <button
-                  type="submit"
-                  disabled={submittingReview}
-                  className="btn-primary flex-1 flex items-center justify-center gap-2 disabled:opacity-50"
-                >
-                  <Send size={18} />
-                  {submittingReview ? 'Відправка...' : 'Надіслати відгук'}
-                </button>
                 <button
                   type="button"
                   onClick={() => setShowReviewForm(false)}
-                  className="btn-secondary flex-1"
+                  className="rounded-full p-2 text-[#9ca3af] transition-colors hover:bg-[#1f1f23] hover:text-white"
+                  aria-label="Закрити модальне вікно"
                 >
-                  Скасувати
+                  <X size={18} />
                 </button>
               </div>
-            </form>
+
+              <form onSubmit={submitReview} className="flex min-h-0 flex-1 flex-col overflow-hidden">
+                <div className="min-h-0 flex-1 overflow-y-auto px-4 py-4 sm:px-6 sm:py-5">
+                  <div className="space-y-4">
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-[#9ca3af]">Рейтинг</label>
+                      <div className="flex flex-wrap gap-2">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <button
+                            key={star}
+                            type="button"
+                            onClick={() => setNewRating(star)}
+                            className="rounded-full p-1 transition-transform hover:scale-110"
+                          >
+                            <Star
+                              size={28}
+                              className={`${
+                                star <= newRating
+                                  ? 'fill-yellow-500 text-yellow-500'
+                                  : 'fill-gray-600 text-gray-600'
+                              }`}
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-[#9ca3af]">Ім&apos;я</label>
+                      <input
+                        type="text"
+                        value={newName}
+                        onChange={(e) => setNewName(e.target.value)}
+                        required
+                        className="input-field"
+                        placeholder="Ваше ім&apos;я"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-[#9ca3af]">Коментар</label>
+                      <textarea
+                        value={newComment}
+                        onChange={(e) => setNewComment(e.target.value)}
+                        rows={4}
+                        className="input-field resize-none"
+                        placeholder="Ваш відгук..."
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-emerald-400">
+                        ✓ Переваги <span className="font-light text-[#6b7280]">(необов&apos;язково)</span>
+                      </label>
+                      <textarea
+                        value={newPros}
+                        onChange={(e) => setNewPros(e.target.value)}
+                        rows={3}
+                        className="input-field resize-none"
+                        placeholder="Що вам сподобалось..."
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-red-400">
+                        ✗ Недоліки <span className="font-light text-[#6b7280]">(необов&apos;язково)</span>
+                      </label>
+                      <textarea
+                        value={newCons}
+                        onChange={(e) => setNewCons(e.target.value)}
+                        rows={3}
+                        className="input-field resize-none"
+                        placeholder="Що не сподобалось..."
+                      />
+                    </div>
+
+                    <div>
+                      <label className="mb-2 block text-sm font-medium text-[#9ca3af]">
+                        Додати фото <span className="font-light text-[#6b7280]">(макс. 5, JPG/PNG/WebP, до 5MB)</span>
+                      </label>
+                      <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-[#26262b] bg-[#131317] px-3 py-2 text-xs text-[#9ca3af]">
+                        <span className="inline-flex items-center gap-2">
+                          <ImageIcon size={14} />
+                          Фото зʼявиться одразу після вибору
+                        </span>
+                        <span className="rounded-full border border-[#26262b] bg-[#18181c] px-2.5 py-1 font-medium text-white">
+                          {newReviewImages.length}/{MAX_REVIEW_IMAGES}
+                        </span>
+                      </div>
+
+                      <div className="flex flex-wrap gap-3">
+                        {newReviewImagePreviews.map((preview, index) => (
+                          <div key={index} className="group relative h-20 w-20 overflow-hidden rounded-lg border border-[#26262b]">
+                            <Image
+                              src={preview}
+                              alt={`Прев'ю ${index + 1}`}
+                              fill
+                              className="object-cover"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => removeReviewImage(index)}
+                              className="absolute right-1 top-1 rounded-full bg-[#0f0f12]/80 p-1 text-white opacity-100 transition-colors hover:bg-red-500/80 sm:opacity-0 sm:group-hover:opacity-100"
+                            >
+                              <X size={12} />
+                            </button>
+                          </div>
+                        ))}
+
+                        {newReviewImages.length < MAX_REVIEW_IMAGES && (
+                          <button
+                            type="button"
+                            onClick={() => fileInputRef.current?.click()}
+                            className="flex h-24 w-full min-w-[140px] flex-col items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[#3f3f46] bg-[#131317] px-4 text-[#6b7280] transition-all duration-300 hover:border-[#6366f1]/50 hover:bg-[#18181c] hover:text-[#9ca3af] sm:w-24 sm:min-w-0"
+                          >
+                            <Upload size={18} />
+                            <span className="text-[10px]">+ Фото</span>
+                          </button>
+                        )}
+                      </div>
+
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/jpeg,image/jpg,image/png,image/webp"
+                        multiple
+                        onChange={handleReviewImageSelect}
+                        className="hidden"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="border-t border-[#26262b] bg-[#18181c]/95 px-4 py-4 backdrop-blur sm:px-6">
+                  <div className="flex flex-col-reverse gap-3 sm:flex-row">
+                    <button
+                      type="button"
+                      onClick={() => setShowReviewForm(false)}
+                      className="btn-secondary flex-1"
+                    >
+                      Скасувати
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={submittingReview}
+                      className="btn-primary flex flex-1 items-center justify-center gap-2 disabled:opacity-50"
+                    >
+                      <Send size={18} />
+                      {submittingReview ? 'Відправка...' : 'Надіслати відгук'}
+                    </button>
+                  </div>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}

@@ -80,6 +80,7 @@ import reviewRoutes from './routes/review.routes.js';
 import orderRoutes from './routes/order.routes.js';
 import adminRoutes from './routes/admin.routes.js';
 import uploadRoutes from './routes/upload.routes.js';
+import specificationRoutes from './routes/specification.routes.js';
 import adminAuthRoutes from './routes/admin.auth.routes.js';
 import novaPoshtaRoutes from './routes/nova-poshta.routes.js';
 import analyticsRoutes from './routes/analytics.routes.js';
@@ -332,6 +333,7 @@ app.use(`${adminApiPrefix}/auth/2fa/disable`, csrfProtection);
 app.use(`${adminApiPrefix}/auth`, adminRateLimiter, adminAuthRoutes);  // Admin auth with hidden path
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/specifications', specificationRoutes);
 app.use('/api/orders', orderRoutes);
 // CSRF для адмінських маршрутів (cookie-based auth)
 app.use(`${adminApiPrefix}`, csrfProtection);

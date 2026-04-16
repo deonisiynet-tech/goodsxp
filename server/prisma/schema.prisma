@@ -65,6 +65,7 @@ model Product {
   orderItems    OrderItem[]
   category      Category?   @relation(fields: [categoryId], references: [id])
   reviews       Review[]
+  specifications ProductSpecification[]
   options       ProductOption[]
   variants      ProductVariant[]
 
@@ -76,6 +77,16 @@ model Product {
   @@index([categoryId])
   @@index([rating])
   slugRedirects ProductSlugRedirect[]
+}
+
+model ProductSpecification {
+  id        String  @id @default(uuid())
+  productId String
+  key       String
+  value     String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
 }
 
 /**

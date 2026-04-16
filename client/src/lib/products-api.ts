@@ -19,6 +19,7 @@ export interface Product {
   updatedAt: string
   averageRating?: number
   reviewCount?: number
+  specifications?: ProductSpecification[]
 }
 
 export interface ReviewImage {
@@ -38,6 +39,13 @@ export interface Review {
   cons: string | null
   createdAt: string
   images?: ReviewImage[]
+}
+
+export interface ProductSpecification {
+  id?: string
+  productId?: string
+  key: string
+  value: string
 }
 
 export interface ReviewsResponse {
@@ -259,6 +267,19 @@ export const productsApi = {
     if (limit) params.append('limit', String(limit))
     return fetchAPI(`/products/slug/${slug}/reviews?${params.toString()}`)
   },
+
+  // Product specifications
+  getSpecifications: async (productId: string): Promise<{ specifications: ProductSpecification[] }> =>
+    fetchAPI(`/products/${productId}/specifications`),
+
+  saveSpecification: async (productId: string, data: ProductSpecification): Promise<ProductSpecification> =>
+    fetchAPI(`/products/${productId}/specifications`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  deleteSpecification: async (specificationId: string) =>
+    fetchAPI(`/specifications/${specificationId}`, { method: 'DELETE' }),
 
   // Create review (by product ID) — supports FormData for image uploads
   createReview: async (data: ReviewCreateInput) => {

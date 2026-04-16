@@ -92,6 +92,12 @@ interface ReviewImageInput {
   imageUrl: string;
 }
 
+interface ProductSpecificationInput {
+  id?: string;
+  key: string;
+  value: string;
+}
+
 export class ProductService {
   async getAllCategories() {
     return prisma.category.findMany({
@@ -584,6 +590,86 @@ export class ProductService {
         totalPages: Math.ceil(total / limit),
       },
     };
+  }
+
+  async getSpecifications(productId: string) {
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      select: { id: true },
+    });
+
+    if (!product) {
+      throw new AppError('Товар не знайдено', 404);
+    }
+
+    return prisma.productSpecification.findMany({
+      where: { productId },
+      orderBy: { key: 'asc' },
+    });
+  }
+
+  async saveSpecification(productId: string, data: ProductSpecificationInput) {
+    const product = await prisma.product.findUnique({
+      where: { id: productId },
+      select: { id: true },
+    });
+
+    if (!product) {
+      throw new AppError('Товар не знайдено', 404);
+    }
+
+    const sanitizedKey = sanitizeHtmlText((data.key || '').trim()).slice(0, 120);
+    const sanitizedValue = sanitizeHtmlText((data.value || '').trim()).slice(0, 500);
+
+    if (!sanitizedKey) {
+      throw new AppError('Назва характеристики обов’язкова', 400);
+    }
+
+    if (!sanitizedValue) {
+      throw new AppError('Значення характеристики обов’язкове', 400);
+    }
+
+    if (data.id) {
+      const existing = await prisma.productSpecification.findUnique({
+        where: { id: data.id },
+      });
+
+      if (!existing || existing.productId !== productId) {
+        throw new AppError('Характеристику не знайдено', 404);
+      }
+
+      return prisma.productSpecification.update({
+        where: { id: data.id },
+        data: {
+          key: sanitizedKey,
+          value: sanitizedValue,
+        },
+      });
+    }
+
+    return prisma.productSpecification.create({
+      data: {
+        productId,
+        key: sanitizedKey,
+        value: sanitizedValue,
+      },
+    });
+  }
+
+  async deleteSpecification(specificationId: string) {
+    const existing = await prisma.productSpecification.findUnique({
+      where: { id: specificationId },
+    });
+
+    if (!existing) {
+      throw new AppError('Характеристику не знайдено', 404);
+    }
+
+    await prisma.productSpecification.delete({
+      where: { id: specificationId },
+    });
+
+    return { message: 'Характеристику видалено' };
   }
 
   async getReviews(productId: string, options: ReviewPaginationOptions = {}) {

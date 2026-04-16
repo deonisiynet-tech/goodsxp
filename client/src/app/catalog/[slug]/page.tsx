@@ -1,12 +1,17 @@
 import type { Metadata } from 'next';
-import { notFound, redirect } from 'next/navigation';
-import { headers } from 'next/headers';
+import { redirect } from 'next/navigation';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ProductClient from './ProductClient';
-import { generateProductJsonLd, generateBreadcrumbJsonLd } from '@/lib/schema';
+import { generateBreadcrumbJsonLd, generateProductJsonLd } from '@/lib/schema';
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://goodsxp.store';
+
+interface ProductSpecification {
+  id: string;
+  key: string;
+  value: string;
+}
 
 interface Product {
   id: string;
@@ -26,10 +31,14 @@ interface Product {
   reviewCount?: number;
   options?: any[];
   variants?: any[];
+  specifications?: ProductSpecification[];
 }
 
-async function fetchProductBySlug(slug: string): Promise<{ product: Product | null; redirected?: boolean; newSlug?: string }> {
+async function fetchProductBySlug(
+  slug: string
+): Promise<{ product: Product | null; redirected?: boolean; newSlug?: string }> {
   const apiUrl = process.env.INTERNAL_API_URL || 'http://localhost:8080';
+
   try {
     const res = await fetch(`${apiUrl}/api/products/${slug}`, {
       next: { revalidate: 60 },
@@ -41,21 +50,32 @@ async function fetchProductBySlug(slug: string): Promise<{ product: Product | nu
       return { product: data.product, redirected: true, newSlug: data.newSlug };
     }
 
-    if (!res.ok) return { product: null };
-    const product = await res.json();
+    if (!res.ok) {
+      return { product: null };
+    }
 
-    // ✅ Завантажуємо variants + options для SSR (прибираємо flicker)
-    try {
-      const variantsRes = await fetch(`${apiUrl}/api/products/${product.id}/variants`, {
+    const product = (await res.json()) as Product;
+
+    const [variantsResult, specificationsResult] = await Promise.allSettled([
+      fetch(`${apiUrl}/api/products/${product.id}/variants`, {
         next: { revalidate: 60 },
-      });
-      if (variantsRes.ok) {
-        const variantsData = await variantsRes.json();
-        product.options = variantsData.options || [];
-        product.variants = variantsData.variants || [];
-      }
-    } catch {
-      // variants не критичні — якщо не завантажились, product все одно працює
+      }),
+      fetch(`${apiUrl}/api/products/${product.id}/specifications`, {
+        next: { revalidate: 60 },
+      }),
+    ]);
+
+    if (variantsResult.status === 'fulfilled' && variantsResult.value.ok) {
+      const variantsData = await variantsResult.value.json();
+      product.options = variantsData.options || [];
+      product.variants = variantsData.variants || [];
+    }
+
+    if (specificationsResult.status === 'fulfilled' && specificationsResult.value.ok) {
+      const specificationsData = await specificationsResult.value.json();
+      product.specifications = specificationsData.specifications || [];
+    } else {
+      product.specifications = [];
     }
 
     return { product };
@@ -64,10 +84,13 @@ async function fetchProductBySlug(slug: string): Promise<{ product: Product | nu
   }
 }
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+export async function generateMetadata({
+  params,
+}: {
+  params: { slug: string };
+}): Promise<Metadata> {
   const { product, redirected, newSlug } = await fetchProductBySlug(params.slug);
 
-  // ✅ Якщо редірект — генеруємо metadata для нового slug
   if (redirected && newSlug) {
     redirect(`/catalog/${newSlug}`);
   }
@@ -84,7 +107,9 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 
   const imageUrl = product.images?.[0] || product.imageUrl;
   const ogImage = imageUrl
-    ? (imageUrl.startsWith('http') ? imageUrl : `${siteUrl}${imageUrl}`)
+    ? imageUrl.startsWith('http')
+      ? imageUrl
+      : `${siteUrl}${imageUrl}`
     : `${siteUrl}/og-image.jpg`;
 
   return {
@@ -111,7 +136,6 @@ export async function generateMetadata({ params }: { params: { slug: string } })
 export default async function ProductPage({ params }: { params: { slug: string } }) {
   const { product, redirected, newSlug } = await fetchProductBySlug(params.slug);
 
-  // ✅ Серверний редірект на новий slug
   if (redirected && newSlug) {
     redirect(`/catalog/${newSlug}`);
   }
@@ -133,7 +157,6 @@ export default async function ProductPage({ params }: { params: { slug: string }
     );
   }
 
-  // ✅ Server-side JSON-LD для Google (без виконання JS)
   const productJsonLd = generateProductJsonLd({
     id: product.id,
     slug: product.slug,
@@ -154,7 +177,6 @@ export default async function ProductPage({ params }: { params: { slug: string }
 
   return (
     <>
-      {/* ✅ JSON-LD рендериться на сервері — Google бачить без JS */}
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(productJsonLd) }}

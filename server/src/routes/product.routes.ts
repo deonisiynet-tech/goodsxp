@@ -2,7 +2,6 @@ import { Router } from 'express';
 import { ProductController } from '../controllers/product.controller.js';
 import { authenticate, authorize } from '../middleware/auth.js';
 import { uploadMiddleware } from '../middleware/upload.js';
-import { strictRateLimiter, apiRateLimiter } from '../middleware/rateLimiter.js';
 import { reviewRateLimiter } from '../middleware/rateLimiter.js';
 import { Role } from '@prisma/client';
 
@@ -22,6 +21,7 @@ router.get('/search', controller.searchSuggestions);
 // Variant routes (public) — MUST be before /:slug to avoid conflicts
 router.get('/:productId/variants', controller.getVariants);
 router.post('/:productId/variants/find', controller.findVariant);
+router.get('/:id/specifications', controller.getSpecifications);
 
 // Slug-based routes — MUST be after specific routes
 router.get('/:slug', controller.getBySlug);
@@ -38,6 +38,7 @@ router.post('/slug/:slug/reviews', reviewRateLimiter, uploadMiddleware, controll
 router.use(authenticate, authorize(Role.ADMIN));
 router.get('/admin/all', controller.getAllAdmin);
 router.post('/', uploadMiddleware, controller.create);
+router.post('/:id/specifications', controller.saveSpecification);
 
 // Variant routes (admin only — MUST be before /:id to avoid conflicts)
 router.post('/:productId/options', controller.createOption);

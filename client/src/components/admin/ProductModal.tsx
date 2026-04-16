@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { useForm } from 'react-hook-form'
-import { productsApi, variantsApi } from '@/lib/products-api'
+import { ProductSpecification, productsApi, variantsApi } from '@/lib/products-api'
 import toast from 'react-hot-toast'
 import { X, Upload, Trash2, ChevronLeft, ChevronRight, Plus, Package } from 'lucide-react'
 
@@ -36,6 +36,11 @@ interface ProductModalProps {
   onClose: () => void
 }
 
+const EMPTY_SPECIFICATION: ProductSpecification = {
+  key: '',
+  value: '',
+}
+
 export default function ProductModal({ product, onClose }: ProductModalProps) {
   const [loading, setLoading] = useState(false)
   const [uploadingImages, setUploadingImages] = useState(false)
@@ -55,6 +60,9 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
   const [newOptionValue, setNewOptionValue] = useState<Record<string, string>>({});
   const [showVariants, setShowVariants] = useState(false);
   const [newVariant, setNewVariant] = useState({ price: 0, stock: 0, image: '', selectedOptions: {} as Record<string, string> });
+  const [specifications, setSpecifications] = useState<ProductSpecification[]>([]);
+  const [initialSpecifications, setInitialSpecifications] = useState<ProductSpecification[]>([]);
+  const [loadingSpecifications, setLoadingSpecifications] = useState(false);
 
   useEffect(() => {
     const loadCategories = async () => {
@@ -86,6 +94,117 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
     } catch {
       // silently fail
     }
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadSpecifications = async () => {
+      if (!product?.id) {
+        setSpecifications([]);
+        setInitialSpecifications([]);
+        setLoadingSpecifications(false);
+        return;
+      }
+
+      setLoadingSpecifications(true);
+      setSpecifications([]);
+      setInitialSpecifications([]);
+
+      try {
+        const response = await productsApi.getSpecifications(product.id);
+        if (cancelled) return;
+
+        const loadedSpecifications = response.specifications || [];
+        setSpecifications(loadedSpecifications);
+        setInitialSpecifications(loadedSpecifications);
+      } catch (e: any) {
+        if (!cancelled) {
+          toast.error(e.message || 'Не вдалося завантажити характеристики');
+          setSpecifications([]);
+          setInitialSpecifications([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingSpecifications(false);
+        }
+      }
+    };
+
+    loadSpecifications();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [product?.id]);
+
+  const handleAddSpecification = () => {
+    setSpecifications((prev) => [...prev, { ...EMPTY_SPECIFICATION }]);
+  };
+
+  const handleSpecificationChange = (
+    index: number,
+    field: 'key' | 'value',
+    value: string
+  ) => {
+    setSpecifications((prev) =>
+      prev.map((specification, specIndex) =>
+        specIndex === index ? { ...specification, [field]: value } : specification
+      )
+    );
+  };
+
+  const handleRemoveSpecification = (index: number) => {
+    setSpecifications((prev) => prev.filter((_, specIndex) => specIndex !== index));
+  };
+
+  const normalizeSpecifications = () => {
+    const normalized = specifications
+      .map((specification) => ({
+        ...specification,
+        key: specification.key.trim(),
+        value: specification.value.trim(),
+      }))
+      .filter((specification) => specification.key || specification.value);
+
+    const hasIncompleteSpecification = normalized.some(
+      (specification) => !specification.key || !specification.value
+    );
+
+    if (hasIncompleteSpecification) {
+      throw new Error('Заповніть назву та значення для кожної характеристики або видаліть порожній рядок');
+    }
+
+    return normalized;
+  };
+
+  const syncSpecifications = async (productId: string) => {
+    const normalizedSpecifications = normalizeSpecifications();
+    const currentIds = new Set(
+      normalizedSpecifications
+        .map((specification) => specification.id)
+        .filter((specificationId): specificationId is string => Boolean(specificationId))
+    );
+
+    const removedIds = initialSpecifications
+      .map((specification) => specification.id)
+      .filter(
+        (specificationId): specificationId is string =>
+          Boolean(specificationId) && !currentIds.has(specificationId)
+      );
+
+    if (removedIds.length > 0) {
+      await Promise.all(removedIds.map((specificationId) => productsApi.deleteSpecification(specificationId)));
+    }
+
+    const savedSpecifications = await Promise.all(
+      normalizedSpecifications.map((specification) =>
+        productsApi.saveSpecification(productId, specification)
+      )
+    );
+
+    setSpecifications(savedSpecifications);
+    setInitialSpecifications(savedSpecifications);
   };
 
   const handleAddOption = async () => {
@@ -260,6 +379,8 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
         images: allImageUrls,
       })
 
+      let savedProductId = product?.id || ''
+
       if (product) {
         // Update existing product
         const result = await productsApi.update(product.id, {
@@ -276,8 +397,8 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
           categoryId: data.categoryId || null,
           images: allImageUrls,
         })
+        savedProductId = result.id
         console.log('📝 Update result:', result)
-        toast.success('Товар оновлено')
       } else {
         // Create new product
         const result = await productsApi.create({
@@ -294,9 +415,12 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
           categoryId: data.categoryId || null,
           images: allImageUrls,
         })
+        savedProductId = result.id
         console.log('📦 Create result:', result)
-        toast.success('Товар створено')
       }
+
+      await syncSpecifications(savedProductId)
+      toast.success(product ? 'Товар оновлено' : 'Товар створено')
 
       onClose()
     } catch (error: any) {
@@ -710,6 +834,65 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
                 </div>
               )}
             </div>
+          </div>
+
+          <div className="rounded-xl border border-border bg-surface/50 p-4">
+            <div className="mb-4 flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-base font-semibold text-white">Характеристики</h3>
+                <p className="mt-1 text-sm text-muted">
+                  Додавайте довільні пари ключ/значення будь-якою мовою: колір, гарантія, вага, матеріал тощо.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleAddSpecification}
+                className="btn-secondary inline-flex items-center gap-2 whitespace-nowrap px-4 py-2 text-sm"
+              >
+                <Plus size={16} />
+                Додати
+              </button>
+            </div>
+
+            {loadingSpecifications ? (
+              <div className="rounded-lg border border-border bg-[#1f1f23] px-4 py-5 text-sm text-muted">
+                Завантаження характеристик...
+              </div>
+            ) : specifications.length > 0 ? (
+              <div className="space-y-3">
+                {specifications.map((specification, index) => (
+                  <div
+                    key={specification.id || `specification-${index}`}
+                    className="grid gap-3 rounded-lg border border-border bg-[#1f1f23] p-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
+                  >
+                    <input
+                      value={specification.key}
+                      onChange={(e) => handleSpecificationChange(index, 'key', e.target.value)}
+                      placeholder="Наприклад: Колір"
+                      className="input-field text-sm"
+                    />
+                    <input
+                      value={specification.value}
+                      onChange={(e) => handleSpecificationChange(index, 'value', e.target.value)}
+                      placeholder="Наприклад: Чорний"
+                      className="input-field text-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveSpecification(index)}
+                      className="inline-flex items-center justify-center rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-red-400 transition-colors hover:bg-red-500/20"
+                      title="Видалити характеристику"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-lg border border-dashed border-border px-4 py-6 text-center text-sm text-muted">
+                Поки що немає характеристик. Натисніть «Додати», щоб створити перший рядок.
+              </div>
+            )}
           </div>
 
           {/* ===== VARIANT MANAGEMENT ===== */}

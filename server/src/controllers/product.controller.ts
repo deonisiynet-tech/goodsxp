@@ -7,7 +7,7 @@ import { AdminService } from '../services/admin.service.js';
 import { ActionType } from '@prisma/client';
 import prisma from '../prisma/client.js';
 import { AppError } from '../middleware/errorHandler.js';
-import { productSchema, sanitizeHtml } from '../utils/validators.js';
+import { sanitizeHtml } from '../utils/validators.js';
 import path from 'path';
 
 const productService = new ProductService();
@@ -320,6 +320,16 @@ export class ProductController {
     }
   }
 
+  async getSpecifications(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const specifications = await productService.getSpecifications(id);
+      res.json({ specifications });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // Admin routes
   async getAllAdmin(req: AuthRequest, res: Response, next: NextFunction) {
     try {
@@ -332,6 +342,30 @@ export class ProductController {
         sortOrder: sortOrder as 'asc' | 'desc',
       });
       res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async saveSpecification(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const specification = await productService.saveSpecification(id, {
+        id: req.body.id,
+        key: req.body.key,
+        value: req.body.value,
+      });
+
+      await adminService.logAction({
+        adminId: req.user!.id,
+        action: req.body.id ? ActionType.UPDATE : ActionType.CREATE,
+        entity: 'ProductSpecification',
+        entityId: specification.id,
+        details: `${req.body.id ? 'Updated' : 'Created'} specification "${specification.key}" for product ${id}`,
+        ipAddress: req.ip,
+      });
+
+      res.status(req.body.id ? 200 : 201).json(specification);
     } catch (error) {
       next(error);
     }
@@ -699,6 +733,26 @@ export class ProductController {
       if (error.message.includes('не знайдено')) {
         return res.status(404).json({ message: error.message });
       }
+      next(error);
+    }
+  }
+
+  async deleteSpecification(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const { id } = req.params;
+      const result = await productService.deleteSpecification(id);
+
+      await adminService.logAction({
+        adminId: req.user!.id,
+        action: ActionType.DELETE,
+        entity: 'ProductSpecification',
+        entityId: id,
+        details: `Deleted specification ${id}`,
+        ipAddress: req.ip,
+      });
+
+      res.json(result);
+    } catch (error) {
       next(error);
     }
   }
