@@ -157,6 +157,10 @@ export default function SettingsPage() {
 
       if (!response.ok) {
         const error = await response.json()
+        // ✅ FIX: More detailed error messages
+        if (error.error?.includes('вже увімкнено')) {
+          throw new Error('2FA вже увімкнено. Спочатку вимкніть поточний 2FA.')
+        }
         throw new Error(error.error || 'Помилка генерації 2FA')
       }
 
@@ -166,6 +170,7 @@ export default function SettingsPage() {
       setShowQR(true)
       toast.success('Секрет 2FA згенеровано. Відскануйте QR-код.')
     } catch (error: any) {
+      console.error('❌ 2FA generation error:', error)
       toast.error(error.message || 'Помилка генерації 2FA')
     } finally {
       setTwoFALoading(false)
@@ -191,14 +196,19 @@ export default function SettingsPage() {
 
       if (!response.ok) {
         const error = await response.json()
+        // ✅ FIX: More detailed error messages
+        if (error.error?.includes('Невірний')) {
+          throw new Error('Невірний код. Перевірте код у Google Authenticator і спробуйте ще раз.')
+        }
         throw new Error(error.error || 'Помилка активації 2FA')
       }
 
       setTwoFAEnabled(true)
       setShowQR(false)
       setTwoFAToken('')
-      toast.success('2FA успішно увімкнено!')
+      toast.success('✅ 2FA успішно увімкнено! Тепер при вході потрібен код з додатку.')
     } catch (error: any) {
+      console.error('❌ 2FA enable error:', error)
       toast.error(error.message || 'Помилка активації 2FA')
     } finally {
       setTwoFALoading(false)
@@ -207,7 +217,11 @@ export default function SettingsPage() {
 
   const handleDisable2FA = async () => {
     if (!twoFAToken || twoFAToken.length !== 6) {
-      toast.error('Введіть 6-значний код з Google Authenticator')
+      toast.error('Введіть 6-значний код з Google Authenticator для підтвердження')
+      return
+    }
+
+    if (!confirm('Ви впевнені, що хочете вимкнути 2FA? Це знизить безпеку вашого акаунту.')) {
       return
     }
 
@@ -224,6 +238,13 @@ export default function SettingsPage() {
 
       if (!response.ok) {
         const error = await response.json()
+        // ✅ FIX: More detailed error messages
+        if (error.error?.includes('Невірний')) {
+          throw new Error('Невірний код. Перевірте код у Google Authenticator і спробуйте ще раз.')
+        }
+        if (error.error?.includes('не увімкнено')) {
+          throw new Error('2FA вже вимкнено.')
+        }
         throw new Error(error.error || 'Помилка вимкнення 2FA')
       }
 
@@ -232,8 +253,9 @@ export default function SettingsPage() {
       setTwoFASecret('')
       setQrCode('')
       setTwoFAToken('')
-      toast.success('2FA успішно вимкнено')
+      toast.success('✅ 2FA успішно вимкнено. Секретний ключ видалено.')
     } catch (error: any) {
+      console.error('❌ 2FA disable error:', error)
       toast.error(error.message || 'Помилка вимкнення 2FA')
     } finally {
       setTwoFALoading(false)

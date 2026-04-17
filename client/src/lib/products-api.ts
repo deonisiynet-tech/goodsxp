@@ -152,6 +152,7 @@ async function fetchAPI(endpoint: string, options: RequestInit = {}) {
     console.log('📡 API Response:', {
       status: response.status,
       statusText: response.statusText,
+      endpoint,
     })
   }
 
@@ -162,10 +163,27 @@ async function fetchAPI(endpoint: string, options: RequestInit = {}) {
       console.error('❌ API Error:', {
         status: response.status,
         statusText: response.statusText,
+        endpoint,
         data,
       })
     }
-    throw new Error(data.error || data.message || 'Request failed')
+
+    // ✅ FIX: More detailed error messages based on status code
+    let errorMessage = data.error || data.message || 'Request failed'
+
+    if (response.status === 401) {
+      errorMessage = 'Необхідна авторизація. Будь ласка, увійдіть в систему.'
+    } else if (response.status === 403) {
+      errorMessage = 'Доступ заборонено. У вас немає прав для цієї операції.'
+    } else if (response.status === 404) {
+      errorMessage = data.error || 'Ресурс не знайдено.'
+    } else if (response.status === 400) {
+      errorMessage = data.error || data.message || 'Невірні дані запиту.'
+    } else if (response.status >= 500) {
+      errorMessage = 'Помилка сервера. Спробуйте пізніше.'
+    }
+
+    throw new Error(errorMessage)
   }
 
   return data
@@ -364,7 +382,9 @@ export const productsApi = {
     formData.append('title', data.title)
     formData.append('description', data.description)
     formData.append('price', String(data.price))
-    formData.append('margin', String(data.margin ?? 0))
+    // ✅ FIX: Ensure margin is always a valid number, not empty string or NaN
+    const marginValue = typeof data.margin === 'number' && !isNaN(data.margin) ? data.margin : 0
+    formData.append('margin', String(marginValue))
     if (data.originalPrice !== undefined && data.originalPrice !== null) formData.append('originalPrice', String(data.originalPrice))
     if (data.discountPrice !== undefined && data.discountPrice !== null) formData.append('discountPrice', String(data.discountPrice))
     formData.append('stock', String(data.stock))
@@ -399,7 +419,9 @@ export const productsApi = {
     formData.append('title', data.title)
     formData.append('description', data.description)
     formData.append('price', String(data.price))
-    formData.append('margin', String(data.margin ?? 0))
+    // ✅ FIX: Ensure margin is always a valid number, not empty string or NaN
+    const marginValue = typeof data.margin === 'number' && !isNaN(data.margin) ? data.margin : 0
+    formData.append('margin', String(marginValue))
     if (data.originalPrice !== undefined && data.originalPrice !== null) formData.append('originalPrice', String(data.originalPrice))
     if (data.discountPrice !== undefined && data.discountPrice !== null) formData.append('discountPrice', String(data.discountPrice))
     formData.append('stock', String(data.stock))

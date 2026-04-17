@@ -193,15 +193,34 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
           Boolean(specificationId) && !currentIds.has(specificationId)
       );
 
+    // ✅ FIX: Delete specifications with individual error handling
     if (removedIds.length > 0) {
-      await Promise.all(removedIds.map((specificationId) => productsApi.deleteSpecification(specificationId)));
+      const deleteResults = await Promise.allSettled(
+        removedIds.map((specificationId) => productsApi.deleteSpecification(specificationId))
+      );
+
+      const failedDeletes = deleteResults.filter((r) => r.status === 'rejected');
+      if (failedDeletes.length > 0) {
+        console.warn(`⚠️ Failed to delete ${failedDeletes.length} specifications`);
+      }
     }
 
-    const savedSpecifications = await Promise.all(
+    // ✅ FIX: Save specifications with individual error handling
+    const saveResults = await Promise.allSettled(
       normalizedSpecifications.map((specification) =>
         productsApi.saveSpecification(productId, specification)
       )
     );
+
+    const savedSpecifications = saveResults
+      .filter((r): r is PromiseFulfilledResult<any> => r.status === 'fulfilled')
+      .map((r) => r.value);
+
+    const failedSaves = saveResults.filter((r) => r.status === 'rejected');
+    if (failedSaves.length > 0) {
+      console.error(`❌ Failed to save ${failedSaves.length} specifications:`, failedSaves);
+      throw new Error(`Не вдалося зберегти ${failedSaves.length} характеристик`);
+    }
 
     setSpecifications(savedSpecifications);
     setInitialSpecifications(savedSpecifications);
@@ -373,6 +392,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
       console.log('💾 Submitting product:', {
         title: data.title,
         price: data.price,
+        margin: data.margin,
         stock: data.stock,
         isActive: data.isActive,
         imagesCount: allImageUrls.length,
@@ -399,6 +419,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
         })
         savedProductId = result.id
         console.log('📝 Update result:', result)
+        toast.success('Товар оновлено')
       } else {
         // Create new product
         const result = await productsApi.create({
@@ -417,15 +438,32 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
         })
         savedProductId = result.id
         console.log('📦 Create result:', result)
+        toast.success('Товар створено')
       }
 
-      await syncSpecifications(savedProductId)
-      toast.success(product ? 'Товар оновлено' : 'Товар створено')
+      // ✅ FIX: Separate specifications sync with detailed error handling
+      try {
+        await syncSpecifications(savedProductId)
+        console.log('✅ Specifications synced successfully')
+      } catch (specError: any) {
+        console.error('❌ Specifications sync error:', specError)
+        toast.error('Товар збережено, але помилка при збереженні характеристик: ' + specError.message)
+        // Don't throw - product is already saved
+      }
 
       onClose()
     } catch (error: any) {
       console.error('❌ Submission error:', error)
-      toast.error('Помилка: ' + error.message)
+      // ✅ FIX: More detailed error messages
+      if (error.message.includes('margin')) {
+        toast.error('Помилка збереження маржі: ' + error.message)
+      } else if (error.message.includes('price')) {
+        toast.error('Помилка збереження ціни: ' + error.message)
+      } else if (error.message.includes('title')) {
+        toast.error('Помилка: назва товару обов\'язкова')
+      } else {
+        toast.error('Помилка збереження товару: ' + error.message)
+      }
     } finally {
       setLoading(false)
     }
