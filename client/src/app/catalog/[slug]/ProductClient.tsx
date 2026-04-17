@@ -58,7 +58,7 @@ export default function ProductClient({ product }: { product: Product }) {
   const [newReviewImagePreviews, setNewReviewImagePreviews] = useState<string[]>([]);
   const [submittingReview, setSubmittingReview] = useState(false);
   const [sortBy, setSortBy] = useState<ReviewSortOption>('newest');
-  const [activeTab, setActiveTab] = useState<'description' | 'reviews'>('description');
+  const [activeTab, setActiveTab] = useState<'description' | 'specifications' | 'reviews'>('description');
   const [relatedProducts, setRelatedProducts] = useState<any[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
 
@@ -616,6 +616,7 @@ export default function ProductClient({ product }: { product: Product }) {
                 <div className="flex gap-1 border-b border-[#26262b] mb-6 overflow-x-auto whitespace-nowrap flex-nowrap">
                   {[
                     { key: 'description' as const, label: 'Опис' },
+                    { key: 'specifications' as const, label: 'Характеристики' },
                     { key: 'reviews' as const, label: `Відгуки (${product.reviewCount || 0})` },
                   ].map((tab) => (
                     <button
@@ -648,8 +649,12 @@ export default function ProductClient({ product }: { product: Product }) {
                     ) : (
                       <p className="text-[#9ca3af]">Опис товару скоро з&apos;явиться. Зверніться до менеджера для отримання деталей.</p>
                     )}
+                  </div>
+                )}
 
-                    {hasSpecifications && (
+                {activeTab === 'specifications' && (
+                  <div className="space-y-6">
+                    {hasSpecifications ? (
                       <section className="overflow-hidden rounded-2xl border border-[#26262b] bg-[#18181c]">
                         <div className="border-b border-[#26262b] px-4 py-3 sm:px-5">
                           <h3 className="text-lg font-medium text-white">Характеристики</h3>
@@ -666,6 +671,8 @@ export default function ProductClient({ product }: { product: Product }) {
                           ))}
                         </div>
                       </section>
+                    ) : (
+                      <p className="text-[#9ca3af]">Характеристики товару скоро з&apos;явиться.</p>
                     )}
                   </div>
                 )}

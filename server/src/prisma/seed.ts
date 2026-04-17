@@ -33,6 +33,7 @@ async function main() {
     { name: 'Аксесуари', slug: 'accessories', description: 'Чохли, кабелі, зарядки, тримачі' },
     { name: 'Гаджети', slug: 'gadgets', description: 'Корисні електронні гаджети' },
     { name: 'Техніка для дому', slug: 'home-appliances', description: 'Електроніка для дому та побуту' },
+    { name: 'Техніка для кухні', slug: 'kitchen-appliances', description: 'Кухонна техніка та аксесуари' },
   ];
 
   const categoryIds: Record<string, string> = {};
