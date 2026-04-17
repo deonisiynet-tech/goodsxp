@@ -403,6 +403,12 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
 
       if (product) {
         // Update existing product
+        console.log('🔍 MODAL UPDATE - Form data.margin:', {
+          margin: data.margin,
+          type: typeof data.margin,
+          product_margin: product.margin,
+        });
+
         const result = await productsApi.update(product.id, {
           title: data.title,
           description: data.description,
@@ -619,6 +625,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
                   {...register('price', {
                     required: 'Ціна обов\'язкова',
                     min: { value: 0, message: 'Ціна має бути додатною' },
+                    valueAsNumber: true, // ✅ FIX: Convert string to number
                   })}
                   type="number"
                   step="0.01"
@@ -638,6 +645,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
                 <input
                   {...register('originalPrice', {
                     min: { value: 0, message: 'Ціна має бути додатною' },
+                    valueAsNumber: true, // ✅ FIX: Convert string to number
                   })}
                   type="number"
                   step="0.01"
@@ -654,6 +662,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
                 <input
                   {...register('discountPrice', {
                     min: { value: 0, message: 'Ціна має бути додатною' },
+                    valueAsNumber: true, // ✅ FIX: Convert string to number
                   })}
                   type="number"
                   step="0.01"
@@ -675,6 +684,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
                   {...register('margin', {
                     required: 'Маржа обов\'язкова',
                     min: { value: 0, message: 'Маржа не може бути менше 0' },
+                    valueAsNumber: true, // ✅ FIX: Convert string to number
                   })}
                   type="number"
                   step="0.01"
@@ -742,6 +752,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
               {...register('stock', {
                 required: 'Залишок обов\'язковий',
                 min: { value: 0, message: 'Некоректне значення' },
+                valueAsNumber: true, // ✅ FIX: Convert string to number
               })}
               type="number"
               className="input-field"

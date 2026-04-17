@@ -457,6 +457,16 @@ export class ProductController {
       const { id } = req.params;
       let { title, description, price, margin, stock, isActive, images, categoryId, isFeatured, isPopular, originalPrice, discountPrice } = req.body;
 
+      // 🔍 DEBUG: Log margin value received
+      console.log('🔍 UPDATE PRODUCT - Received margin:', {
+        margin,
+        type: typeof margin,
+        isUndefined: margin === undefined,
+        isNull: margin === null,
+        isEmpty: margin === '',
+        value: margin,
+      });
+
       // ✅ Санітизація HTML для запобігання XSS
       if (title && typeof title === 'string') title = sanitizeHtml(title);
       if (description && typeof description === 'string') description = sanitizeHtml(description);
@@ -466,6 +476,12 @@ export class ProductController {
       if (description !== undefined) updateData.description = description;
       if (price !== undefined) updateData.price = Number(price);
       if (margin !== undefined) updateData.margin = Number(margin);
+
+      // 🔍 DEBUG: Log margin after Number() conversion
+      console.log('🔍 UPDATE PRODUCT - After conversion:', {
+        marginInUpdateData: updateData.margin,
+        isNaN: isNaN(updateData.margin),
+      });
       if (categoryId !== undefined) updateData.categoryId = categoryId;
       if (stock !== undefined) updateData.stock = Number(stock);
       if (isActive !== undefined) updateData.isActive = isActive === 'true' || isActive === true;
