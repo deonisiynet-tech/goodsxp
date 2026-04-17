@@ -18,12 +18,13 @@ export default function ProductsPage() {
   const loadProducts = async () => {
     try {
       setLoading(true)
-      const response = await productsApi.getAll({
+      // ✅ FIX: Use getAllAdmin instead of getAll to include margin
+      const response = await productsApi.getAllAdmin({
         search: search || undefined,
         limit: 100,
       })
       let loadedProducts = response.products || response
-      
+
       // Filter by status
       if (statusFilter === 'active') {
         loadedProducts = loadedProducts.filter((p: any) => p.isActive)
@@ -34,7 +35,7 @@ export default function ProductsPage() {
       } else if (statusFilter === 'outofstock') {
         loadedProducts = loadedProducts.filter((p: any) => p.stock === 0)
       }
-      
+
       setProducts(loadedProducts)
     } catch (error: any) {
       console.error('Error loading products:', error)

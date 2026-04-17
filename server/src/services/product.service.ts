@@ -308,6 +308,80 @@ export class ProductService {
     };
   }
 
+  // ✅ FIX: Admin version of getById that includes margin
+  async getByIdAdmin(id: string) {
+    const product = await prisma.product.findUnique({
+      where: { id },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        price: true,
+        margin: true, // ✅ Include margin for admin
+        categoryId: true,
+        rating: true,
+        originalPrice: true,
+        discountPrice: true,
+        isFeatured: true,
+        isPopular: true,
+        imageUrl: true,
+        images: true,
+        stock: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
+        slug: true,
+        variants: {
+          select: {
+            id: true,
+            price: true,
+            stock: true,
+            image: true,
+            options: true,
+            createdAt: true,
+            updatedAt: true,
+          },
+        },
+        reviews: {
+          select: {
+            id: true,
+            name: true,
+            rating: true,
+            comment: true,
+            pros: true,
+            cons: true,
+            createdAt: true,
+          },
+          orderBy: { createdAt: 'desc' },
+        },
+        _count: {
+          select: { variants: true },
+        },
+      },
+    }) as any;
+
+    if (!product) {
+      throw new AppError('Товар не знайдено', 404);
+    }
+
+    // Обчислюємо середній рейтинг через aggregate
+    const stats = await prisma.review.aggregate({
+      where: { productId: id },
+      _avg: { rating: true },
+      _count: { rating: true },
+    });
+
+    const averageRating = stats._avg.rating ? Math.round(stats._avg.rating * 10) / 10 : 0;
+    const reviewCount = stats._count.rating;
+
+    return {
+      ...product,
+      averageRating,
+      reviewCount,
+      ...withDiscountPercent(product),
+    };
+  }
+
   async getBySlug(slug: string): Promise<{ product: any; redirectedFrom?: string }> {
     // 🔒 SECURITY: Explicit select — exclude `margin` (business secret) from public API
     const productSelect = {

@@ -254,6 +254,11 @@ export const productsApi = {
     return fetchAPI(`/products/id/${id}`)
   },
 
+  // ✅ FIX: Get product by ID for admin (includes margin)
+  getByIdAdmin: async (id: string) => {
+    return fetchAPI(`/admin/products/${id}`)
+  },
+
   // Batch fetch products by IDs — 1 request instead of N
   getBatch: async (ids: string[]) => {
     return fetchAPI('/products/batch', {

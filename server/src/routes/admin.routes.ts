@@ -52,6 +52,7 @@ router.delete('/users/:id', adminController.deleteUser.bind(adminController));
 
 // Products
 router.get('/products', productController.getAllAdmin.bind(productController));
+router.get('/products/:id', productController.getByIdAdmin.bind(productController)); // ✅ FIX: Use admin version
 router.post('/products', productController.create.bind(productController));
 router.put('/products/:id', productController.update.bind(productController));
 router.delete('/products/:id', productController.delete.bind(productController));

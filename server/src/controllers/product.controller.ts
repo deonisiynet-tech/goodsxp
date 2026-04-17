@@ -299,6 +299,16 @@ export class ProductController {
     }
   }
 
+  // ✅ FIX: Admin endpoint that includes margin
+  async getByIdAdmin(req: AuthRequest, res: Response, next: NextFunction) {
+    try {
+      const product = await productService.getByIdAdmin(req.params.id);
+      res.json(product);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async getBySlug(req: Request, res: Response, next: NextFunction) {
     try {
       const result = await productService.getBySlug(req.params.slug);
