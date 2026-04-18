@@ -5,9 +5,11 @@ import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { ordersApi } from '@/lib/api';
 import { useCartStore } from '@/lib/store';
+import { FREE_SHIPPING_THRESHOLD } from '@/lib/constants';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import NovaPoshtaSelector from '@/components/NovaPoshtaSelector';
+import FreeShippingProgress from '@/components/FreeShippingProgress';
 import { useCheckoutStorage, CheckoutData } from '@/hooks/useCheckoutStorage';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
@@ -60,8 +62,8 @@ export default function CheckoutClient() {
   // Calculate totals
   const originalSubtotal = getTotal();
   const finalTotal = originalSubtotal - discount;
-  const isFreeShipping = originalSubtotal >= 5000;
-  const amountUntilFreeShipping = isFreeShipping ? 0 : 5000 - originalSubtotal;
+  const isFreeShipping = originalSubtotal >= FREE_SHIPPING_THRESHOLD;
+  const amountUntilFreeShipping = isFreeShipping ? 0 : FREE_SHIPPING_THRESHOLD - originalSubtotal;
 
   const {
     register,
@@ -552,25 +554,16 @@ export default function CheckoutClient() {
                 </div>
               </div>
 
-              {isFreeShipping ? (
-                <div className="mt-4 p-3 bg-green-500/10 rounded-lg border border-green-500/20">
-                  <p className="text-sm text-green-400 leading-relaxed">
-                    🎉 У вас безкоштовна доставка!
-                  </p>
-                </div>
-              ) : (
-                <div className="mt-4 p-3 bg-purple-500/5 rounded-lg border border-purple-500/10">
-                  <p className="text-xs sm:text-sm text-[#9ca3af] leading-relaxed">
-                    💡 До безкоштовної доставки ще {amountUntilFreeShipping.toLocaleString('uk-UA')} ₴
-                  </p>
-                </div>
-              )}
+              {/* Free Shipping Progress */}
+              <div className="mt-4">
+                <FreeShippingProgress cartSubtotal={originalSubtotal} />
+              </div>
 
               <div className="flex items-start gap-2 mt-4 p-3 bg-purple-500/5 rounded-lg border border-purple-500/10">
                 <span className="text-purple-400 text-sm shrink-0 mt-0.5">ⓘ</span>
                 <span className="text-xs text-muted leading-relaxed">
                   {isFreeShipping
-                    ? 'Доставка безкоштовна при замовленні від 5000 ₴'
+                    ? `Доставка безкоштовна при замовленні від ${FREE_SHIPPING_THRESHOLD.toLocaleString('uk-UA')} ₴`
                     : 'Вартість доставки оплачується окремо при отриманні'
                   }
                 </span>

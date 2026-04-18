@@ -1,8 +1,10 @@
 'use client';
 
 import { useCartStore } from '@/lib/store';
+import { FREE_SHIPPING_THRESHOLD } from '@/lib/constants';
 import Header from '@/components/Header';
 import Footer from '@/components/Footer';
+import FreeShippingProgress from '@/components/FreeShippingProgress';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
@@ -24,6 +26,9 @@ export default function CartClient() {
   const router = useRouter();
   const { items, updateQuantity, removeItem, getTotal, getItemCount, clearCart } = useCartStore();
   const [itemSlugs, setItemSlugs] = useState<Record<string, string>>({});
+
+  const cartSubtotal = getTotal();
+  const isFreeShipping = cartSubtotal >= FREE_SHIPPING_THRESHOLD;
 
   // Fetch sl for cart items — batch request (1 замість N)
   useEffect(() => {
@@ -182,27 +187,26 @@ export default function CartClient() {
               <div className="space-y-3 mb-6">
                 <div className="flex justify-between text-muted text-sm">
                   <span>Товари ({getItemCount()} шт.):</span>
-                  <span>{getTotal().toLocaleString('uk-UA')} ₴</span>
+                  <span>{cartSubtotal.toLocaleString('uk-UA')} ₴</span>
                 </div>
                 <div className="flex justify-between text-muted text-sm">
                   <span>Доставка:</span>
-                  <span className="text-purple-400">за тарифом НП</span>
+                  <span className="text-purple-400">
+                    {isFreeShipping ? 'Безкоштовно 🎉' : 'за тарифом НП'}
+                  </span>
                 </div>
                 <div className="border-t border-border pt-3 flex justify-between text-lg font-medium">
                   <span>Разом:</span>
                   <span className="text-xl font-bold text-purple-400">
-                    {getTotal().toLocaleString('uk-UA')} ₴
+                    {cartSubtotal.toLocaleString('uk-UA')} ₴
                   </span>
                 </div>
               </div>
 
-              {getTotal() < 5000 && (
-                <div className="mb-4 p-3 bg-purple-500/5 rounded-lg border border-purple-500/10">
-                  <p className="text-xs sm:text-sm text-muted leading-relaxed">
-                    💡 До безкоштовної доставки ще {(5000 - getTotal()).toLocaleString('uk-UA')} ₴
-                  </p>
-                </div>
-              )}
+              {/* Free Shipping Progress */}
+              <div className="mb-4">
+                <FreeShippingProgress cartSubtotal={cartSubtotal} />
+              </div>
 
               <button
                 onClick={handleCheckout}

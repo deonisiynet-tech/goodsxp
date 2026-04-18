@@ -618,7 +618,7 @@ export default function ProductClient({ product }: { product: Product }) {
 
                 <div className="flex items-center gap-2 text-green-400">
                   <Truck size={16} />
-                  <span className="text-xs font-medium">Безкоштовна доставка при замовленні від 5000 ₴</span>
+                  <span className="text-xs font-medium">Безкоштовна доставка при замовленні від 3500 ₴</span>
                 </div>
               </div>
 
