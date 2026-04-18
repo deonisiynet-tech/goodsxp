@@ -126,7 +126,10 @@ interface OrderNotificationData {
   createdAt?: Date | string;
 }
 
-export async function notifyNewOrder(order: OrderNotificationData): Promise<boolean> {
+export async function notifyNewOrder(order: OrderNotificationData & {
+  promoCode?: string | null;
+  discount?: any;
+}): Promise<boolean> {
   // Форматуємо спосіб оплати
   const paymentMethodText = order.paymentMethod === 'CARD'
     ? 'Оплата на карту'
@@ -163,12 +166,27 @@ export async function notifyNewOrder(order: OrderNotificationData): Promise<bool
     })
     .join('\n\n');
 
+  // Форматуємо промокод та знижку
+  let promoText = '';
+  if (order.promoCode && order.discount) {
+    const discountAmount = typeof order.discount === 'string' ? parseFloat(order.discount) : order.discount;
+    const safePromoCode = escapeForTelegramHtml(order.promoCode);
+    promoText = `
+
+🏷 <b>Промокод:</b> ${safePromoCode}
+💸 <b>Знижка:</b> -${formatPrice(discountAmount)}`;
+  } else {
+    promoText = `
+
+🏷 <b>Промокод:</b> не використано`;
+  }
+
   const message = `📦 <b>НОВЕ ЗАМОВЛЕННЯ #${orderNum}</b>
 
 🛒 <b>Товари:</b>
 ${itemsList}
 
-💰 <b>Сума:</b> ${formatPrice(order.totalPrice)}
+💰 <b>Сума:</b> ${formatPrice(order.totalPrice)}${promoText}
 
 💳 <b>Оплата:</b> ${paymentMethodText}
 

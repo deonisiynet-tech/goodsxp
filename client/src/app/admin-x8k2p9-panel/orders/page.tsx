@@ -260,8 +260,15 @@ export default function OrdersPage() {
                         <div className="text-sm text-muted">{order.phone}</div>
                       </div>
                     </td>
-                    <td className="px-6 py-4 font-medium text-white">
-                      {Number(order.totalPrice).toLocaleString('uk-UA')} ₴
+                    <td className="px-6 py-4">
+                      <div className="font-medium text-white">
+                        {Number(order.totalPrice).toLocaleString('uk-UA')} ₴
+                      </div>
+                      {order.promoCodeValue && order.discount && (
+                        <div className="text-xs text-green-400 mt-1">
+                          🏷 {order.promoCodeValue} (-{Number(order.discount).toLocaleString('uk-UA')} ₴)
+                        </div>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <span className={`px-3 py-1 text-xs rounded-full border ${getStatusColor(order.status)}`}>

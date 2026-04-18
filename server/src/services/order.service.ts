@@ -317,6 +317,8 @@ export class OrderService {
       paymentMethod: order.paymentMethod,
       status: order.status,
       createdAt: order.createdAt,
+      promoCode: order.promoCodeValue,
+      discount: order.discount,
     }).catch((error) => {
       console.error('❌ Failed to send Telegram notification:', error);
     });

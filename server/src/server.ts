@@ -337,12 +337,15 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/specifications', specificationRoutes);
 app.use('/api/orders', orderRoutes);
-app.use('/api/promo-codes', apiRateLimiter, promoCodeRoutes); // ✅ Rate limited
+// Public promo code validation endpoint (for checkout)
+app.use('/api/promo-codes', apiRateLimiter, promoCodeRoutes);
 // CSRF для адмінських маршрутів (cookie-based auth)
 app.use(`${adminApiPrefix}`, csrfProtection);
 // ✅ Rate limiting для admin CRUD — запобігає спаму
 app.use(`${adminApiPrefix}`, adminRateLimiter);
 app.use(`${adminApiPrefix}`, adminRoutes);           // Admin only - requires auth
+// Admin promo code management (protected)
+app.use(`${adminApiPrefix}/promo-codes`, promoCodeRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/nova-poshta', apiRateLimiter, novaPoshtaRoutes); // ✅ Rate limited
 // ✅ Rate limited — prevents DoS via heartbeat spam

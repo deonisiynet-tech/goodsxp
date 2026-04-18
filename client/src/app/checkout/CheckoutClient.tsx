@@ -470,7 +470,7 @@ export default function CheckoutClient() {
                   disabled={loading}
                   className="btn-primary w-full py-4 text-base disabled:opacity-50"
                 >
-                  {loading ? 'Оформлення...' : `Оформити замовлення на ${getTotal().toLocaleString('uk-UA')} ₴`}
+                  {loading ? 'Оформлення...' : `Оформити замовлення на ${(getTotal() - discount).toLocaleString('uk-UA')} ₴`}
                 </button>
 
                 <p className="text-xs sm:text-sm text-muted text-center">
