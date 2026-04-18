@@ -9,6 +9,8 @@ interface OrderItem {
   productId: string
   quantity: number
   price: number
+  variantId?: string | null
+  variantOptions?: Array<{ name: string; value: string }> | null
   product: {
     id: string
     title: string
@@ -163,6 +165,11 @@ export default function OrderModal({ order, onClose, onStatusChange }: OrderModa
                   </div>
                   <div className="flex-1">
                     <p className="font-medium">{item.product?.title}</p>
+                    {item.variantOptions && Array.isArray(item.variantOptions) && item.variantOptions.length > 0 && (
+                      <p className="text-sm text-purple-400 mt-1">
+                        Варіант: {item.variantOptions.map((opt: any) => `${opt.name}: ${opt.value}`).join(', ')}
+                      </p>
+                    )}
                     <p className="text-sm text-muted">
                       {item.quantity} шт. × {Number(item.price).toLocaleString('uk-UA')} ₴
                     </p>

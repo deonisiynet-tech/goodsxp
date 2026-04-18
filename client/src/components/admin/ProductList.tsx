@@ -3,11 +3,12 @@
 import { useEffect, useState } from 'react';
 import { productsApi } from '@/lib/products-api';
 import toast from 'react-hot-toast';
-import { Plus, Edit, Trash2, Search } from 'lucide-react';
+import { Plus, Edit, Trash2, Search, Eye } from 'lucide-react';
 import ProductModal from './ProductModal';
 
 interface Product {
   id: string;
+  slug: string;
   title: string;
   description: string;
   price: number;
@@ -160,14 +161,23 @@ export default function AdminProductList() {
                   <td className="px-6 py-4 text-right">
                     <div className="flex justify-end gap-2">
                       <button
+                        onClick={() => window.open(`/catalog/${product.slug}?preview=true`, '_blank')}
+                        className="p-2 text-purple-400 hover:bg-surfaceLight transition-colors"
+                        title="Переглянути товар"
+                      >
+                        <Eye size={18} />
+                      </button>
+                      <button
                         onClick={() => handleEdit(product)}
                         className="p-2 text-primary hover:bg-surfaceLight transition-colors"
+                        title="Редагувати"
                       >
                         <Edit size={18} />
                       </button>
                       <button
                         onClick={() => handleDelete(product.id)}
                         className="p-2 text-red-500 hover:bg-surfaceLight transition-colors"
+                        title="Видалити"
                       >
                         <Trash2 size={18} />
                       </button>

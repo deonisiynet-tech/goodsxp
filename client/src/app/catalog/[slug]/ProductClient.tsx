@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { productsApi, ProductSpecification, Review } from '@/lib/products-api';
 import { useCartStore } from '@/lib/store';
 import { useWishlistStore } from '@/lib/wishlist';
@@ -16,7 +16,7 @@ import Link from 'next/link';
 import {
   ShoppingCart, Check, ChevronLeft, ChevronRight, Star, Send,
   Truck, Shield, RotateCcw, Heart, Share2, Trash2,
-  Upload, X, ImageIcon, ZoomIn, Loader2,
+  Upload, X, ImageIcon, ZoomIn, Loader2, ArrowLeft,
 } from 'lucide-react';
 
 interface Product {
@@ -44,6 +44,9 @@ type ReviewSortOption = 'newest' | 'best' | 'worst';
 
 export default function ProductClient({ product }: { product: Product }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const isPreviewMode = searchParams.get('preview') === 'true';
+
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
   const [reviews, setReviews] = useState<Review[]>([]);
@@ -416,6 +419,26 @@ export default function ProductClient({ product }: { product: Product }) {
   // ✅ JSON-LD тепер генерується на сервері (page.tsx) — цей компонент тільки UI
 
   return (
+    <>
+      {/* Preview Mode Banner */}
+      {isPreviewMode && (
+        <div className="bg-purple-500/20 border-b border-purple-500/30 py-3 px-4 fixed top-0 left-0 right-0 z-50">
+          <div className="container mx-auto flex items-center justify-between">
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-purple-400">👁</span>
+              <span>Режим перегляду (Preview)</span>
+            </div>
+            <Link
+              href="/admin-x8k2p9-panel/products"
+              className="btn-primary flex items-center gap-2 text-sm py-2 px-4"
+            >
+              <ArrowLeft size={16} />
+              Назад в адмінку
+            </Link>
+          </div>
+        </div>
+      )}
+
     <main className="flex-1 pt-20">
         <div className="container mx-auto px-4 py-8">
           <nav className="flex items-center gap-2 text-sm text-[#9ca3af] mb-6" aria-label="Breadcrumb">
@@ -1173,5 +1196,6 @@ export default function ProductClient({ product }: { product: Product }) {
         />
       )}
     </main>
+    </>
   );
 }

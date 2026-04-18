@@ -225,7 +225,12 @@ export class OrderService {
     notifyNewOrder({
       id: order.id,
       orderNumber: order.orderNumber,
-      items: order.items,
+      items: order.items.map(item => ({
+        product: item.product,
+        quantity: item.quantity,
+        price: item.price,
+        variantOptions: item.variantOptions as Array<{ name: string; value: string }> | null,
+      })),
       totalPrice: order.totalPrice,
       name: order.name,
       phone: order.phone,
@@ -425,7 +430,12 @@ export class OrderService {
         {
           id: order.id,
           orderNumber: order.orderNumber,
-          items: order.items,
+          items: order.items.map(item => ({
+            product: item.product,
+            quantity: item.quantity,
+            price: item.price,
+            variantOptions: item.variantOptions as Array<{ name: string; value: string }> | null,
+          })),
           totalPrice: order.totalPrice,
           name: order.name,
           phone: order.phone,

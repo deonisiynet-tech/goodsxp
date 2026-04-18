@@ -113,6 +113,7 @@ interface OrderNotificationData {
     };
     quantity: number;
     price: any;
+    variantOptions?: Array<{ name: string; value: string }> | null;
   }>;
   totalPrice: any;
   name: string;
@@ -146,9 +147,19 @@ export async function notifyNewOrder(order: OrderNotificationData): Promise<bool
       const productName = escapeForTelegramHtml(item.product.title);
       const quantity = item.quantity;
       const price = formatPrice(item.price);
+
+      // Додаємо відображення варіанту, якщо він є
+      let variantText = '';
+      if (item.variantOptions && Array.isArray(item.variantOptions) && item.variantOptions.length > 0) {
+        const variantStr = item.variantOptions
+          .map((opt: any) => `${opt.name}: ${opt.value}`)
+          .join(', ');
+        variantText = `\n   Варіант: ${escapeForTelegramHtml(variantStr)}`;
+      }
+
       return `<b>${index + 1}. ${productName}</b>
    Кількість: ${quantity} шт.
-   Ціна: ${price}`;
+   Ціна: ${price}${variantText}`;
     })
     .join('\n\n');
 
