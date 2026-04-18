@@ -9,6 +9,7 @@ import ViewToggle, { ViewMode } from './ViewToggle';
 import ProductFiltersComponent, { ProductFilters } from './ProductFilters';
 import ProductGridView from './ProductGridView';
 import ProductListView from './ProductListView';
+import Pagination from './Pagination';
 
 interface Product {
   id: string;
@@ -37,12 +38,19 @@ interface Category {
   slug: string;
 }
 
+const ITEMS_PER_PAGE = 20;
+
 export default function AdminProductList() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
+
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [totalProducts, setTotalProducts] = useState(0);
 
   // View mode with localStorage persistence
   const [viewMode, setViewMode] = useState<ViewMode>(() => {
@@ -63,7 +71,7 @@ export default function AdminProductList() {
 
   useEffect(() => {
     loadProducts();
-  }, [filters.search]);
+  }, [filters.search, currentPage]);
 
   useEffect(() => {
     loadCategories();
@@ -81,8 +89,14 @@ export default function AdminProductList() {
   const loadProducts = async () => {
     try {
       setLoading(true);
-      const response = await productsApi.getAllAdmin({ search: filters.search });
+      const response = await productsApi.getAllAdmin({
+        search: filters.search,
+        page: currentPage,
+        limit: ITEMS_PER_PAGE
+      });
       setProducts(response.products || []);
+      setTotalPages(response.pagination?.totalPages || 1);
+      setTotalProducts(response.pagination?.total || 0);
     } catch (error) {
       console.error('Failed to load products:', error);
       toast.error('Помилка завантаження товарів');
@@ -97,6 +111,17 @@ export default function AdminProductList() {
     if (typeof window !== 'undefined') {
       localStorage.setItem('admin-products-view', mode);
     }
+  };
+
+  // Handle filters change and reset to page 1
+  const handleFiltersChange = (newFilters: ProductFilters) => {
+    setFilters(newFilters);
+    setCurrentPage(1);
+  };
+
+  // Handle page change
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
   };
 
   // Filter products based on filters
@@ -159,10 +184,17 @@ export default function AdminProductList() {
       <div className="mb-6">
         <ProductFiltersComponent
           filters={filters}
-          onChange={setFilters}
+          onChange={handleFiltersChange}
           categories={categories}
         />
       </div>
+
+      {!loading && filteredProducts.length > 0 && (
+        <div className="mb-4 text-sm text-muted">
+          Показано {(currentPage - 1) * ITEMS_PER_PAGE + 1}–
+          {Math.min(currentPage * ITEMS_PER_PAGE, totalProducts)} з {totalProducts} товарів
+        </div>
+      )}
 
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -192,6 +224,17 @@ export default function AdminProductList() {
           products={filteredProducts}
           onEdit={handleEdit}
           onDelete={handleDelete}
+        />
+      )}
+
+      {/* Pagination */}
+      {!loading && filteredProducts.length > 0 && totalPages > 1 && (
+        <Pagination
+          currentPage={currentPage}
+          totalPages={totalPages}
+          totalItems={totalProducts}
+          itemsPerPage={ITEMS_PER_PAGE}
+          onPageChange={handlePageChange}
         />
       )}
 
