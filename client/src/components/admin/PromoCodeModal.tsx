@@ -110,9 +110,18 @@ export default function PromoCodeModal({ promoCode, onClose }: PromoCodeModalPro
         ? getAdminApiFullPath(`/promo-codes/${promoCode.id}`)
         : getAdminApiFullPath('/promo-codes');
 
+      // Get CSRF token from cookies
+      const csrfToken = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrf_token='))
+        ?.split('=')[1];
+
       const response = await fetch(url, {
         method: promoCode ? 'PUT' : 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken || '',
+        },
         credentials: 'include',
         body: JSON.stringify(data),
       });
