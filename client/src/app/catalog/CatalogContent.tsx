@@ -60,7 +60,7 @@ export default function CatalogContent() {
   const [priceMax, setPriceMax] = useState<number>(100000);
   const [showFilters, setShowFilters] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  const [selectedCategory, setSelectedCategory] = useState<string>(searchParams.get('category') || '');
   const [featuredOnly, setFeaturedOnly] = useState(false);
   const [currentPage, setCurrentPage] = useState(parseInt(searchParams.get('page') || '1'));
   const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -334,9 +334,9 @@ export default function CatalogContent() {
               {categories.map((cat) => (
                 <button
                   key={cat.id}
-                  onClick={() => { setFeaturedOnly(false); setSelectedCategory(cat.id); setCurrentPage(1); updateURL({ category: cat.id, page: '', featured: '' }); }}
+                  onClick={() => { setFeaturedOnly(false); setSelectedCategory(cat.slug); setCurrentPage(1); updateURL({ category: cat.slug, page: '', featured: '' }); }}
                   className={`px-4 py-2.5 min-h-[44px] rounded-full text-sm font-medium transition-all ${
-                    selectedCategory === cat.id
+                    selectedCategory === cat.slug
                       ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30'
                       : 'bg-[#1f1f23] text-[#9ca3af] border border-[#26262b] hover:border-purple-500/50'
                   }`}
@@ -545,7 +545,7 @@ export default function CatalogContent() {
                     )}
                     {selectedCategory && (
                       <span className="px-3 py-1.5 bg-purple-500/10 text-purple-400 text-xs rounded-full border border-purple-500/20">
-                        {categories.find(c => c.id === selectedCategory)?.name || 'Категорія'}
+                        {categories.find(c => c.slug === selectedCategory)?.name || 'Категорія'}
                       </span>
                     )}
                     {priceMax < 100000 && (
