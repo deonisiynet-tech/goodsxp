@@ -36,7 +36,6 @@ function OrderContent() {
         <div className="card p-6 mb-8 text-center border border-green-500/20">
           <p className="text-muted text-sm mb-2">Номер вашого замовлення:</p>
           <OrderNumber />
-          {orderNum && <p className="text-2xl font-bold text-green-400 mt-2">#{orderNum}</p>}
           <p className="text-muted text-xs mt-3">Збережіть цей номер для відстеження</p>
         </div>
 

@@ -11,6 +11,31 @@ const router = Router();
 const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 хвилин
 
 /**
+ * Cleanup старих записів Visitor (>90 днів неактивності)
+ * Викликається автоматично при heartbeat (0.1% шанс)
+ * Зберігаємо історію 90 днів для аналізу трафіку
+ */
+async function cleanupOldVisitors() {
+  try {
+    const ninetyDaysAgo = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+
+    const deleted = await prisma.visitor.deleteMany({
+      where: {
+        lastSeenAt: {
+          lt: ninetyDaysAgo,
+        },
+      },
+    });
+
+    if (deleted.count > 0) {
+      console.log(`[Analytics] Cleaned up ${deleted.count} old visitors (>90 days)`);
+    }
+  } catch (error) {
+    console.error('[Analytics] Cleanup error:', error);
+  }
+}
+
+/**
  * POST /api/analytics/heartbeat
  * Оновлення статусу відвідувача (heartbeat кожні 30 секунд)
  *
@@ -25,7 +50,7 @@ const SESSION_TIMEOUT_MS = 30 * 60 * 1000; // 30 хвилин
  */
 router.post('/heartbeat', async (req: Request, res: Response) => {
   try {
-    const { visitorId, page, referrer } = req.body;
+    const { visitorId, fingerprint, page, referrer } = req.body;
     const userAgent = req.headers['user-agent'] || '';
     const ipAddress = req.ip || req.socket.remoteAddress || '';
 
@@ -41,11 +66,13 @@ router.post('/heartbeat', async (req: Request, res: Response) => {
       update: {
         lastSeenAt: new Date(),
         isOnline: true,
+        fingerprint: fingerprint || undefined,
         userAgent: userAgent || undefined,
         ipAddress: ipAddress || undefined,
       },
       create: {
         visitorId,
+        fingerprint: fingerprint || undefined,
         lastSeenAt: new Date(),
         isOnline: true,
         userAgent: userAgent || undefined,
@@ -80,6 +107,12 @@ router.post('/heartbeat', async (req: Request, res: Response) => {
     } else {
       // Оновлюємо існуючу сесію — не створюємо дублікат
       console.log('[Analytics] Session continued for:', visitorId);
+    }
+
+    // ✅ Cleanup старих відвідувачів (0.1% шанс при кожному heartbeat)
+    // Зменшено частоту для економії ресурсів
+    if (Math.random() < 0.001) {
+      cleanupOldVisitors().catch(err => console.error('[Analytics] Cleanup failed:', err));
     }
 
     res.json({ success: true, visitorId });
@@ -117,7 +150,9 @@ router.get('/online', async (req: Request, res: Response) => {
 /**
  * GET /api/analytics/visitors
  * Отримати кількість унікальних відвідувачів за період
- * Query params: days (1, 3, 7)
+ * Query params: days (1, 3, 7, 30)
+ *
+ * Рахує по firstSeenAt — коли відвідувач вперше зайшов на сайт
  */
 router.get('/visitors', async (req: Request, res: Response) => {
   try {
@@ -125,24 +160,36 @@ router.get('/visitors', async (req: Request, res: Response) => {
     const startDate = new Date();
     startDate.setDate(startDate.getDate() - days);
 
-    // ✅ Унікальні відвідувачі за період (по lastSeenAt)
-    const uniqueVisitors = await prisma.visitor.findMany({
+    // ✅ Унікальні відвідувачі за період (по firstSeenAt — перший візит)
+    const count = await prisma.visitor.count({
       where: {
-        lastSeenAt: {
+        firstSeenAt: {
           gte: startDate,
         },
       },
-      select: {
-        visitorId: true,
-      },
     });
 
-    const count = uniqueVisitors.length;
     console.log('[Analytics] Visitors count:', count, 'days:', days);
     res.json({ count, days, period: `${days} днів` });
   } catch (error) {
     console.error('[Analytics] Visitors count error:', error);
     res.status(500).json({ error: 'Failed to get visitors count' });
+  }
+});
+
+/**
+ * GET /api/analytics/visitors/total
+ * Отримати загальну кількість унікальних відвідувачів (за весь час)
+ */
+router.get('/visitors/total', async (req: Request, res: Response) => {
+  try {
+    const totalCount = await prisma.visitor.count();
+
+    console.log('[Analytics] Total visitors:', totalCount);
+    res.json({ count: totalCount });
+  } catch (error) {
+    console.error('[Analytics] Total visitors error:', error);
+    res.status(500).json({ error: 'Failed to get total visitors' });
   }
 });
 

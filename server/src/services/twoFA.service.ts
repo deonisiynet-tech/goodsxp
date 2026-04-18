@@ -3,6 +3,59 @@ import QRCode from 'qrcode';
 import prisma from '../prisma/client.js';
 import { AppError } from '../middleware/errorHandler.js';
 
+/**
+ * Rate limiting для 2FA спроб
+ * Максимум 5 невдалих спроб за 15 хвилин
+ */
+class TwoFARateLimiter {
+  private attempts: Map<string, { count: number; resetAt: number }> = new Map();
+  private readonly MAX_ATTEMPTS = 5;
+  private readonly WINDOW_MS = 15 * 60 * 1000; // 15 хвилин
+
+  checkAndIncrement(userId: string): void {
+    const now = Date.now();
+    const record = this.attempts.get(userId);
+
+    // Якщо запису немає або вікно закінчилось — скидаємо
+    if (!record || now > record.resetAt) {
+      this.attempts.set(userId, { count: 1, resetAt: now + this.WINDOW_MS });
+      return;
+    }
+
+    // Якщо перевищено ліміт — блокуємо
+    if (record.count >= this.MAX_ATTEMPTS) {
+      const remainingMs = record.resetAt - now;
+      const remainingMin = Math.ceil(remainingMs / 60000);
+      throw new AppError(
+        `Занадто багато невдалих спроб 2FA. Спробуйте через ${remainingMin} хв.`,
+        429
+      );
+    }
+
+    // Інкрементуємо лічильник
+    record.count++;
+  }
+
+  reset(userId: string): void {
+    this.attempts.delete(userId);
+  }
+
+  // Cleanup старих записів (викликається періодично)
+  cleanup(): void {
+    const now = Date.now();
+    for (const [userId, record] of this.attempts.entries()) {
+      if (now > record.resetAt) {
+        this.attempts.delete(userId);
+      }
+    }
+  }
+}
+
+const twoFARateLimiter = new TwoFARateLimiter();
+
+// Cleanup кожні 5 хвилин
+setInterval(() => twoFARateLimiter.cleanup(), 5 * 60 * 1000);
+
 export class TwoFAService {
   /**
    * Generate a new 2FA secret for a user
@@ -51,8 +104,12 @@ export class TwoFAService {
 
   /**
    * Verify a TOTP token against user's secret
+   * Includes rate limiting to prevent brute force attacks
    */
   async verifyToken(userId: string, token: string): Promise<boolean> {
+    // ✅ Rate limiting: перевіряємо кількість спроб
+    twoFARateLimiter.checkAndIncrement(userId);
+
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: { twoFASecret: true, twoFAEnabled: true },
@@ -68,6 +125,11 @@ export class TwoFAService {
       token,
       window: 1, // Allow 1 step before/after for time drift
     });
+
+    // ✅ Якщо успішно — скидаємо лічильник спроб
+    if (verified) {
+      twoFARateLimiter.reset(userId);
+    }
 
     return verified;
   }

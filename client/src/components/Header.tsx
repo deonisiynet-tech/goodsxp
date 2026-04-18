@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { ShoppingCart, User, Menu, X, Phone, Heart, ChevronDown, Search } from 'lucide-react';
+import { ShoppingCart, User, Menu, X, Phone, Heart, ChevronDown } from 'lucide-react';
 import { useCartStore } from '@/lib/store';
 import { useWishlistStore } from '@/lib/wishlist';
 import { useState, useEffect, useRef } from 'react';
@@ -32,12 +32,6 @@ export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
   const [showCategoriesDropdown, setShowCategoriesDropdown] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
-  const [searchLoading, setSearchLoading] = useState(false);
-  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const searchRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -61,57 +55,10 @@ export default function Header() {
     };
     loadCategories();
 
-    // Close search dropdown on outside click
-    const handleClickOutside = (event: MouseEvent) => {
-      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
-        setShowSearchDropdown(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-
     return () => {
       window.removeEventListener('scroll', handleScroll);
-      document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
-
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const query = e.target.value;
-    setSearchQuery(query);
-
-    if (searchTimeoutRef.current) {
-      clearTimeout(searchTimeoutRef.current);
-    }
-
-    if (query.trim().length < 2) {
-      setSearchResults([]);
-      setShowSearchDropdown(false);
-      return;
-    }
-
-    setSearchLoading(true);
-    searchTimeoutRef.current = setTimeout(async () => {
-      try {
-        const response = await productsApi.searchSuggestions(query);
-        setSearchResults(response.products || []);
-        setShowSearchDropdown(true);
-      } catch (error) {
-        console.error('Search failed:', error);
-        setSearchResults([]);
-      } finally {
-        setSearchLoading(false);
-      }
-    }, 300);
-  };
-
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      router.push(`/catalog?search=${encodeURIComponent(searchQuery)}`);
-      setShowSearchDropdown(false);
-      setSearchQuery('');
-    }
-  };
 
   useEffect(() => {
     if (lastAddedPosition) {
@@ -193,59 +140,6 @@ export default function Header() {
               )
             ))}
           </nav>
-
-          {/* Search Bar */}
-          <div ref={searchRef} className="hidden md:flex flex-1 max-w-md relative">
-            <form onSubmit={handleSearchSubmit} className="w-full">
-              <div className="relative">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={handleSearchChange}
-                  placeholder="Пошук товарів..."
-                  className="w-full px-4 py-2 pl-10 bg-[#18181c] border border-purple-500/20 rounded-lg text-sm text-white placeholder:text-muted focus:outline-none focus:border-purple-500/50 transition-colors"
-                />
-                <Search size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" />
-                {searchLoading && (
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                    <div className="w-4 h-4 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
-                  </div>
-                )}
-              </div>
-            </form>
-
-            {showSearchDropdown && searchResults.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-[#18181c] border border-purple-500/20 rounded-xl shadow-2xl shadow-purple-500/10 py-2 max-h-96 overflow-y-auto animate-fade-in z-50">
-                {searchResults.slice(0, 5).map((product) => (
-                  <Link
-                    key={product.id}
-                    href={`/catalog/${product.slug}`}
-                    onClick={() => {
-                      setShowSearchDropdown(false);
-                      setSearchQuery('');
-                    }}
-                    className="flex items-center gap-3 px-4 py-2.5 hover:bg-purple-500/10 transition-colors duration-200"
-                  >
-                    <div className="w-12 h-12 bg-[#1f1f23] rounded-lg overflow-hidden flex-shrink-0">
-                      {product.imageUrl && (
-                        <img
-                          src={product.imageUrl}
-                          alt={product.title}
-                          className="w-full h-full object-cover"
-                        />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm text-white truncate">{product.title}</p>
-                      <p className="text-xs text-purple-400 font-medium">
-                        {Number(product.price).toLocaleString('uk-UA')} ₴
-                      </p>
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
 
           {/* Right Section */}
           <div className="flex items-center gap-1 sm:gap-2 md:gap-4 lg:gap-6 shrink-0">

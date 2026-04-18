@@ -4,13 +4,13 @@ import { useState, useEffect } from 'react';
 import { Users, Activity } from 'lucide-react';
 
 interface VisitorStatsProps {
-  period?: 'today' | '3days' | '7days' | '30days';
+  period?: 'today' | '3days' | '7days' | '30days' | 'total';
 }
 
 export default function VisitorStats({ period = '7days' }: VisitorStatsProps) {
   const [onlineCount, setOnlineCount] = useState<number>(0);
   const [visitorCount, setVisitorCount] = useState<number>(0);
-  const [selectedPeriod, setSelectedPeriod] = useState<'today' | '3days' | '7days' | '30days'>(period);
+  const [selectedPeriod, setSelectedPeriod] = useState<'today' | '3days' | '7days' | '30days' | 'total'>(period);
   const [loading, setLoading] = useState(true);
 
   // Період в днях для API
@@ -19,6 +19,7 @@ export default function VisitorStats({ period = '7days' }: VisitorStatsProps) {
     '3days': 3,
     '7days': 7,
     '30days': 30,
+    total: null, // Окремий endpoint
   };
 
   const loadStats = async () => {
@@ -33,10 +34,19 @@ export default function VisitorStats({ period = '7days' }: VisitorStatsProps) {
       }
 
       // ✅ Завантажуємо відвідувачів за період
-      const days = daysMap[selectedPeriod];
-      const visitorsRes = await fetch(`/api/analytics/visitors?days=${days}`, {
-        cache: 'no-store',
-      });
+      let visitorsRes;
+      if (selectedPeriod === 'total') {
+        // Окремий endpoint для загальної кількості
+        visitorsRes = await fetch('/api/analytics/visitors/total', {
+          cache: 'no-store',
+        });
+      } else {
+        const days = daysMap[selectedPeriod];
+        visitorsRes = await fetch(`/api/analytics/visitors?days=${days}`, {
+          cache: 'no-store',
+        });
+      }
+
       if (visitorsRes.ok) {
         const visitorsData = await visitorsRes.json();
         setVisitorCount(visitorsData.count || 0);
@@ -61,6 +71,7 @@ export default function VisitorStats({ period = '7days' }: VisitorStatsProps) {
     '3days': '3 дні',
     '7days': '7 днів',
     '30days': '30 днів',
+    total: 'Всього',
   };
 
   return (

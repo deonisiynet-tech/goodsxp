@@ -192,14 +192,14 @@ export class AdminService {
       deliveredOrdersCount,
       ordersByStatus,
     ] = await Promise.all([
-      prisma.order.count(),
-      prisma.order.aggregate({ _sum: { totalPrice: true } }),
+      prisma.order.count({ where: { deletedAt: null } }),
+      prisma.order.aggregate({ _sum: { totalPrice: true }, where: { deletedAt: null } }),
       prisma.product.count(),
-      prisma.order.count({ where: { createdAt: { gte: todayStart, lte: todayEnd } } }),
-      prisma.order.count({ where: { status: 'NEW' } }),
-      prisma.order.count({ where: { status: 'PROCESSING' } }),
-      prisma.order.count({ where: { status: 'DELIVERED' } }),
-      prisma.order.groupBy({ by: ['status'], _count: true }),
+      prisma.order.count({ where: { createdAt: { gte: todayStart, lte: todayEnd }, deletedAt: null } }),
+      prisma.order.count({ where: { status: 'NEW', deletedAt: null } }),
+      prisma.order.count({ where: { status: 'PROCESSING', deletedAt: null } }),
+      prisma.order.count({ where: { status: 'DELIVERED', deletedAt: null } }),
+      prisma.order.groupBy({ by: ['status'], _count: true, where: { deletedAt: null } }),
     ]);
 
     // Daily revenue/orders/profit — raw SQL з окремим catch
@@ -212,7 +212,7 @@ export class AdminService {
         prisma.$queryRaw`
           SELECT DATE("createdAt") as date, SUM("totalPrice") as revenue
           FROM "Order"
-          WHERE "createdAt" >= ${startDate}
+          WHERE "createdAt" >= ${startDate} AND "deletedAt" IS NULL
           GROUP BY DATE("createdAt")
           ORDER BY date DESC
           LIMIT ${days}
@@ -220,7 +220,7 @@ export class AdminService {
         prisma.$queryRaw`
           SELECT DATE("createdAt") as date, COUNT(*) as orders
           FROM "Order"
-          WHERE "createdAt" >= ${startDate}
+          WHERE "createdAt" >= ${startDate} AND "deletedAt" IS NULL
           GROUP BY DATE("createdAt")
           ORDER BY date DESC
           LIMIT ${days}
@@ -229,7 +229,7 @@ export class AdminService {
           SELECT DATE(o."createdAt") as date, SUM(oi."margin" * oi."quantity") as profit
           FROM "OrderItem" oi
           JOIN "Order" o ON oi."orderId" = o."id"
-          WHERE o."createdAt" >= ${startDate}
+          WHERE o."createdAt" >= ${startDate} AND o."deletedAt" IS NULL
           GROUP BY DATE(o."createdAt")
           ORDER BY date DESC
           LIMIT ${days}
@@ -248,6 +248,8 @@ export class AdminService {
       const profitResult = await prisma.$queryRaw`
         SELECT SUM(oi."margin" * oi."quantity") as "totalProfit"
         FROM "OrderItem" oi
+        JOIN "Order" o ON oi."orderId" = o."id"
+        WHERE o."deletedAt" IS NULL
       `;
       totalProfit = Number((profitResult as any[])?.[0]?.totalProfit || 0);
     } catch (e) {
@@ -288,6 +290,7 @@ export class AdminService {
     let recentOrders: any[] = [];
     try {
       const orders = await prisma.order.findMany({
+        where: { deletedAt: null },
         take: 5,
         orderBy: { createdAt: 'desc' },
         include: {
@@ -354,7 +357,7 @@ export class AdminService {
           SUM(oi."margin" * oi."quantity") as profit
         FROM "OrderItem" oi
         JOIN "Order" o ON oi."orderId" = o."id"
-        WHERE o."createdAt" >= ${startDate}
+        WHERE o."createdAt" >= ${startDate} AND o."deletedAt" IS NULL
         GROUP BY DATE(o."createdAt")
         ORDER BY date DESC
         LIMIT ${days}
@@ -371,7 +374,7 @@ export class AdminService {
           DATE("createdAt") as date,
           SUM("totalPrice") as revenue
         FROM "Order"
-        WHERE "createdAt" >= ${startDate}
+        WHERE "createdAt" >= ${startDate} AND "deletedAt" IS NULL
         GROUP BY DATE("createdAt")
         ORDER BY date DESC
         LIMIT ${days}

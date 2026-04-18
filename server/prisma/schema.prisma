@@ -278,7 +278,7 @@ model SiteSettings {
 model Visitor {
   id              String      @id @default(uuid())
   visitorId       String      @unique // UUID з cookie/localStorage
-  fingerprint     String?     // Відбиток браузера
+  fingerprint     String?     // Відбиток браузера (base64 hash)
   firstSeenAt     DateTime    @default(now()) @db.Timestamptz(6)
   lastSeenAt      DateTime    @updatedAt @db.Timestamptz(6)
   userAgent       String?
@@ -288,6 +288,7 @@ model Visitor {
   updatedAt       DateTime    @updatedAt @db.Timestamptz(6)
 
   @@index([visitorId])
+  @@index([fingerprint])
   @@index([isOnline])
   @@index([lastSeenAt])
 }
