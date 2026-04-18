@@ -416,7 +416,7 @@ router.post('/2fa/enable', strictRateLimiter, async (req: Request, res: Response
  * POST /api/admin/auth/2fa/disable
  * Disable 2FA for current admin
  */
-router.post('/2fa/disable', strictRateLimiter, async (req: Request, res: Response) => {
+router.post('/2fa/disable', csrfProtection, strictRateLimiter, async (req: Request, res: Response) => {
   try {
     const { token: twoFAToken } = req.body;
 

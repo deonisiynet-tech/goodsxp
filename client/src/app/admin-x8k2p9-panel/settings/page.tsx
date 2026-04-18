@@ -227,10 +227,18 @@ export default function SettingsPage() {
 
     try {
       setTwoFALoading(true)
+
+      // Отримуємо CSRF токен з cookies
+      const csrfToken = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrf_token='))
+        ?.split('=')[1]
+
       const response = await fetch(getAdminApiFullPath('/auth/2fa/disable'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken || '',
         },
         body: JSON.stringify({ token: twoFAToken }),
         credentials: 'include',
