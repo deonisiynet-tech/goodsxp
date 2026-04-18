@@ -150,8 +150,17 @@ export default function SettingsPage() {
   const handleGenerate2FA = async () => {
     try {
       setTwoFALoading(true)
+      // Отримуємо CSRF токен з cookies
+      const csrfToken = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrf_token='))
+        ?.split('=')[1]
+
       const response = await fetch(getAdminApiFullPath('/auth/2fa/generate'), {
         method: 'POST',
+        headers: {
+          'X-CSRF-Token': csrfToken || '',
+        },
         credentials: 'include',
       })
 
@@ -185,10 +194,17 @@ export default function SettingsPage() {
 
     try {
       setTwoFALoading(true)
+      // Отримуємо CSRF токен з cookies
+      const csrfToken = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrf_token='))
+        ?.split('=')[1]
+
       const response = await fetch(getAdminApiFullPath('/auth/2fa/enable'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'X-CSRF-Token': csrfToken || '',
         },
         body: JSON.stringify({ token: twoFAToken }),
         credentials: 'include',

@@ -353,7 +353,7 @@ router.get('/2fa/status', strictRateLimiter, async (req: Request, res: Response)
  * POST /api/admin/auth/2fa/generate
  * Generate 2FA secret for current admin
  */
-router.post('/2fa/generate', strictRateLimiter, async (req: Request, res: Response) => {
+router.post('/2fa/generate', csrfProtection, strictRateLimiter, async (req: Request, res: Response) => {
   try {
     const token = req.cookies?.admin_session;
 
@@ -384,7 +384,7 @@ router.post('/2fa/generate', strictRateLimiter, async (req: Request, res: Respon
  * POST /api/admin/auth/2fa/enable
  * Enable 2FA for current admin (after verifying token)
  */
-router.post('/2fa/enable', strictRateLimiter, async (req: Request, res: Response) => {
+router.post('/2fa/enable', csrfProtection, strictRateLimiter, async (req: Request, res: Response) => {
   try {
     const { token: twoFAToken } = req.body;
 
