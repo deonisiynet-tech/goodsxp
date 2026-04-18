@@ -91,6 +91,7 @@ import { csrfProtection } from './middleware/csrf.js';
 import { getAdminApiPrefix } from './utils/adminPaths.js';
 import { initializeAdmin } from './utils/initAdmin.js';
 import { runMigrations } from './prisma/migrate.js';
+import { LogCleanupService } from './services/log-cleanup.service.js';
 console.log('✅ All imports completed successfully');
 
 // ==================================
@@ -391,6 +392,13 @@ nextApp.prepare().then(async () => {
   // Initialize admin user
   await initializeAdmin();
 
+  // Initialize log cleanup cron job
+  console.log('🧹 Ініціалізація log cleanup...');
+  LogCleanupService.startCronJob();
+
+  // Run initial cleanup on startup
+  await LogCleanupService.runCleanup();
+
   const server = app.listen(PORT, '0.0.0.0', () => {
     console.log('='.repeat(60));
     console.log('✅ SERVER STARTED SUCCESSFULLY');
@@ -415,6 +423,10 @@ nextApp.prepare().then(async () => {
   // Graceful shutdown
   const shutdown = (signal: string) => {
     console.log(signal, 'received, shutting down...');
+
+    // Stop log cleanup cron job
+    LogCleanupService.stopCronJob();
+
     server.close(() => {
       console.log('HTTP server closed');
       nextApp.close();

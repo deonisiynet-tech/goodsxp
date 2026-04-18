@@ -166,11 +166,12 @@ export class LoggerService {
   }
 
   /**
-   * Clear all system logs
+   * Clear logs with retention policy
+   * Uses LogCleanupService instead of deleting all logs
    */
-  async clearLogs(): Promise<{ count: number }> {
-    const result = await prisma.systemLog.deleteMany();
-    return { count: result.count };
+  async clearLogs(): Promise<void> {
+    const { LogCleanupService } = await import('./log-cleanup.service.js');
+    await LogCleanupService.runCleanup();
   }
 
   /**

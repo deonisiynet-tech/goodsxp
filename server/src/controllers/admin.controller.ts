@@ -213,7 +213,7 @@ export class AdminController {
         req.ip as string
       );
 
-      res.json({ success: true, ...result });
+      res.json({ success: true, message: 'Logs cleaned up with retention policy' });
     } catch (error) {
       next(error);
     }
