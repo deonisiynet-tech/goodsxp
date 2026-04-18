@@ -34,25 +34,27 @@ export class OrderService {
     }
 
     // 🔒 SECURITY: Ціни завантажуються ВИКЛЮЧНО з БД, ігнорується будь-яка ціна з frontend.
-    // SELECT ... FOR_UPDATE блокує рядки на рівні БД для запобігання race conditions.
+    // Використовуємо Serializable isolation + атомарні операції для запобігання race conditions.
     const order = await prisma.$transaction(async (tx) => {
-      // ✅ SELECT ... FOR UPDATE — блокуємо рядки продуктів на рівні БД
-      // Запобігає race condition: інша транзакція чекатиме поки ця завершиться
       const productIds = validated.items.map((item) => item.productId);
-      const products = await tx.$queryRaw<Array<{
-        id: string;
-        title: string;
-        price: import('@prisma/client').Prisma.Decimal;
-        discountPrice: import('@prisma/client').Prisma.Decimal | null;
-        margin: number;
-        stock: number;
-        isActive: boolean;
-      }>>`
-        SELECT id, title, price, "discountPrice", margin, stock, "isActive"
-        FROM "Product"
-        WHERE id IN (${productIds.join(',')}) AND "isActive" = true
-        FOR UPDATE
-      `;
+
+      // 🔒 SECURITY FIX: Use Prisma findMany instead of raw SQL
+      // Serializable isolation level забезпечує консистентність
+      const products = await tx.product.findMany({
+        where: {
+          id: { in: productIds },
+          isActive: true,
+        },
+        select: {
+          id: true,
+          title: true,
+          price: true,
+          discountPrice: true,
+          margin: true,
+          stock: true,
+          isActive: true,
+        },
+      });
 
       if (products.length !== validated.items.length) {
         throw new AppError('Деякі товари недоступні', 400);
@@ -66,33 +68,28 @@ export class OrderService {
         }
 
         if (item.variantId) {
-          // 🔒 FOR UPDATE — блокуємо рядок варіанту на рівні БД
-          // Запобігає race condition при одночасному замовленні одного варіанту
-          const variant = await tx.$queryRaw<Array<{
-            id: string;
-            stock: number;
-            "productId": string;
-          }>>`
-            SELECT id, stock, "productId"
-            FROM "ProductVariant"
-            WHERE id = ${item.variantId}
-            FOR UPDATE
-          `;
+          // 🔒 SECURITY FIX: Use Prisma findUnique instead of raw SQL
+          const variant = await tx.productVariant.findUnique({
+            where: { id: item.variantId },
+            select: {
+              id: true,
+              stock: true,
+              productId: true,
+            },
+          });
 
-          if (variant.length === 0) {
+          if (!variant) {
             throw new AppError('Обраний варіант товару недоступний', 400);
           }
 
-          const v = variant[0];
-
           // 🔒 SECURITY: Verify variant belongs to the specified product.
-          if (v.productId !== item.productId) {
+          if (variant.productId !== item.productId) {
             throw new AppError('Варіант не відповідає товару', 400);
           }
 
-          if (v.stock < item.quantity) {
+          if (variant.stock < item.quantity) {
             throw new AppError(
-              `Товар "${product.title}" (варіант) недоступний у кількості ${item.quantity}. Доступно: ${v.stock}`,
+              `Товар "${product.title}" (варіант) недоступний у кількості ${item.quantity}. Доступно: ${variant.stock}`,
               400
             );
           }
@@ -180,19 +177,38 @@ export class OrderService {
       });
 
       // Update stock — атомарний decrement всередині транзакції
+      // 🔒 RACE CONDITION FIX: Verify stock didn't go negative after decrement
       for (const item of validated.items) {
         if (item.variantId) {
           // Зменшуємо stock конкретного варіанту
-          await tx.productVariant.update({
+          const updatedVariant = await tx.productVariant.update({
             where: { id: item.variantId },
             data: { stock: { decrement: item.quantity } },
+            select: { stock: true, productId: true },
           });
+
+          // ✅ Перевірка: якщо stock став негативним — відкатуємо транзакцію
+          if (updatedVariant.stock < 0) {
+            throw new AppError(
+              'Товар розпроданий під час оформлення замовлення. Спробуйте ще раз.',
+              409
+            );
+          }
         } else {
           // Зменшуємо базовий stock товару
-          await tx.product.update({
+          const updatedProduct = await tx.product.update({
             where: { id: item.productId },
             data: { stock: { decrement: item.quantity } },
+            select: { stock: true, title: true },
           });
+
+          // ✅ Перевірка: якщо stock став негативним — відкатуємо транзакцію
+          if (updatedProduct.stock < 0) {
+            throw new AppError(
+              `Товар "${updatedProduct.title}" розпроданий під час оформлення замовлення. Спробуйте ще раз.`,
+              409
+            );
+          }
         }
       }
 

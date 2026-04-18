@@ -2,11 +2,12 @@ import rateLimit from 'express-rate-limit';
 
 /**
  * Rate limiter для админских маршрутов
- * 5 запросов в минуту
+ * 🔒 OPTIMIZED: 100 запросов в минуту (было 5)
+ * Адмін може редагувати товар з багатьма характеристиками — потрібно більше запитів
  */
 export const adminRateLimiter = rateLimit({
   windowMs: 60 * 1000, // 1 minute
-  max: 5, // 5 requests per window
+  max: 100, // 100 requests per window (збільшено з 5)
   message: {
     error: 'Занадто багато запитів. Спробуйте пізніше.',
     retryAfter: 60,

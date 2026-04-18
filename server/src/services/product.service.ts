@@ -582,13 +582,6 @@ export class ProductService {
     if (data.description !== undefined) updateData.description = data.description;
     if (data.price !== undefined) updateData.price = data.price;
     if (data.margin !== undefined) updateData.margin = data.margin;
-
-    // 🔍 DEBUG: Log what will be saved to DB
-    console.log('🔍 SERVICE UPDATE - Data to save:', {
-      margin: updateData.margin,
-      hasMargin: 'margin' in updateData,
-      fullUpdateData: updateData,
-    });
     if (data.categoryId !== undefined) updateData.categoryId = data.categoryId;
     if (data.rating !== undefined) updateData.rating = data.rating;
     if (data.originalPrice !== undefined) updateData.originalPrice = data.originalPrice;
@@ -603,13 +596,6 @@ export class ProductService {
     const result = await prisma.product.update({
       where: { id },
       data: updateData,
-    });
-
-    // 🔍 DEBUG: Log what was actually saved
-    console.log('🔍 SERVICE UPDATE - Saved to DB:', {
-      id: result.id,
-      margin: result.margin,
-      title: result.title,
     });
 
     return result;

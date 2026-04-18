@@ -222,6 +222,7 @@ model OrderItem {
   @@index([orderId])
   @@index([productId])
   @@index([variantId])
+  @@index([margin])
 }
 
 model AdminLog {

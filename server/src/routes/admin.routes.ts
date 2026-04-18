@@ -3,6 +3,7 @@ import { ProductController } from '../controllers/product.controller.js';
 import { OrderController } from '../controllers/order.controller.js';
 import { AdminController } from '../controllers/admin.controller.js';
 import { authenticate, authorize } from '../middleware/auth.js';
+import { validateUuid } from '../middleware/validateUuid.js';
 import { Role } from '@prisma/client';
 
 const router = Router();
@@ -42,25 +43,25 @@ router.put('/settings/:key', adminController.updateSetting.bind(adminController)
 
 // Users Management
 router.get('/users', adminController.getUsers.bind(adminController));
-router.get('/users/:id', adminController.getUserById.bind(adminController));
-router.patch('/users/:id/role', adminController.updateUserRole.bind(adminController));
-router.post('/users/:id/reset-password', adminController.resetUserPassword.bind(adminController));
-router.delete('/users/:id', adminController.deleteUser.bind(adminController));
+router.get('/users/:id', validateUuid('id'), adminController.getUserById.bind(adminController));
+router.patch('/users/:id/role', validateUuid('id'), adminController.updateUserRole.bind(adminController));
+router.post('/users/:id/reset-password', validateUuid('id'), adminController.resetUserPassword.bind(adminController));
+router.delete('/users/:id', validateUuid('id'), adminController.deleteUser.bind(adminController));
 
 // Categories - REMOVED (Category model not in schema)
 // Categories endpoints are deprecated
 
 // Products
 router.get('/products', productController.getAllAdmin.bind(productController));
-router.get('/products/:id', productController.getByIdAdmin.bind(productController)); // ✅ FIX: Use admin version
+router.get('/products/:id', validateUuid('id'), productController.getByIdAdmin.bind(productController)); // ✅ FIX: Use admin version
 router.post('/products', productController.create.bind(productController));
-router.put('/products/:id', productController.update.bind(productController));
-router.delete('/products/:id', productController.delete.bind(productController));
+router.put('/products/:id', validateUuid('id'), productController.update.bind(productController));
+router.delete('/products/:id', validateUuid('id'), productController.delete.bind(productController));
 
 // Orders
 router.get('/orders', orderController.getAllAdmin.bind(orderController));
 router.get('/orders/stats', orderController.getStats.bind(orderController));
-router.patch('/orders/:id/status', orderController.updateStatus.bind(orderController));
-router.delete('/orders/:id', orderController.delete.bind(orderController));
+router.patch('/orders/:id/status', validateUuid('id'), orderController.updateStatus.bind(orderController));
+router.delete('/orders/:id', validateUuid('id'), orderController.delete.bind(orderController));
 
 export default router;
