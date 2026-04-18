@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import { Role } from '@prisma/client';
 import { limitLoginAttempts } from '../middleware/loginAttempts.js';
 import { strictRateLimiter } from '../middleware/rateLimiter.js';
+import { csrfProtection } from '../middleware/csrf.js';
 import { loginLogService } from '../services/login-log.service.js';
 import { twoFAService } from '../services/twoFA.service.js';
 import { getJwtSecret, getJwtExpiresIn } from '../utils/jwt.js';
