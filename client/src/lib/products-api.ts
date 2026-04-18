@@ -132,15 +132,6 @@ async function fetchAPI(endpoint: string, options: RequestInit = {}) {
     headers['Authorization'] = `Bearer ${token}`
   }
 
-  if (typeof window !== 'undefined') {
-    console.log('📡 API Request:', {
-      endpoint,
-      method: options.method || 'GET',
-      hasToken: !!token,
-      tokenPreview: token ? `${token.substring(0, 20)}...` : 'none',
-    })
-  }
-
   // IMPORTANT: Always include credentials for cookie-based auth (admin)
   const response = await fetchWithRetry(`${API_BASE}${endpoint}`, {
     ...options,
@@ -148,26 +139,9 @@ async function fetchAPI(endpoint: string, options: RequestInit = {}) {
     credentials: 'include',
   })
 
-  if (typeof window !== 'undefined') {
-    console.log('📡 API Response:', {
-      status: response.status,
-      statusText: response.statusText,
-      endpoint,
-    })
-  }
-
   const data = await response.json()
 
   if (!response.ok) {
-    if (typeof window !== 'undefined') {
-      console.error('❌ API Error:', {
-        status: response.status,
-        statusText: response.statusText,
-        endpoint,
-        data,
-      })
-    }
-
     // ✅ FIX: More detailed error messages based on status code
     let errorMessage = data.error || data.message || 'Request failed'
 
@@ -420,14 +394,6 @@ export const productsApi = {
     isPopular?: boolean
     categoryId?: string | null
   }) => {
-    // 🔍 DEBUG: Log margin before FormData
-    console.log('🔍 API UPDATE - Received data.margin:', {
-      margin: data.margin,
-      type: typeof data.margin,
-      isUndefined: data.margin === undefined,
-      isNull: data.margin === null,
-    });
-
     const formData = new FormData()
     formData.append('title', data.title)
     formData.append('description', data.description)
@@ -435,12 +401,6 @@ export const productsApi = {
     // ✅ FIX: Ensure margin is always a valid number, not empty string or NaN
     const marginValue = typeof data.margin === 'number' && !isNaN(data.margin) ? data.margin : 0
     formData.append('margin', String(marginValue))
-
-    // 🔍 DEBUG: Log what's being sent
-    console.log('🔍 API UPDATE - Sending margin:', {
-      marginValue,
-      asString: String(marginValue),
-    });
     if (data.originalPrice !== undefined && data.originalPrice !== null) formData.append('originalPrice', String(data.originalPrice))
     if (data.discountPrice !== undefined && data.discountPrice !== null) formData.append('discountPrice', String(data.discountPrice))
     formData.append('stock', String(data.stock))

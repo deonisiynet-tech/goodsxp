@@ -403,12 +403,6 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
 
       if (product) {
         // Update existing product
-        console.log('🔍 MODAL UPDATE - Form data.margin:', {
-          margin: data.margin,
-          type: typeof data.margin,
-          product_margin: product.margin,
-        });
-
         const result = await productsApi.update(product.id, {
           title: data.title,
           description: data.description,
@@ -424,7 +418,6 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
           images: allImageUrls,
         })
         savedProductId = result.id
-        console.log('📝 Update result:', result)
         toast.success('Товар оновлено')
       } else {
         // Create new product
