@@ -32,6 +32,7 @@ export default function Header() {
   const [scrolled, setScrolled] = useState(false);
   const [categories, setCategories] = useState<any[]>([]);
   const [showCategoriesDropdown, setShowCategoriesDropdown] = useState(false);
+  const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -80,6 +81,19 @@ export default function Header() {
     }
   };
 
+  const handleCategoriesMouseEnter = () => {
+    if (dropdownTimeoutRef.current) {
+      clearTimeout(dropdownTimeoutRef.current);
+    }
+    setShowCategoriesDropdown(true);
+  };
+
+  const handleCategoriesMouseLeave = () => {
+    dropdownTimeoutRef.current = setTimeout(() => {
+      setShowCategoriesDropdown(false);
+    }, 200);
+  };
+
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
@@ -104,8 +118,8 @@ export default function Header() {
                 <div
                   key={link.href}
                   className="relative"
-                  onMouseEnter={() => setShowCategoriesDropdown(true)}
-                  onMouseLeave={() => setShowCategoriesDropdown(false)}
+                  onMouseEnter={handleCategoriesMouseEnter}
+                  onMouseLeave={handleCategoriesMouseLeave}
                 >
                   <Link
                     href={link.href}
@@ -116,7 +130,11 @@ export default function Header() {
                   </Link>
 
                   {showCategoriesDropdown && categories.length > 0 && (
-                    <div className="absolute top-full left-0 mt-2 w-64 bg-[#18181c] border border-purple-500/20 rounded-xl shadow-2xl shadow-purple-500/10 py-2 animate-fade-in">
+                    <div
+                      className="absolute top-full left-0 mt-2 w-64 bg-[#18181c] border border-purple-500/20 rounded-xl shadow-2xl shadow-purple-500/10 py-2 animate-fade-in"
+                      onMouseEnter={handleCategoriesMouseEnter}
+                      onMouseLeave={handleCategoriesMouseLeave}
+                    >
                       {categories.map((category) => (
                         <Link
                           key={category.id}

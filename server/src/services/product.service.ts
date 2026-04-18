@@ -645,6 +645,7 @@ export class ProductService {
           isActive: true,
           createdAt: true,
           updatedAt: true,
+          slug: true,
         },
       }) as Promise<any[]>,
       prisma.product.count({ where }),

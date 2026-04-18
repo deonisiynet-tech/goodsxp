@@ -3,8 +3,12 @@
 import { useEffect, useState } from 'react';
 import { productsApi } from '@/lib/products-api';
 import toast from 'react-hot-toast';
-import { Plus, Edit, Trash2, Search, Eye } from 'lucide-react';
+import { Plus } from 'lucide-react';
 import ProductModal from './ProductModal';
+import ViewToggle, { ViewMode } from './ViewToggle';
+import ProductFiltersComponent, { ProductFilters } from './ProductFilters';
+import ProductGridView from './ProductGridView';
+import ProductListView from './ProductListView';
 
 interface Product {
   id: string;
@@ -27,21 +31,57 @@ interface Product {
   categoryId: string | null;
 }
 
+interface Category {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 export default function AdminProductList() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  // View mode with localStorage persistence
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('admin-products-view');
+      return (saved as ViewMode) || 'grid';
+    }
+    return 'grid';
+  });
+
+  // Filters state
+  const [filters, setFilters] = useState<ProductFilters>({
+    search: '',
+    status: 'all',
+    availability: 'all',
+    categoryId: '',
+  });
 
   useEffect(() => {
     loadProducts();
-  }, [search]);
+  }, [filters.search]);
+
+  useEffect(() => {
+    loadCategories();
+  }, []);
+
+  const loadCategories = async () => {
+    try {
+      const response = await productsApi.getCategories();
+      setCategories(response.categories || []);
+    } catch (error) {
+      console.error('Failed to load categories:', error);
+    }
+  };
 
   const loadProducts = async () => {
     try {
       setLoading(true);
-      const response = await productsApi.getAllAdmin({ search });
+      const response = await productsApi.getAllAdmin({ search: filters.search });
       setProducts(response.products || []);
     } catch (error) {
       console.error('Failed to load products:', error);
@@ -50,6 +90,30 @@ export default function AdminProductList() {
       setLoading(false);
     }
   };
+
+  // Handle view mode change with localStorage
+  const handleViewModeChange = (mode: ViewMode) => {
+    setViewMode(mode);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('admin-products-view', mode);
+    }
+  };
+
+  // Filter products based on filters
+  const filteredProducts = products.filter((product) => {
+    // Status filter
+    if (filters.status === 'active' && !product.isActive) return false;
+    if (filters.status === 'inactive' && product.isActive) return false;
+
+    // Availability filter
+    if (filters.availability === 'in_stock' && product.stock === 0) return false;
+    if (filters.availability === 'out_of_stock' && product.stock > 0) return false;
+
+    // Category filter
+    if (filters.categoryId && product.categoryId !== filters.categoryId) return false;
+
+    return true;
+  });
 
   const handleDelete = async (id: string) => {
     if (!confirm('Ви впевнені, що хочете видалити цей товар?')) return;
@@ -83,117 +147,52 @@ export default function AdminProductList() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-light">Керування товарами</h1>
-        <button onClick={handleCreate} className="btn-primary flex items-center gap-2">
-          <Plus size={20} />
-          Додати товар
-        </button>
+        <div className="flex items-center gap-4">
+          <ViewToggle mode={viewMode} onChange={handleViewModeChange} />
+          <button onClick={handleCreate} className="btn-primary flex items-center gap-2">
+            <Plus size={20} />
+            Додати товар
+          </button>
+        </div>
       </div>
 
-      <div className="card p-4 mb-6">
-        <div className="flex gap-4">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={20} />
-            <input
-              type="text"
-              placeholder="Пошук товарів..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="input-field pl-10"
-            />
-          </div>
-        </div>
+      <div className="mb-6">
+        <ProductFiltersComponent
+          filters={filters}
+          onChange={setFilters}
+          categories={categories}
+        />
       </div>
 
       {loading ? (
-        <div className="flex justify-center py-20">
-          <div className="w-12 h-12 border-2 border-primary border-t-transparent rounded-full animate-spin" />
-        </div>
-      ) : (
-        <div className="card overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-surfaceLight">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Фото</th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Назва</th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Ціна</th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Залишок</th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Статус</th>
-                <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">Дії</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {products.map((product) => (
-                <tr key={product.id} className="hover:bg-surfaceLight">
-                  <td className="px-6 py-4">
-                    <div className="w-12 h-12 overflow-hidden bg-surfaceLight rounded-lg">
-                      <img
-                        src={
-                          product.imageUrl
-                            ? product.imageUrl.startsWith('http')
-                              ? product.imageUrl
-                              : product.imageUrl.startsWith('/')
-                                ? product.imageUrl
-                                : `/uploads/${product.imageUrl}`
-                            : '/placeholder.jpg'
-                        }
-                        alt={product.title}
-                        className="w-full h-full object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = '/placeholder.jpg';
-                        }}
-                      />
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 font-medium">{product.title}</td>
-                  <td className="px-6 py-4">{product.price.toLocaleString('uk-UA')} ₴</td>
-                  <td className="px-6 py-4">{product.stock} шт.</td>
-                  <td className="px-6 py-4">
-                    <span
-                      className={`px-2 py-1 text-xs ${
-                        product.isActive
-                          ? 'bg-green-500/10 text-green-500'
-                          : 'bg-red-500/10 text-red-500'
-                      }`}
-                    >
-                      {product.isActive ? 'Активний' : 'Неактивний'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex justify-end gap-2">
-                      <button
-                        onClick={() => window.open(`/catalog/${product.slug}?preview=true`, '_blank')}
-                        className="p-2 text-purple-400 hover:bg-surfaceLight transition-colors"
-                        title="Переглянути товар"
-                      >
-                        <Eye size={18} />
-                      </button>
-                      <button
-                        onClick={() => handleEdit(product)}
-                        className="p-2 text-primary hover:bg-surfaceLight transition-colors"
-                        title="Редагувати"
-                      >
-                        <Edit size={18} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(product.id)}
-                        className="p-2 text-red-500 hover:bg-surfaceLight transition-colors"
-                        title="Видалити"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-
-          {products.length === 0 && (
-            <div className="text-center py-20 text-muted">
-              Товари не знайдені
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="card animate-pulse">
+              <div className="h-48 bg-surfaceLight" />
+              <div className="p-4 space-y-3">
+                <div className="h-4 bg-surfaceLight rounded w-3/4" />
+                <div className="h-4 bg-surfaceLight rounded w-1/2" />
+              </div>
             </div>
-          )}
+          ))}
         </div>
+      ) : filteredProducts.length === 0 ? (
+        <div className="text-center py-20 text-muted">
+          <p className="text-lg mb-2">Товари не знайдені</p>
+          <p className="text-sm">Спробуйте змінити фільтри або додати новий товар</p>
+        </div>
+      ) : viewMode === 'grid' ? (
+        <ProductGridView
+          products={filteredProducts}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
+      ) : (
+        <ProductListView
+          products={filteredProducts}
+          onEdit={handleEdit}
+          onDelete={handleDelete}
+        />
       )}
 
       {modalOpen && (
