@@ -91,7 +91,12 @@ export default function ProductGridView({ products, onEdit, onDelete }: ProductG
               </span>
               <div className="flex gap-2">
                 <button
-                  onClick={() => window.open(`/catalog/${product.slug}?preview=true`, '_blank')}
+                  onClick={() => {
+                    const previewWindow = window.open(`/catalog/${product.slug}?preview=true`, 'productPreview');
+                    if (previewWindow) {
+                      previewWindow.focus();
+                    }
+                  }}
                   className="p-2 text-purple-400 hover:bg-purple-500/10 rounded-lg transition-colors"
                   title="Переглянути товар"
                 >

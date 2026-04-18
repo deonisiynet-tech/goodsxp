@@ -94,7 +94,12 @@ export default function ProductListView({ products, onEdit, onDelete }: ProductL
                 <td className="p-4">
                   <div className="flex items-center justify-end gap-2">
                     <button
-                      onClick={() => window.open(`/catalog/${product.slug}?preview=true`, '_blank')}
+                      onClick={() => {
+                        const previewWindow = window.open(`/catalog/${product.slug}?preview=true`, 'productPreview');
+                        if (previewWindow) {
+                          previewWindow.focus();
+                        }
+                      }}
                       className="p-2 text-purple-400 hover:bg-purple-500/10 rounded-lg transition-colors"
                       title="Переглянути товар"
                     >
