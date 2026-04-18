@@ -12,7 +12,7 @@ import { useCheckoutStorage, CheckoutData } from '@/hooks/useCheckoutStorage';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 import { normalizeImageUrl } from '@/lib/image-utils';
-import { ArrowLeft, ShoppingCart, Check, ShieldCheck, Truck, CreditCard, User, MapPin } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, ShieldCheck, User, MapPin, CreditCard } from 'lucide-react';
 
 // ===== TYPES =====
 interface City {
@@ -35,20 +35,11 @@ interface Warehouse {
 }
 
 interface CheckoutForm {
-  surname: string;
   firstName: string;
-  middleName: string;
+  surname: string;
   phone: string;
   comment?: string;
 }
-
-// ===== STEPS CONFIG =====
-const STEPS = [
-  { key: 'contact', label: 'Контакти', icon: User },
-  { key: 'delivery', label: 'Доставка', icon: MapPin },
-  { key: 'payment', label: 'Оплата', icon: CreditCard },
-  { key: 'confirm', label: 'Підтвердження', icon: Check },
-];
 
 export default function CheckoutClient() {
   const router = useRouter();
@@ -57,7 +48,6 @@ export default function CheckoutClient() {
   const [selectedCity, setSelectedCity] = useState<City | null>(null);
   const [selectedWarehouse, setSelectedWarehouse] = useState<Warehouse | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<'COD' | 'CARD'>('COD');
-  const [currentStep, setCurrentStep] = useState(0);
 
   const {
     register,
@@ -75,7 +65,6 @@ export default function CheckoutClient() {
     if (isLoaded && savedData) {
       if (savedData.surname) setValue('surname', savedData.surname);
       if (savedData.firstName) setValue('firstName', savedData.firstName);
-      if (savedData.middleName) setValue('middleName', savedData.middleName);
       if (savedData.phone) setValue('phone', savedData.phone);
     }
   }, [isLoaded, savedData, setValue]);
@@ -91,7 +80,6 @@ export default function CheckoutClient() {
     const dataToSave: CheckoutData = {
       surname: watch('surname') || '',
       firstName: watch('firstName') || '',
-      middleName: watch('middleName') || '',
       phone: watch('phone') || '',
       city: selectedCity?.label || null,
       cityRef: selectedCity?.ref || null,
@@ -100,14 +88,29 @@ export default function CheckoutClient() {
     };
     saveFormData(dataToSave);
     return () => { if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current); };
-  }, [isLoaded, selectedCity?.label, selectedCity?.ref, selectedWarehouse?.number, selectedWarehouse?.shortAddress]);
+  }, [isLoaded, watch('surname'), watch('firstName'), watch('phone'), selectedCity?.label, selectedCity?.ref, selectedWarehouse?.number, selectedWarehouse?.shortAddress, saveFormData]);
 
-  // ✅ Ukrainian phone validation
+  // Ukrainian phone validation
   const ukrainianPhoneRegex = /^(\+380|380|0)\d{9}$/;
 
   const onSubmit = async (data: CheckoutForm) => {
-    if (!selectedCity) { toast.error('Оберіть місто'); setCurrentStep(1); return; }
-    if (!selectedWarehouse) { toast.error('Оберіть відділення'); setCurrentStep(1); return; }
+    // Validation
+    if (!data.firstName?.trim()) {
+      toast.error('Введіть ім\'я');
+      return;
+    }
+    if (!data.surname?.trim()) {
+      toast.error('Введіть прізвище');
+      return;
+    }
+    if (!selectedCity) {
+      toast.error('Оберіть місто');
+      return;
+    }
+    if (!selectedWarehouse) {
+      toast.error('Оберіть відділення');
+      return;
+    }
 
     // Validate phone format
     const cleanPhone = data.phone.replace(/[\s\-\(\)]/g, '');
@@ -118,7 +121,7 @@ export default function CheckoutClient() {
 
     try {
       setLoading(true);
-      const fullName = `${data.surname} ${data.firstName} ${data.middleName}`.trim();
+      const fullName = `${data.surname} ${data.firstName}`.trim();
       const orderData = {
         name: fullName,
         phone: cleanPhone,
@@ -135,7 +138,7 @@ export default function CheckoutClient() {
         })),
       };
 
-      // ✅ Retry логіка на клієнті для race condition
+      // Retry logic for race condition
       const MAX_RETRIES = 2;
       let lastError: any;
 
@@ -143,16 +146,16 @@ export default function CheckoutClient() {
         try {
           const response = await ordersApi.create(orderData);
 
-          // ✅ Очищаємо кошик ТІЛЬКИ після успішної відповіді
+          // Clear cart only after successful response
           clearCart();
           saveData({
-            surname: '', firstName: '', middleName: '',
+            surname: '', firstName: '',
             phone: '', city: null, cityRef: null, warehouse: null, warehouseAddress: null
           });
 
           const orderNumber = response.data?.orderNumber || response.data?.id;
           router.push(`/orders/success?order=${orderNumber}`);
-          return; // Вихід після успіху
+          return;
         } catch (err: any) {
           lastError = err;
 
@@ -167,18 +170,15 @@ export default function CheckoutClient() {
             throw err;
           }
 
-          // Експоненційна затримка + jitter
           const delay = Math.pow(2, attempt - 1) * 200 + Math.random() * 200;
           await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
 
-      // Всі спроби вичерпані
       throw lastError;
     } catch (error: any) {
       const errorMsg = error.response?.data?.error || error.response?.data?.message;
 
-      // ✅ Спеціальне повідомлення для race condition
       if (errorMsg?.includes('недоступний') || errorMsg?.includes('Товар')) {
         toast.error('На жаль, товар вже закінчився. Видаліть його з кошика та спробуйте знову.');
       } else if (error.response?.status === 429) {
@@ -193,10 +193,6 @@ export default function CheckoutClient() {
 
   const handleCityChange = useCallback((city: City | null) => setSelectedCity(city), []);
   const handleWarehouseChange = useCallback((warehouse: Warehouse | null) => setSelectedWarehouse(warehouse), []);
-
-  // Auto-advance step based on form completion
-  const canProceedToDelivery = watch('surname') && watch('firstName') && watch('phone');
-  const canProceedToPayment = canProceedToDelivery && selectedCity && selectedWarehouse;
 
   if (items.length === 0) {
     return (
@@ -221,7 +217,7 @@ export default function CheckoutClient() {
   return (
     <div className="min-h-screen flex flex-col">
       <Header />
-      <main className="flex-1 container mx-auto px-4 py-8 mt-20 max-w-5xl">
+      <main className="flex-1 container mx-auto px-4 py-8 mt-20 max-w-6xl">
         {/* Back button */}
         <button
           onClick={() => router.push('/cart')}
@@ -233,113 +229,60 @@ export default function CheckoutClient() {
 
         <h1 className="text-3xl font-light mb-8">Оформлення замовлення</h1>
 
-        {/* ✅ Progress Steps */}
-        <div className="flex items-center justify-between mb-6 sm:mb-10 px-2 sm:px-4 overflow-x-auto">
-          {STEPS.map((step, i) => {
-            const isActive = i === currentStep;
-            const isCompleted = i < currentStep;
-            const Icon = step.icon;
-            return (
-              <div key={step.key} className="flex items-center flex-1 last:flex-none min-w-0">
-                <div className="flex flex-col items-center">
-                  <div
-                    className={`w-11 h-11 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-sm font-medium transition-all ${
-                      isCompleted
-                        ? 'bg-green-500 text-white'
-                        : isActive
-                        ? 'bg-purple-500 text-white shadow-lg shadow-purple-500/30'
-                        : 'bg-[#1f1f23] text-[#9ca3af] border border-[#26262b]'
-                    }`}
-                  >
-                    {isCompleted ? <Check size={18} /> : <Icon size={18} />}
-                  </div>
-                  <span className={`text-xs sm:text-sm mt-2 ${isActive ? 'text-white' : 'text-[#9ca3af]'}`}>
-                    {step.label}
-                  </span>
-                </div>
-                {i < STEPS.length - 1 && (
-                  <div className={`flex-1 h-0.5 mx-1 sm:mx-3 mb-6 ${
-                    isCompleted ? 'bg-green-500' : 'bg-[#26262b]'
-                  }`} />
-                )}
-              </div>
-            );
-          })}
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Form Section */}
-          <div className="lg:col-span-3">
-            <div className="card p-6" style={{ overflow: 'visible', position: 'relative' }}>
-              <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-                {/* Step 1: Contact Info */}
-                <div className={currentStep === 0 ? 'block' : 'hidden'}>
-                  <h2 className="text-xl font-light mb-6 flex items-center gap-2">
+          <div className="lg:col-span-2">
+            <div className="card p-6">
+              <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
+
+                {/* Section 1: Contact Info */}
+                <div className="space-y-4">
+                  <h2 className="text-xl font-medium text-white flex items-center gap-2">
                     <User size={20} className="text-purple-400" />
                     Контактні дані
                   </h2>
-                  <div className="space-y-4">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Прізвище *</label>
-                        <input
-                          {...register('surname', { required: "Обов'язкове" })}
-                          className="input-field"
-                          placeholder="Іванов"
-                        />
-                        {errors.surname && <p className="text-red-400 text-xs sm:text-sm mt-1">{errors.surname.message}</p>}
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium mb-1">Ім&apos;я *</label>
-                        <input
-                          {...register('firstName', { required: "Обов'язкове" })}
-                          className="input-field"
-                          placeholder="Іван"
-                        />
-                        {errors.firstName && <p className="text-red-400 text-xs sm:text-sm mt-1">{errors.firstName.message}</p>}
-                      </div>
-                    </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-sm font-medium mb-1">По-батькові</label>
-                      <input {...register('middleName')} className="input-field" placeholder="Іванович" />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Телефон *</label>
+                      <label className="block text-sm font-medium mb-1">Ім'я *</label>
                       <input
-                        {...register('phone', {
-                          required: "Обов'язковий",
-                          pattern: {
-                            value: /^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/,
-                            message: 'Некоректний номер телефону'
-                          }
-                        })}
+                        {...register('firstName', { required: "Обов'язкове" })}
                         className="input-field"
-                        placeholder="+380 (XX) XXX-XX-XX"
+                        placeholder="Іван"
                       />
-                      {errors.phone && <p className="text-red-400 text-xs sm:text-sm mt-1">{errors.phone.message}</p>}
+                      {errors.firstName && <p className="text-red-400 text-xs sm:text-sm mt-1">{errors.firstName.message}</p>}
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium mb-1">Прізвище *</label>
+                      <input
+                        {...register('surname', { required: "Обов'язкове" })}
+                        className="input-field"
+                        placeholder="Іванов"
+                      />
+                      {errors.surname && <p className="text-red-400 text-xs sm:text-sm mt-1">{errors.surname.message}</p>}
                     </div>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (canProceedToDelivery) {
-                        setCurrentStep(1);
-                        toast.success('Контакти збережено');
-                      } else {
-                        toast.error("Заповніть обов'язкові поля");
-                      }
-                    }}
-                    className="btn-primary w-full mt-6"
-                  >
-                    Далі → Доставка
-                  </button>
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Телефон *</label>
+                    <input
+                      {...register('phone', {
+                        required: "Обов'язковий",
+                        pattern: {
+                          value: /^[\+]?[(]?[0-9]{3}[)]?[-\s\.]?[0-9]{3}[-\s\.]?[0-9]{4,6}$/,
+                          message: 'Некоректний номер телефону'
+                        }
+                      })}
+                      className="input-field"
+                      placeholder="+380 (XX) XXX-XX-XX"
+                    />
+                    {errors.phone && <p className="text-red-400 text-xs sm:text-sm mt-1">{errors.phone.message}</p>}
+                  </div>
                 </div>
 
-                {/* Step 2: Delivery */}
-                <div className={currentStep === 1 ? 'block' : 'hidden'}>
-                  <h2 className="text-xl font-light mb-6 flex items-center gap-2">
+                {/* Section 2: Delivery */}
+                <div className="space-y-4">
+                  <h2 className="text-xl font-medium text-white flex items-center gap-2">
                     <MapPin size={20} className="text-purple-400" />
-                    Доставка Новою Поштою
+                    Доставка
                   </h2>
                   <NovaPoshtaSelector
                     onCityChange={handleCityChange}
@@ -348,50 +291,15 @@ export default function CheckoutClient() {
                     selectedWarehouse={selectedWarehouse}
                     savedCityName={savedData?.city}
                   />
-                  <div className="flex gap-3 mt-6">
-                    <button
-                      type="button"
-                      onClick={() => setCurrentStep(0)}
-                      className="btn-secondary flex-1"
-                    >
-                      ← Назад
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (canProceedToPayment) {
-                          setCurrentStep(2);
-                          toast.success('Доставку обрано');
-                        } else {
-                          toast.error('Оберіть місто та відділення');
-                        }
-                      }}
-                      className="btn-primary flex-1"
-                    >
-                      Далі → Оплата
-                    </button>
-                  </div>
                 </div>
 
-                {/* Step 3: Payment */}
-                <div className={currentStep === 2 ? 'block' : 'hidden'}>
-                  <h2 className="text-xl font-light mb-6 flex items-center gap-2">
+                {/* Section 3: Payment */}
+                <div className="space-y-4">
+                  <h2 className="text-xl font-medium text-white flex items-center gap-2">
                     <CreditCard size={20} className="text-purple-400" />
                     Спосіб оплати
                   </h2>
 
-                  {/* Comment */}
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium mb-1">Коментар до замовлення</label>
-                    <textarea
-                      {...register('comment')}
-                      className="input-field"
-                      rows={2}
-                      placeholder="Додаткова інформація"
-                    />
-                  </div>
-
-                  {/* Payment Methods */}
                   <div className="space-y-3">
                     <label className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
                       paymentMethod === 'COD'
@@ -408,7 +316,9 @@ export default function CheckoutClient() {
                       />
                       <div className="flex-1">
                         <span className="font-medium text-white text-sm">Оплата при отриманні</span>
-                        <p className="text-xs sm:text-sm text-muted mt-0.5">Накладений платіж на Новій Пошті</p>
+                        <p className="text-xs text-orange-400 mt-1">
+                          Комісія Нової Пошти: 2% + 20 грн
+                        </p>
                       </div>
                     </label>
 
@@ -427,95 +337,59 @@ export default function CheckoutClient() {
                       />
                       <div className="flex-1">
                         <span className="font-medium text-white text-sm">Повна передоплата на карту</span>
-                        <p className="text-xs sm:text-sm text-muted mt-0.5">Переказ на банківську карту через менеджера</p>
+                        <p className="text-xs text-green-400 mt-1">
+                          Без комісії — переказ через менеджера
+                        </p>
                       </div>
                     </label>
                   </div>
+                </div>
 
-                  <div className="flex gap-3 mt-6">
-                    <button type="button" onClick={() => setCurrentStep(1)} className="btn-secondary flex-1">
-                      ← Назад
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setCurrentStep(3)}
-                      className="btn-primary flex-1"
-                    >
-                      Підтвердити
-                    </button>
+                {/* Section 4: Comment */}
+                <div className="space-y-4">
+                  <label className="block text-sm font-medium">Коментар до замовлення (необов'язково)</label>
+                  <textarea
+                    {...register('comment')}
+                    className="input-field"
+                    rows={3}
+                    placeholder="Додаткова інформація для менеджера..."
+                  />
+                </div>
+
+                {/* Security Badge */}
+                <div className="flex items-center gap-3 p-4 bg-green-500/5 rounded-xl border border-green-500/20">
+                  <ShieldCheck size={24} className="text-green-400 shrink-0" />
+                  <div>
+                    <p className="text-white text-sm font-medium">Безпечне оформлення</p>
+                    <p className="text-xs sm:text-sm text-[#9ca3af]">Менеджер зв'яжеться для підтвердження</p>
                   </div>
                 </div>
 
-                {/* Step 4: Confirm */}
-                <div className={currentStep === 3 ? 'block' : 'hidden'}>
-                  <h2 className="text-xl font-light mb-6 flex items-center gap-2">
-                    <Check size={20} className="text-purple-400" />
-                    Підтвердження замовлення
-                  </h2>
+                {/* Submit Button */}
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="btn-primary w-full py-4 text-base disabled:opacity-50"
+                >
+                  {loading ? 'Оформлення...' : `Оформити замовлення на ${getTotal().toLocaleString('uk-UA')} ₴`}
+                </button>
 
-                  {/* Order Summary */}
-                  <div className="space-y-3 p-4 bg-[#1f1f23] rounded-xl">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#9ca3af]">Отримувач:</span>
-                      <span className="text-white">{watch('surname')} {watch('firstName')}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#9ca3af]">Телефон:</span>
-                      <span className="text-white">{watch('phone')}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#9ca3af]">Місто:</span>
-                      <span className="text-white">{selectedCity?.label}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#9ca3af]">Відділення:</span>
-                      <span className="text-white">{selectedWarehouse?.shortAddress}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-[#9ca3af]">Оплата:</span>
-                      <span className="text-white">{paymentMethod === 'COD' ? 'При отриманні' : 'Онлайн'}</span>
-                    </div>
-                  </div>
-
-                  {/* ✅ Security Badge */}
-                  <div className="flex items-center gap-3 mt-4 p-4 bg-green-500/5 rounded-xl border border-green-500/20">
-                    <ShieldCheck size={24} className="text-green-400 shrink-0" />
-                    <div>
-                      <p className="text-white text-sm font-medium">Безпечне оформлення</p>
-                      <p className="text-xs sm:text-sm text-[#9ca3af]">Менеджер зв&apos;яжеться для підтвердження</p>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3 mt-6">
-                    <button type="button" onClick={() => setCurrentStep(2)} className="btn-secondary flex-1">
-                      ← Назад
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={loading}
-                      className="btn-primary flex-1 disabled:opacity-50"
-                    >
-                      {loading ? 'Оформлення...' : `Замовити на ${getTotal().toLocaleString('uk-UA')} ₴`}
-                    </button>
-                  </div>
-
-                  <p className="text-xs sm:text-sm text-muted text-center mt-4">
-                    Натискаючи &quot;Замовити&quot;, ви погоджуєтесь з умовами доставки та оплати
-                  </p>
-                </div>
+                <p className="text-xs sm:text-sm text-muted text-center">
+                  Натискаючи &quot;Оформити замовлення&quot;, ви погоджуєтесь з умовами доставки та оплати
+                </p>
               </form>
             </div>
           </div>
 
           {/* Order Summary Sidebar */}
-          <div className="lg:col-span-2">
+          <div className="lg:col-span-1">
             <div className="card p-6 sticky top-24">
               <h2 className="text-xl font-light mb-6">Твоє замовлення</h2>
 
               <div className="mb-6">
                 <div className="space-y-3 max-h-80 overflow-y-auto pr-2">
                   {items.map((item) => (
-                    <div key={item.productId} className="flex gap-3 p-3 rounded-lg bg-surfaceLight/50">
+                    <div key={`${item.productId}-${item.variantId || 'default'}`} className="flex gap-3 p-3 rounded-lg bg-surfaceLight/50">
                       <div className="w-16 h-16 flex-shrink-0 overflow-hidden rounded-md bg-surfaceLight relative">
                         <Image
                           src={normalizeImageUrl(item.imageUrl)}
@@ -549,6 +423,12 @@ export default function CheckoutClient() {
                   <span className="text-muted">Доставка:</span>
                   <span className="font-medium text-purple-400">за тарифами НП</span>
                 </div>
+                {paymentMethod === 'COD' && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted">Комісія НП:</span>
+                    <span className="font-medium text-orange-400">2% + 20 ₴</span>
+                  </div>
+                )}
                 <div className="border-t border-border pt-3 mt-3">
                   <div className="flex justify-between items-center">
                     <span className="text-base font-medium">Разом:</span>
@@ -562,7 +442,7 @@ export default function CheckoutClient() {
               {getTotal() < 5000 && (
                 <div className="mt-4 p-3 bg-purple-500/5 rounded-lg border border-purple-500/10">
                   <p className="text-xs sm:text-sm text-[#9ca3af] leading-relaxed">
-                    До безкоштовної доставки ще {(5000 - getTotal()).toLocaleString('uk-UA')} ₴
+                    💡 До безкоштовної доставки ще {(5000 - getTotal()).toLocaleString('uk-UA')} ₴
                   </p>
                 </div>
               )}

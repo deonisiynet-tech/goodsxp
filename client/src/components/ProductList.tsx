@@ -240,10 +240,11 @@ export default function ProductList({ title = 'Каталог товарів', l
                     {product.stock > 0 ? (
                       <button
                         onClick={(e) => handleAddToCart(e, product)}
-                        className="p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center hover:bg-surfaceLight transition-colors"
+                        className="w-full px-4 py-2.5 min-h-[44px] flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 rounded-lg transition-all duration-300 shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 font-medium text-sm"
                         aria-label="Додати до кошика"
                       >
-                        <ShoppingCart size={18} strokeWidth={1.5} />
+                        <ShoppingCart size={18} strokeWidth={2} />
+                        <span>Купити</span>
                       </button>
                     ) : (
                       <span className="text-xs sm:text-sm text-muted">Недоступно</span>

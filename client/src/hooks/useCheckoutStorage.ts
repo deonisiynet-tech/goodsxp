@@ -5,7 +5,6 @@ import { useEffect, useState } from 'react';
 export interface CheckoutData {
   surname?: string;
   firstName?: string;
-  middleName?: string;
   name?: string;
   phone: string;
   email?: string;

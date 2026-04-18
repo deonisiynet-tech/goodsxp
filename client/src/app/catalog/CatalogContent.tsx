@@ -459,10 +459,23 @@ export default function CatalogContent() {
           {/* Filter Panel */}
           {showFilters && (
             <div className="card p-6 mb-8 animate-fade-in">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-medium text-white flex items-center gap-2">
+                  <SlidersHorizontal size={20} className="text-purple-400" />
+                  Фільтри
+                </h3>
+                <button
+                  onClick={resetFilters}
+                  className="text-sm text-muted hover:text-purple-400 transition-colors min-h-[44px] px-3"
+                >
+                  Скинути все
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                 {/* Sort By */}
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-[#9ca3af]">Сортування</label>
+                  <label className="block text-sm font-medium mb-3 text-white">Сортування</label>
                   <select
                     value={sortBy}
                     onChange={(e) => handleSortChange('sortBy', e.target.value)}
@@ -473,9 +486,10 @@ export default function CatalogContent() {
                     ))}
                   </select>
                 </div>
+
                 {/* Sort Order */}
                 <div>
-                  <label className="block text-sm font-medium mb-2 text-[#9ca3af]">Порядок</label>
+                  <label className="block text-sm font-medium mb-3 text-white">Порядок</label>
                   <select
                     value={sortOrder}
                     onChange={(e) => handleSortChange('sortOrder', e.target.value)}
@@ -485,33 +499,63 @@ export default function CatalogContent() {
                     <option value="asc">За зростанням</option>
                   </select>
                 </div>
+
                 {/* Price Range */}
-                <div>
-                  <label className="block text-sm font-medium mb-2 text-[#9ca3af]">
-                    Макс. ціна: {priceMax.toLocaleString('uk-UA')} ₴
+                <div className="lg:col-span-2">
+                  <label className="block text-sm font-medium mb-3 text-white">
+                    Ціна: до {priceMax.toLocaleString('uk-UA')} ₴
                   </label>
-                  <input
-                    type="range"
-                    min="0"
-                    max="100000"
-                    step="1000"
-                    value={priceMax}
-                    onChange={(e) => setPriceMax(parseInt(e.target.value))}
-                    onMouseUp={() => setCurrentPage(1)}
-                    onTouchEnd={() => setCurrentPage(1)}
-                    className="w-full accent-[#6366f1]"
-                  />
+                  <div className="flex items-center gap-4">
+                    <input
+                      type="range"
+                      min="0"
+                      max="100000"
+                      step="1000"
+                      value={priceMax}
+                      onChange={(e) => setPriceMax(parseInt(e.target.value))}
+                      onMouseUp={() => setCurrentPage(1)}
+                      onTouchEnd={() => setCurrentPage(1)}
+                      className="flex-1 accent-purple-500"
+                    />
+                    <span className="text-sm text-purple-400 font-medium min-w-[100px] text-right">
+                      {priceMax === 100000 ? 'Без ліміту' : `${priceMax.toLocaleString('uk-UA')} ₴`}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-xs text-muted mt-2">
+                    <span>0 ₴</span>
+                    <span>100 000 ₴</span>
+                  </div>
                 </div>
               </div>
-              {/* Reset Filters */}
-              <div className="mt-4 flex justify-end">
-                <button
-                  onClick={resetFilters}
-                  className="text-sm text-[#9ca3af] hover:text-purple-400 transition-colors min-h-[44px]"
-                >
-                  Скинути фільтри
-                </button>
-              </div>
+
+              {/* Active Filters Summary */}
+              {(selectedCategory || featuredOnly || priceMax < 100000 || debouncedSearch) && (
+                <div className="mt-6 pt-6 border-t border-purple-500/10">
+                  <p className="text-sm text-muted mb-3">Активні фільтри:</p>
+                  <div className="flex flex-wrap gap-2">
+                    {debouncedSearch && (
+                      <span className="px-3 py-1.5 bg-purple-500/10 text-purple-400 text-xs rounded-full border border-purple-500/20">
+                        Пошук: "{debouncedSearch}"
+                      </span>
+                    )}
+                    {featuredOnly && (
+                      <span className="px-3 py-1.5 bg-orange-500/10 text-orange-400 text-xs rounded-full border border-orange-500/20">
+                        🔥 Хіт-продаж
+                      </span>
+                    )}
+                    {selectedCategory && (
+                      <span className="px-3 py-1.5 bg-purple-500/10 text-purple-400 text-xs rounded-full border border-purple-500/20">
+                        {categories.find(c => c.id === selectedCategory)?.name || 'Категорія'}
+                      </span>
+                    )}
+                    {priceMax < 100000 && (
+                      <span className="px-3 py-1.5 bg-purple-500/10 text-purple-400 text-xs rounded-full border border-purple-500/20">
+                        До {priceMax.toLocaleString('uk-UA')} ₴
+                      </span>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
