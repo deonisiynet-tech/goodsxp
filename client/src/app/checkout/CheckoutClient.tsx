@@ -57,6 +57,12 @@ export default function CheckoutClient() {
   const [promoError, setPromoError] = useState('');
   const [validatingPromo, setValidatingPromo] = useState(false);
 
+  // Calculate totals
+  const originalSubtotal = getTotal();
+  const finalTotal = originalSubtotal - discount;
+  const isFreeShipping = originalSubtotal >= 5000;
+  const amountUntilFreeShipping = isFreeShipping ? 0 : 5000 - originalSubtotal;
+
   const {
     register,
     handleSubmit,
@@ -470,7 +476,7 @@ export default function CheckoutClient() {
                   disabled={loading}
                   className="btn-primary w-full py-4 text-base disabled:opacity-50"
                 >
-                  {loading ? 'Оформлення...' : `Оформити замовлення на ${(getTotal() - discount).toLocaleString('uk-UA')} ₴`}
+                  {loading ? 'Оформлення...' : `Оформити замовлення на ${finalTotal.toLocaleString('uk-UA')} ₴`}
                 </button>
 
                 <p className="text-xs sm:text-sm text-muted text-center">
@@ -516,11 +522,19 @@ export default function CheckoutClient() {
               <div className="border-t border-border pt-4 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted">Товари:</span>
-                  <span className="font-medium">{getTotal().toLocaleString('uk-UA')} ₴</span>
+                  <span className="font-medium">{originalSubtotal.toLocaleString('uk-UA')} ₴</span>
                 </div>
+                {discount > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted">Знижка ({appliedPromoCode}):</span>
+                    <span className="font-medium text-green-400">-{discount.toLocaleString('uk-UA')} ₴</span>
+                  </div>
+                )}
                 <div className="flex justify-between text-sm">
                   <span className="text-muted">Доставка:</span>
-                  <span className="font-medium text-purple-400">за тарифами НП</span>
+                  <span className="font-medium text-purple-400">
+                    {isFreeShipping ? 'Безкоштовно 🎉' : 'за тарифами НП'}
+                  </span>
                 </div>
                 {paymentMethod === 'COD' && (
                   <div className="flex justify-between text-sm">
@@ -528,26 +542,26 @@ export default function CheckoutClient() {
                     <span className="font-medium text-orange-400">2% + 20 ₴</span>
                   </div>
                 )}
-                {discount > 0 && (
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted">Знижка ({appliedPromoCode}):</span>
-                    <span className="font-medium text-green-400">-{discount.toLocaleString('uk-UA')} ₴</span>
-                  </div>
-                )}
                 <div className="border-t border-border pt-3 mt-3">
                   <div className="flex justify-between items-center">
                     <span className="text-base font-medium">Разом:</span>
                     <span className="text-2xl font-bold text-purple-400">
-                      {(getTotal() - discount).toLocaleString('uk-UA')} ₴
+                      {finalTotal.toLocaleString('uk-UA')} ₴
                     </span>
                   </div>
                 </div>
               </div>
 
-              {(getTotal() - discount) < 5000 && (
+              {isFreeShipping ? (
+                <div className="mt-4 p-3 bg-green-500/10 rounded-lg border border-green-500/20">
+                  <p className="text-sm text-green-400 leading-relaxed">
+                    🎉 У вас безкоштовна доставка!
+                  </p>
+                </div>
+              ) : (
                 <div className="mt-4 p-3 bg-purple-500/5 rounded-lg border border-purple-500/10">
                   <p className="text-xs sm:text-sm text-[#9ca3af] leading-relaxed">
-                    💡 До безкоштовної доставки ще {(5000 - (getTotal() - discount)).toLocaleString('uk-UA')} ₴
+                    💡 До безкоштовної доставки ще {amountUntilFreeShipping.toLocaleString('uk-UA')} ₴
                   </p>
                 </div>
               )}
@@ -555,7 +569,10 @@ export default function CheckoutClient() {
               <div className="flex items-start gap-2 mt-4 p-3 bg-purple-500/5 rounded-lg border border-purple-500/10">
                 <span className="text-purple-400 text-sm shrink-0 mt-0.5">ⓘ</span>
                 <span className="text-xs text-muted leading-relaxed">
-                  Вартість доставки оплачується окремо при отриманні
+                  {isFreeShipping
+                    ? 'Доставка безкоштовна при замовленні від 5000 ₴'
+                    : 'Вартість доставки оплачується окремо при отриманні'
+                  }
                 </span>
               </div>
             </div>

@@ -3,13 +3,12 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { ShoppingCart, User, Menu, X, Phone, Heart, ChevronDown } from 'lucide-react';
+import { ShoppingCart, User, Menu, X, Phone, Heart } from 'lucide-react';
 import { useCartStore } from '@/lib/store';
 import { useWishlistStore } from '@/lib/wishlist';
 import { useState, useEffect, useRef } from 'react';
 import { getAdminPagePath } from '@/lib/admin-paths';
 import FlyToCartAnimation from '@/components/FlyToCartAnimation';
-import { productsApi } from '@/lib/products-api';
 
 const navLinks = [
   { href: '/', label: 'Головна' },
@@ -30,9 +29,6 @@ export default function Header() {
   const [user, setUser] = useState<any>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [categories, setCategories] = useState<any[]>([]);
-  const [showCategoriesDropdown, setShowCategoriesDropdown] = useState(false);
-  const dropdownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
@@ -44,17 +40,6 @@ export default function Header() {
       setScrolled(window.scrollY > 20);
     };
     window.addEventListener('scroll', handleScroll);
-
-    // Load categories
-    const loadCategories = async () => {
-      try {
-        const response = await productsApi.getCategories();
-        setCategories(response.categories || []);
-      } catch (error) {
-        console.error('Failed to load categories:', error);
-      }
-    };
-    loadCategories();
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
@@ -81,18 +66,6 @@ export default function Header() {
     }
   };
 
-  const handleCategoriesMouseEnter = () => {
-    if (dropdownTimeoutRef.current) {
-      clearTimeout(dropdownTimeoutRef.current);
-    }
-    setShowCategoriesDropdown(true);
-  };
-
-  const handleCategoriesMouseLeave = () => {
-    dropdownTimeoutRef.current = setTimeout(() => {
-      setShowCategoriesDropdown(false);
-    }, 200);
-  };
 
   return (
     <header
@@ -114,48 +87,13 @@ export default function Header() {
           {/* Desktop Navigation */}
           <nav className="hidden lg:flex items-center gap-8">
             {navLinks.map((link) => (
-              link.label === 'Каталог' ? (
-                <div
-                  key={link.href}
-                  className="relative"
-                  onMouseEnter={handleCategoriesMouseEnter}
-                  onMouseLeave={handleCategoriesMouseLeave}
-                >
-                  <Link
-                    href={link.href}
-                    className="text-sm font-light tracking-wide text-white/90 hover:text-purple-400 transition-colors duration-200 flex items-center gap-1"
-                  >
-                    {link.label}
-                    <ChevronDown size={16} className={`transition-transform duration-200 ${showCategoriesDropdown ? 'rotate-180' : ''}`} />
-                  </Link>
-
-                  {showCategoriesDropdown && categories.length > 0 && (
-                    <div
-                      className="absolute top-full left-0 mt-2 w-64 bg-[#18181c] border border-purple-500/20 rounded-xl shadow-2xl shadow-purple-500/10 py-2 animate-fade-in"
-                      onMouseEnter={handleCategoriesMouseEnter}
-                      onMouseLeave={handleCategoriesMouseLeave}
-                    >
-                      {categories.map((category) => (
-                        <Link
-                          key={category.id}
-                          href={`/catalog?category=${category.slug}`}
-                          className="block px-4 py-2.5 text-sm text-white/90 hover:text-purple-400 hover:bg-purple-500/10 transition-colors duration-200"
-                        >
-                          {category.name}
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className="text-sm font-light tracking-wide text-white/90 hover:text-purple-400 transition-colors duration-200"
-                >
-                  {link.label}
-                </Link>
-              )
+              <Link
+                key={link.href}
+                href={link.href}
+                className="text-sm font-light tracking-wide text-white/90 hover:text-purple-400 transition-colors duration-200"
+              >
+                {link.label}
+              </Link>
             ))}
           </nav>
 

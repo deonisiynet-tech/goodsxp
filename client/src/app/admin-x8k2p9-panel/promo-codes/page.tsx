@@ -80,9 +80,18 @@ export default function PromoCodesPage() {
     if (!confirm('Ви впевнені, що хочете видалити цей промокод?')) return;
 
     try {
+      // Get CSRF token from cookies
+      const csrfToken = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrf_token='))
+        ?.split('=')[1];
+
       const response = await fetch(getAdminApiFullPath(`/promo-codes/${id}`), {
         method: 'DELETE',
         credentials: 'include',
+        headers: {
+          'X-CSRF-Token': csrfToken || '',
+        },
       });
 
       if (!response.ok) {
