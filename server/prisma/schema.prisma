@@ -193,10 +193,14 @@ model Order {
   status          OrderStatus   @default(NEW)
   paymentMethod   PaymentMethod @default(COD)
   comment         String?
+  promoCodeId     String?
+  promoCodeValue  String?
+  discount        Decimal?      @db.Decimal(10, 2)
   deletedAt       DateTime?     @db.Timestamptz(6)
   createdAt       DateTime      @default(now()) @db.Timestamptz(6)
   updatedAt       DateTime      @updatedAt @db.Timestamptz(6)
   user            User?         @relation(fields: [userId], references: [id])
+  promoCode       PromoCode?    @relation(fields: [promoCodeId], references: [id], onDelete: SetNull)
   items           OrderItem[]
 
   @@index([status])
@@ -204,6 +208,7 @@ model Order {
   @@index([email])
   @@index([userId])
   @@index([deletedAt])
+  @@index([promoCodeId])
 }
 
 model OrderItem {
@@ -370,4 +375,36 @@ enum LogSource {
   ADMIN_PANEL
   API
   SYSTEM
+}
+
+enum PromoCodeType {
+  PERCENTAGE
+  FIXED
+}
+
+enum ValidityType {
+  DAYS
+  HOURS
+  DATE_RANGE
+}
+
+model PromoCode {
+  id            String        @id @default(uuid())
+  code          String        @unique
+  type          PromoCodeType
+  value         Decimal       @db.Decimal(10, 2)
+  validityType  ValidityType
+  duration      Int?
+  startDate     DateTime?     @db.Timestamptz(6)
+  endDate       DateTime?     @db.Timestamptz(6)
+  maxUsageCount Int?
+  currentUsage  Int           @default(0)
+  isActive      Boolean       @default(true)
+  createdAt     DateTime      @default(now()) @db.Timestamptz(6)
+  updatedAt     DateTime      @updatedAt @db.Timestamptz(6)
+  orders        Order[]
+
+  @@index([code])
+  @@index([isActive])
+  @@index([endDate])
 }

@@ -14,6 +14,7 @@ import {
   X,
   LogOut,
   Home,
+  Tag,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getAdminPagePath, getAdminApiPath, getAdminBasePath } from '@/lib/admin-paths';
@@ -35,6 +36,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     { href: getAdminPagePath(''), icon: Home, label: 'Dashboard' },
     { href: getAdminPagePath('/products'), icon: Package, label: 'Товари' },
     { href: getAdminPagePath('/orders'), icon: ShoppingCart, label: 'Замовлення' },
+    { href: getAdminPagePath('/promo-codes'), icon: Tag, label: 'Промокоди' },
     { href: getAdminPagePath('/users'), icon: Users, label: 'Користувачі' },
     { href: getAdminPagePath('/logs'), icon: FileText, label: 'Логи' },
     { href: getAdminPagePath('/settings'), icon: Settings, label: 'Налаштування' },

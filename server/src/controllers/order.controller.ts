@@ -10,7 +10,7 @@ const adminService = new AdminService();
 export class OrderController {
   async create(req: Request, res: Response, next: NextFunction) {
     try {
-      const { name, phone, email, address, city, warehouse, warehouseAddress, comment, paymentMethod, items } = req.body;
+      const { name, phone, email, address, city, warehouse, warehouseAddress, comment, paymentMethod, items, promoCode } = req.body;
 
       // ✅ Якщо користувач авторизований — прив'язуємо замовлення до його акаунта
       const authReq = req as AuthRequest;
@@ -34,6 +34,7 @@ export class OrderController {
             comment,
             paymentMethod,
             items,
+            promoCode,
           });
           return res.status(201).json(order);
         } catch (err: any) {

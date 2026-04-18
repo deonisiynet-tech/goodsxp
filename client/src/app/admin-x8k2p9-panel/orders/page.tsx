@@ -19,6 +19,8 @@ interface Order {
   totalPrice: number
   status: string
   comment: string | null
+  promoCodeValue?: string | null
+  discount?: number | null
   createdAt: string
   updatedAt: string
   items: {

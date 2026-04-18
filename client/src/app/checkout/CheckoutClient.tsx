@@ -12,7 +12,7 @@ import { useCheckoutStorage, CheckoutData } from '@/hooks/useCheckoutStorage';
 import toast from 'react-hot-toast';
 import Image from 'next/image';
 import { normalizeImageUrl } from '@/lib/image-utils';
-import { ArrowLeft, ShoppingCart, ShieldCheck, User, MapPin, CreditCard } from 'lucide-react';
+import { ArrowLeft, ShoppingCart, ShieldCheck, User, MapPin, CreditCard, Tag, Check, X } from 'lucide-react';
 
 // ===== TYPES =====
 interface City {
@@ -48,6 +48,14 @@ export default function CheckoutClient() {
   const [selectedCity, setSelectedCity] = useState<City | null>(null);
   const [selectedWarehouse, setSelectedWarehouse] = useState<Warehouse | null>(null);
   const [paymentMethod, setPaymentMethod] = useState<'COD' | 'CARD'>('COD');
+
+  // Promo code state
+  const [promoCode, setPromoCode] = useState('');
+  const [promoApplied, setPromoApplied] = useState(false);
+  const [appliedPromoCode, setAppliedPromoCode] = useState('');
+  const [discount, setDiscount] = useState(0);
+  const [promoError, setPromoError] = useState('');
+  const [validatingPromo, setValidatingPromo] = useState(false);
 
   const {
     register,
@@ -93,6 +101,49 @@ export default function CheckoutClient() {
   // Ukrainian phone validation
   const ukrainianPhoneRegex = /^(\+380|380|0)\d{9}$/;
 
+  // Promo code handlers
+  const handleApplyPromoCode = async () => {
+    if (!promoCode.trim()) return;
+
+    setValidatingPromo(true);
+    setPromoError('');
+
+    try {
+      const response = await fetch('/api/promo-codes/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: promoCode,
+          orderTotal: getTotal(),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setPromoError(data.error || 'Промокод недійсний');
+        return;
+      }
+
+      setDiscount(data.discount);
+      setAppliedPromoCode(promoCode);
+      setPromoApplied(true);
+      toast.success(`Промокод застосовано! Знижка: ${data.discount} ₴`);
+    } catch (error) {
+      setPromoError('Помилка перевірки промокоду');
+    } finally {
+      setValidatingPromo(false);
+    }
+  };
+
+  const handleRemovePromoCode = () => {
+    setPromoCode('');
+    setPromoApplied(false);
+    setAppliedPromoCode('');
+    setDiscount(0);
+    setPromoError('');
+  };
+
   const onSubmit = async (data: CheckoutForm) => {
     // Validation
     if (!data.firstName?.trim()) {
@@ -130,6 +181,7 @@ export default function CheckoutClient() {
         warehouseAddress: selectedWarehouse.shortAddress,
         comment: data.comment,
         paymentMethod,
+        promoCode: promoApplied ? appliedPromoCode : null,
         items: items.map((item) => ({
           productId: item.productId,
           quantity: item.quantity,
@@ -345,6 +397,53 @@ export default function CheckoutClient() {
                   </div>
                 </div>
 
+                {/* Section 3.5: Promo Code */}
+                <div className="space-y-4">
+                  <h2 className="text-xl font-medium text-white flex items-center gap-2">
+                    <Tag size={20} className="text-purple-400" />
+                    Промокод
+                  </h2>
+
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={promoCode}
+                      onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                      placeholder="Введіть промокод"
+                      className="input-field flex-1"
+                      disabled={promoApplied}
+                    />
+                    <button
+                      type="button"
+                      onClick={handleApplyPromoCode}
+                      disabled={!promoCode || promoApplied || validatingPromo}
+                      className="btn-secondary px-6 whitespace-nowrap"
+                    >
+                      {validatingPromo ? 'Перевірка...' : promoApplied ? '✓ Застосовано' : 'Застосувати'}
+                    </button>
+                  </div>
+
+                  {promoError && (
+                    <p className="text-red-400 text-sm">{promoError}</p>
+                  )}
+
+                  {promoApplied && discount > 0 && (
+                    <div className="flex items-center gap-2 p-3 bg-green-500/10 rounded-lg border border-green-500/20">
+                      <Check size={16} className="text-green-400" />
+                      <span className="text-sm text-green-400 flex-1">
+                        Промокод "{appliedPromoCode}" застосовано! Знижка: {discount.toLocaleString('uk-UA')} ₴
+                      </span>
+                      <button
+                        type="button"
+                        onClick={handleRemovePromoCode}
+                        className="text-muted hover:text-red-400 transition-colors"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                  )}
+                </div>
+
                 {/* Section 4: Comment */}
                 <div className="space-y-4">
                   <label className="block text-sm font-medium">Коментар до замовлення (необов'язково)</label>
@@ -429,20 +528,26 @@ export default function CheckoutClient() {
                     <span className="font-medium text-orange-400">2% + 20 ₴</span>
                   </div>
                 )}
+                {discount > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted">Знижка ({appliedPromoCode}):</span>
+                    <span className="font-medium text-green-400">-{discount.toLocaleString('uk-UA')} ₴</span>
+                  </div>
+                )}
                 <div className="border-t border-border pt-3 mt-3">
                   <div className="flex justify-between items-center">
                     <span className="text-base font-medium">Разом:</span>
                     <span className="text-2xl font-bold text-purple-400">
-                      {getTotal().toLocaleString('uk-UA')} ₴
+                      {(getTotal() - discount).toLocaleString('uk-UA')} ₴
                     </span>
                   </div>
                 </div>
               </div>
 
-              {getTotal() < 5000 && (
+              {(getTotal() - discount) < 5000 && (
                 <div className="mt-4 p-3 bg-purple-500/5 rounded-lg border border-purple-500/10">
                   <p className="text-xs sm:text-sm text-[#9ca3af] leading-relaxed">
-                    💡 До безкоштовної доставки ще {(5000 - getTotal()).toLocaleString('uk-UA')} ₴
+                    💡 До безкоштовної доставки ще {(5000 - (getTotal() - discount)).toLocaleString('uk-UA')} ₴
                   </p>
                 </div>
               )}

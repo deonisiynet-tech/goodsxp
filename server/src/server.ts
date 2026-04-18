@@ -84,6 +84,7 @@ import specificationRoutes from './routes/specification.routes.js';
 import adminAuthRoutes from './routes/admin.auth.routes.js';
 import novaPoshtaRoutes from './routes/nova-poshta.routes.js';
 import analyticsRoutes from './routes/analytics.routes.js';
+import promoCodeRoutes from './routes/promo-code.routes.js';
 import { errorHandler, notFound } from './middleware/errorHandler.js';
 import { adminRateLimiter, apiRateLimiter, strictRateLimiter } from './middleware/rateLimiter.js';
 import { blockAdminScanning } from './middleware/adminPanelPath.js';
@@ -336,6 +337,7 @@ app.use('/api/reviews', reviewRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/specifications', specificationRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/promo-codes', apiRateLimiter, promoCodeRoutes); // ✅ Rate limited
 // CSRF для адмінських маршрутів (cookie-based auth)
 app.use(`${adminApiPrefix}`, csrfProtection);
 // ✅ Rate limiting для admin CRUD — запобігає спаму

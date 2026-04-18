@@ -33,6 +33,8 @@ interface Order {
   status: string
   paymentMethod?: string | null
   comment?: string | null
+  promoCodeValue?: string | null
+  discount?: number | null
   createdAt: string
   updatedAt: string
   items: OrderItem[]
@@ -116,6 +118,18 @@ export default function OrderModal({ order, onClose, onStatusChange }: OrderModa
                 <p>
                   <span className="text-secondary">Оплата:</span> {getPaymentMethodLabel(order.paymentMethod || 'COD')}
                 </p>
+                {order.promoCodeValue && (
+                  <p>
+                    <span className="text-secondary">Промокод:</span>{' '}
+                    <span className="font-mono font-bold text-green-400">{order.promoCodeValue}</span>
+                  </p>
+                )}
+                {order.discount && Number(order.discount) > 0 && (
+                  <p>
+                    <span className="text-secondary">Знижка:</span>{' '}
+                    <span className="text-green-400">-{Number(order.discount).toLocaleString('uk-UA')} ₴</span>
+                  </p>
+                )}
                 <p>
                   <span className="text-secondary">Сума:</span>{' '}
                   {Number(order.totalPrice).toLocaleString('uk-UA')} ₴

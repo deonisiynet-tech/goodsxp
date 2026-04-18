@@ -25,6 +25,7 @@ export class OrderService {
     comment?: string;
     paymentMethod?: 'COD' | 'CARD';
     items: { productId: string; quantity: number; variantId?: string | null; variantOptions?: Array<{ name: string; value: string }> | null }[];
+    promoCode?: string | null;
   }) {
     const validated = orderSchema.parse(data);
 
@@ -131,6 +132,79 @@ export class OrderService {
         totalProfit += Number(product.margin ?? 0) * item.quantity;
       }
 
+      // Validate and apply promo code if provided
+      let promoCodeId: string | null = null;
+      let promoCodeValue: string | null = null;
+      let discount: number = 0;
+
+      if (data.promoCode) {
+        const promoCode = await tx.promoCode.findUnique({
+          where: { code: data.promoCode.toUpperCase() },
+        });
+
+        if (!promoCode) {
+          throw new AppError('Промокод не знайдено', 400);
+        }
+
+        if (!promoCode.isActive) {
+          throw new AppError('Промокод неактивний', 400);
+        }
+
+        // Check expiration
+        const now = new Date();
+        if (promoCode.validityType === 'DAYS') {
+          const expiryDate = new Date(promoCode.createdAt);
+          expiryDate.setDate(expiryDate.getDate() + (promoCode.duration || 0));
+          if (now > expiryDate) {
+            throw new AppError('Промокод прострочений', 400);
+          }
+        } else if (promoCode.validityType === 'HOURS') {
+          const expiryDate = new Date(promoCode.createdAt);
+          expiryDate.setHours(expiryDate.getHours() + (promoCode.duration || 0));
+          if (now > expiryDate) {
+            throw new AppError('Промокод прострочений', 400);
+          }
+        } else if (promoCode.validityType === 'DATE_RANGE') {
+          if (!promoCode.startDate || !promoCode.endDate) {
+            throw new AppError('Промокод має невірну конфігурацію', 400);
+          }
+          if (now < promoCode.startDate) {
+            throw new AppError('Промокод ще не активний', 400);
+          }
+          if (now > promoCode.endDate) {
+            throw new AppError('Промокод прострочений', 400);
+          }
+        }
+
+        // Check usage limit
+        if (promoCode.maxUsageCount !== null && promoCode.currentUsage >= promoCode.maxUsageCount) {
+          throw new AppError('Промокод вичерпано', 400);
+        }
+
+        // Calculate discount
+        if (promoCode.type === 'PERCENTAGE') {
+          discount = (totalPrice * Number(promoCode.value)) / 100;
+        } else if (promoCode.type === 'FIXED') {
+          discount = Number(promoCode.value);
+        }
+
+        // Ensure discount doesn't exceed total
+        discount = Math.min(discount, totalPrice);
+        discount = Math.round(discount * 100) / 100;
+
+        // Increment usage count
+        await tx.promoCode.update({
+          where: { id: promoCode.id },
+          data: { currentUsage: { increment: 1 } },
+        });
+
+        promoCodeId = promoCode.id;
+        promoCodeValue = promoCode.code;
+      }
+
+      // Apply discount to total price
+      const finalTotalPrice = totalPrice - discount;
+
       // Create order
       const newOrder = await tx.order.create({
         data: {
@@ -144,7 +218,10 @@ export class OrderService {
           warehouseAddress: validated.warehouseAddress,
           comment: validated.comment,
           paymentMethod: validated.paymentMethod || 'COD',
-          totalPrice,
+          totalPrice: finalTotalPrice,
+          promoCodeId,
+          promoCodeValue,
+          discount: discount > 0 ? discount : null,
           items: {
             create: validated.items.map((item) => {
               const product = products.find((p) => p.id === item.productId)!;
