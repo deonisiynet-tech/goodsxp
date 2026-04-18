@@ -1,6 +1,7 @@
 'use client';
 
 import { Edit, Trash2, Eye } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 interface Product {
   id: string;
@@ -20,6 +21,8 @@ interface ProductGridViewProps {
 }
 
 export default function ProductGridView({ products, onEdit, onDelete }: ProductGridViewProps) {
+  const router = useRouter();
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
       {products.map((product) => (
@@ -91,12 +94,7 @@ export default function ProductGridView({ products, onEdit, onDelete }: ProductG
               </span>
               <div className="flex gap-2">
                 <button
-                  onClick={() => {
-                    const previewWindow = window.open(`/catalog/${product.slug}?preview=true`, 'productPreview');
-                    if (previewWindow) {
-                      previewWindow.focus();
-                    }
-                  }}
+                  onClick={() => router.push(`/catalog/${product.slug}?preview=true`)}
                   className="p-2 text-purple-400 hover:bg-purple-500/10 rounded-lg transition-colors"
                   title="Переглянути товар"
                 >
