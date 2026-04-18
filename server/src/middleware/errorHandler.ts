@@ -20,10 +20,17 @@ export const errorHandler = (
   next: NextFunction
 ) => {
   // 🔒 SECURITY: В production не логуємо повну помилку (може містити sensitive data)
+  // Але логуємо достатньо для debugging
   if (process.env.NODE_ENV === 'development') {
     console.error('Error:', err);
   } else {
-    console.error('Error:', err instanceof AppError ? err.message : 'Internal server error');
+    console.error('Error:', {
+      message: err instanceof AppError ? err.message : 'Internal server error',
+      stack: err.stack,
+      url: req.originalUrl,
+      method: req.method,
+      timestamp: new Date().toISOString(),
+    });
   }
 
   if (err instanceof ZodError) {

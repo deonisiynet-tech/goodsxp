@@ -557,9 +557,25 @@ export class ProductService {
         newSlug = `${newSlug}-${Math.random().toString(36).substring(2, 8)}`;
       }
 
-      // ⚠️ DISABLED: ProductSlugRedirect викликав deadlock при множинних update
-      // Редіректи slug не критичні — можна додати пізніше через background job
+      // ✅ Якщо slug змінився — зберігаємо редірект
       if (existing.slug !== newSlug) {
+        try {
+          await prisma.productSlugRedirect.upsert({
+            where: { oldSlug: existing.slug },
+            update: { newSlug },
+            create: {
+              oldSlug: existing.slug,
+              newSlug,
+              productId: id,
+            },
+          });
+        } catch (err: any) {
+          // Таблиця ProductSlugRedirect ще не існує — просто оновлюємо slug
+          if (err.code !== 'P2021' && err.code !== 'P2022') {
+            throw err;
+          }
+        }
+
         updateData.slug = newSlug;
       }
     }
@@ -577,23 +593,12 @@ export class ProductService {
     if (data.stock !== undefined) updateData.stock = data.stock;
     if (data.isActive !== undefined) updateData.isActive = data.isActive;
 
-    try {
-      const result = await prisma.product.update({
-        where: { id },
-        data: updateData,
-      });
+    const result = await prisma.product.update({
+      where: { id },
+      data: updateData,
+    });
 
-      return result;
-    } catch (error: any) {
-      console.error('❌ Product update failed:', {
-        productId: id,
-        error: error.message,
-        code: error.code,
-        meta: error.meta,
-        stack: error.stack,
-      });
-      throw error;
-    }
+    return result;
   }
 
   async delete(id: string) {

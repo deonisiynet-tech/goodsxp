@@ -516,8 +516,14 @@ export class ProductController {
       });
 
       res.json(product);
-    } catch (error) {
-      console.error('Update product error:', error);
+    } catch (error: any) {
+      console.error('❌ Update product controller error:', {
+        productId: req.params.id,
+        userId: req.user?.id,
+        error: error.message,
+        stack: error.stack,
+        body: JSON.stringify(req.body).slice(0, 500),
+      });
       next(error);
     }
   }
