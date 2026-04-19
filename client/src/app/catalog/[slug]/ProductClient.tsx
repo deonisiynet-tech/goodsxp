@@ -138,32 +138,6 @@ export default function ProductClient({ product }: { product: Product }) {
     }
   }, [product, sortBy]);
 
-  // Auto-scroll active thumbnail into view
-  useEffect(() => {
-    if (!thumbnailsRef.current || images.length === 0) return;
-
-    const container = thumbnailsRef.current;
-    const thumbnails = container.children;
-    const activeThumbnail = thumbnails[safeSelectedIndex] as HTMLElement;
-
-    if (activeThumbnail) {
-      const containerRect = container.getBoundingClientRect();
-      const thumbnailRect = activeThumbnail.getBoundingClientRect();
-
-      // Check if thumbnail is outside visible area
-      if (
-        thumbnailRect.left < containerRect.left ||
-        thumbnailRect.right > containerRect.right
-      ) {
-        activeThumbnail.scrollIntoView({
-          behavior: 'smooth',
-          block: 'nearest',
-          inline: 'center'
-        });
-      }
-    }
-  }, [safeSelectedIndex, images.length]);
-
   const loadRelated = async (productId: string) => {
     try {
       const response = await productsApi.getRelated(productId, 4);
@@ -438,6 +412,32 @@ export default function ProductClient({ product }: { product: Product }) {
   const safeSelectedIndex = images.length > 0
     ? Math.min(selectedImage, images.length - 1)
     : 0;
+
+  // Auto-scroll active thumbnail into view
+  useEffect(() => {
+    if (!thumbnailsRef.current || images.length === 0) return;
+
+    const container = thumbnailsRef.current;
+    const thumbnails = container.children;
+    const activeThumbnail = thumbnails[safeSelectedIndex] as HTMLElement;
+
+    if (activeThumbnail) {
+      const containerRect = container.getBoundingClientRect();
+      const thumbnailRect = activeThumbnail.getBoundingClientRect();
+
+      // Check if thumbnail is outside visible area
+      if (
+        thumbnailRect.left < containerRect.left ||
+        thumbnailRect.right > containerRect.right
+      ) {
+        activeThumbnail.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+          inline: 'center'
+        });
+      }
+    }
+  }, [safeSelectedIndex, images.length]);
 
   const scrollThumbnails = (direction: 'left' | 'right') => {
     if (!thumbnailsRef.current) return;
