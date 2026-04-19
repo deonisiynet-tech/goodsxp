@@ -76,6 +76,7 @@ export default function ProductClient({ product }: { product: Product }) {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const reviewPreviewUrlsRef = useRef<string[]>([]);
+  const thumbnailsRef = useRef<HTMLDivElement>(null);
 
   const addItem = useCartStore((state) => state.addItem);
   const setLastAddedPosition = useCartStore((state) => state.setLastAddedPosition);
@@ -136,6 +137,32 @@ export default function ProductClient({ product }: { product: Product }) {
       }
     }
   }, [product, sortBy]);
+
+  // Auto-scroll active thumbnail into view
+  useEffect(() => {
+    if (!thumbnailsRef.current || images.length === 0) return;
+
+    const container = thumbnailsRef.current;
+    const thumbnails = container.children;
+    const activeThumbnail = thumbnails[safeSelectedIndex] as HTMLElement;
+
+    if (activeThumbnail) {
+      const containerRect = container.getBoundingClientRect();
+      const thumbnailRect = activeThumbnail.getBoundingClientRect();
+
+      // Check if thumbnail is outside visible area
+      if (
+        thumbnailRect.left < containerRect.left ||
+        thumbnailRect.right > containerRect.right
+      ) {
+        activeThumbnail.scrollIntoView({
+          behavior: 'smooth',
+          block: 'nearest',
+          inline: 'center'
+        });
+      }
+    }
+  }, [safeSelectedIndex, images.length]);
 
   const loadRelated = async (productId: string) => {
     try {
@@ -412,6 +439,18 @@ export default function ProductClient({ product }: { product: Product }) {
     ? Math.min(selectedImage, images.length - 1)
     : 0;
 
+  const scrollThumbnails = (direction: 'left' | 'right') => {
+    if (!thumbnailsRef.current) return;
+
+    const container = thumbnailsRef.current;
+    const scrollAmount = container.clientWidth * 0.8; // Прокрутка на 80% ширини
+
+    container.scrollBy({
+      left: direction === 'left' ? -scrollAmount : scrollAmount,
+      behavior: 'smooth'
+    });
+  };
+
   const discountPercent = product.discountPrice && product.originalPrice
     ? Math.round((1 - product.discountPrice / product.originalPrice) * 100)
     : 0;
@@ -498,28 +537,53 @@ export default function ProductClient({ product }: { product: Product }) {
               </div>
 
               {images.length > 1 && (
-                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 gap-2">
-                  {images.map((img, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setSelectedImage(idx)}
-                      className={`aspect-square rounded-lg overflow-hidden border-2 transition-all duration-200 relative ${
-                        safeSelectedIndex === idx
-                          ? 'border-[#6366f1] ring-2 ring-[#6366f1]/30 scale-105'
-                          : 'border-[#26262b] hover:border-[#6366f1]/50'
-                      }`}
-                    >
-                      <Image
-                        src={img}
-                        alt={`${product.title} thumbnail ${idx + 1}`}
-                        fill
-                        className="object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).src = 'https://via.placeholder.com/200?text=No+Image';
-                        }}
-                      />
-                    </button>
-                  ))}
+                <div className="relative">
+                  <div
+                    ref={thumbnailsRef}
+                    className="flex gap-2 overflow-x-auto scrollbar-hide snap-x snap-mandatory scroll-smooth"
+                    style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                  >
+                    {images.map((img, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setSelectedImage(idx)}
+                        className={`aspect-square rounded-lg overflow-hidden border-2 transition-all duration-200 relative shrink-0 w-20 h-20 sm:w-24 sm:h-24 snap-start ${
+                          safeSelectedIndex === idx
+                            ? 'border-[#6366f1] ring-2 ring-[#6366f1]/30 scale-105'
+                            : 'border-[#26262b] hover:border-[#6366f1]/50'
+                        }`}
+                      >
+                        <Image
+                          src={img}
+                          alt={`${product.title} thumbnail ${idx + 1}`}
+                          fill
+                          className="object-cover"
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).src = 'https://via.placeholder.com/200?text=No+Image';
+                          }}
+                        />
+                      </button>
+                    ))}
+                  </div>
+
+                  {images.length > 4 && (
+                    <>
+                      <button
+                        onClick={() => scrollThumbnails('left')}
+                        className="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 -translate-x-2 p-2 bg-[#0f0f12]/90 backdrop-blur-sm text-white rounded-full hover:bg-[#1f1f23] transition-colors z-10 shadow-lg"
+                        aria-label="Попередні мініатюри"
+                      >
+                        <ChevronLeft size={20} />
+                      </button>
+                      <button
+                        onClick={() => scrollThumbnails('right')}
+                        className="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 translate-x-2 p-2 bg-[#0f0f12]/90 backdrop-blur-sm text-white rounded-full hover:bg-[#1f1f23] transition-colors z-10 shadow-lg"
+                        aria-label="Наступні мініатюри"
+                      >
+                        <ChevronRight size={20} />
+                      </button>
+                    </>
+                  )}
                 </div>
               )}
             </div>

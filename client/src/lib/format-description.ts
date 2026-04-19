@@ -1,8 +1,11 @@
 /**
- * Format plain text description into safe HTML.
- * Converts line breaks to <br> / <p> tags.
- * Strips dangerous HTML while preserving formatting.
+ * Format description into safe HTML.
+ * Supports both:
+ * 1. Rich HTML from WYSIWYG editor (sanitized)
+ * 2. Plain text with line breaks (legacy format)
  */
+
+import DOMPurify from 'isomorphic-dompurify';
 
 /**
  * Escape HTML entities to prevent XSS.
@@ -17,14 +20,19 @@ function escapeHtml(str: string): string {
 }
 
 /**
+ * Check if text contains HTML tags
+ */
+function isHtml(text: string): boolean {
+  return /<[a-z][\s\S]*>/i.test(text);
+}
+
+/**
  * Convert plain text with line breaks to HTML.
  * - Double newline → <p> paragraph
  * - Single newline → <br>
  * - Bullet points (•, -, *, *) → <li>
  */
-export function formatDescription(text: string): string {
-  if (!text || typeof text !== 'string') return '';
-
+function plainTextToHtml(text: string): string {
   // First escape all HTML entities
   let escaped = escapeHtml(text);
 
@@ -87,4 +95,31 @@ export function formatDescription(text: string): string {
   }
 
   return html;
+}
+
+/**
+ * Main function: format description text into safe HTML
+ */
+export function formatDescription(text: string): string {
+  if (!text || typeof text !== 'string') return '';
+
+  // Check if text already contains HTML tags (from WYSIWYG editor)
+  if (isHtml(text)) {
+    // Sanitize HTML to prevent XSS
+    const clean = DOMPurify.sanitize(text, {
+      ALLOWED_TAGS: [
+        'p', 'br', 'strong', 'b', 'em', 'i', 'u',
+        'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+        'ul', 'ol', 'li',
+        'blockquote', 'pre', 'code',
+        'a', 'span', 'div',
+      ],
+      ALLOWED_ATTR: ['href', 'target', 'rel', 'class'],
+      ALLOW_DATA_ATTR: false,
+    });
+    return clean;
+  }
+
+  // Plain text — convert to HTML
+  return plainTextToHtml(text);
 }

@@ -2,6 +2,7 @@
 
 import { Edit, Trash2, Eye } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { memo } from 'react';
 
 interface Product {
   id: string;
@@ -19,7 +20,7 @@ interface ProductListViewProps {
   onDelete: (id: string) => void;
 }
 
-export default function ProductListView({ products, onEdit, onDelete }: ProductListViewProps) {
+function ProductListView({ products, onEdit, onDelete }: ProductListViewProps) {
   const router = useRouter();
 
   return (
@@ -56,6 +57,8 @@ export default function ProductListView({ products, onEdit, onDelete }: ProductL
                       }
                       alt={product.title}
                       className="w-full h-full object-cover"
+                      loading="lazy"
+                      decoding="async"
                       onError={(e) => {
                         (e.target as HTMLImageElement).src = '/placeholder.jpg';
                       }}
@@ -127,3 +130,5 @@ export default function ProductListView({ products, onEdit, onDelete }: ProductL
     </div>
   );
 }
+
+export default memo(ProductListView);

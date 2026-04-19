@@ -41,7 +41,10 @@ async function fetchProductBySlug(
 
   try {
     const res = await fetch(`${apiUrl}/api/products/${slug}`, {
-      next: { revalidate: 60 },
+      next: {
+        revalidate: 3600, // 1 година замість 60 секунд
+        tags: [`product-${slug}`]
+      },
       redirect: 'manual',
     });
 
@@ -58,10 +61,16 @@ async function fetchProductBySlug(
 
     const [variantsResult, specificationsResult] = await Promise.allSettled([
       fetch(`${apiUrl}/api/products/${product.id}/variants`, {
-        next: { revalidate: 60 },
+        next: {
+          revalidate: 3600,
+          tags: [`product-${slug}-variants`]
+        },
       }),
       fetch(`${apiUrl}/api/products/${product.id}/specifications`, {
-        next: { revalidate: 60 },
+        next: {
+          revalidate: 3600,
+          tags: [`product-${slug}-specs`]
+        },
       }),
     ]);
 

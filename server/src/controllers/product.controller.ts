@@ -8,6 +8,7 @@ import { ActionType } from '@prisma/client';
 import prisma from '../prisma/client.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { sanitizeHtml } from '../utils/validators.js';
+import { revalidateProduct, revalidateCatalog } from '../utils/revalidate.js';
 import path from 'path';
 
 const productService = new ProductService();
@@ -445,6 +446,9 @@ export class ProductController {
         ipAddress: req.ip,
       });
 
+      // Revalidate catalog cache
+      await revalidateCatalog();
+
       res.status(201).json(product);
     } catch (error) {
       console.error('Create product error:', error);
@@ -515,6 +519,10 @@ export class ProductController {
         ipAddress: req.ip,
       });
 
+      // Revalidate product and catalog cache
+      await revalidateProduct(product.slug);
+      await revalidateCatalog();
+
       res.json(product);
     } catch (error: any) {
       console.error('❌ Update product controller error:', {
@@ -542,6 +550,10 @@ export class ProductController {
         details: `Deleted product: ${product.title}`,
         ipAddress: req.ip,
       });
+
+      // Revalidate product and catalog cache
+      await revalidateProduct(product.slug);
+      await revalidateCatalog();
 
       res.json(result);
     } catch (error) {

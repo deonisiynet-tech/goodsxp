@@ -17,7 +17,7 @@ import {
   Tag,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { getAdminPagePath, getAdminApiPath, getAdminBasePath } from '@/lib/admin-paths';
+import { getAdminPagePath, getAdminApiFullPath, getAdminBasePath } from '@/lib/admin-paths';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -55,7 +55,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     try {
       setLoggingOut(true);
 
-      const response = await fetch(getAdminApiPath('/auth/logout'), {
+      const response = await fetch(getAdminApiFullPath('/auth/logout'), {
         method: 'POST',
         credentials: 'include',
       });

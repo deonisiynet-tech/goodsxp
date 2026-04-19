@@ -2,6 +2,7 @@
 
 import { Edit, Trash2, Eye } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { memo } from 'react';
 
 interface Product {
   id: string;
@@ -20,7 +21,7 @@ interface ProductGridViewProps {
   onDelete: (id: string) => void;
 }
 
-export default function ProductGridView({ products, onEdit, onDelete }: ProductGridViewProps) {
+function ProductGridView({ products, onEdit, onDelete }: ProductGridViewProps) {
   const router = useRouter();
 
   return (
@@ -43,6 +44,8 @@ export default function ProductGridView({ products, onEdit, onDelete }: ProductG
               }
               alt={product.title}
               className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+              loading="lazy"
+              decoding="async"
               onError={(e) => {
                 (e.target as HTMLImageElement).src = '/placeholder.jpg';
               }}
@@ -122,3 +125,5 @@ export default function ProductGridView({ products, onEdit, onDelete }: ProductG
     </div>
   );
 }
+
+export default memo(ProductGridView);

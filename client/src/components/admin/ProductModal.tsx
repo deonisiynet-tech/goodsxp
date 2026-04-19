@@ -5,6 +5,7 @@ import { useForm } from 'react-hook-form'
 import { ProductSpecification, productsApi, variantsApi } from '@/lib/products-api'
 import toast from 'react-hot-toast'
 import { X, Upload, Trash2, ChevronLeft, ChevronRight, Plus, Package } from 'lucide-react'
+import RichTextEditor from './RichTextEditor'
 
 interface Category {
   id: string
@@ -48,6 +49,8 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
   const [existingImages, setExistingImages] = useState<string[]>(product?.images || [])
   // New images being uploaded (Cloudinary URLs only - no File objects!)
   const [newImages, setNewImages] = useState<string[]>([])
+  // Rich text description state
+  const [description, setDescription] = useState(product?.description || '')
   const fileInputRef = useRef<HTMLInputElement>(null)
 
   // Categories
@@ -347,7 +350,6 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
   } = useForm({
     defaultValues: {
       title: product?.title || '',
-      description: product?.description || '',
       price: product?.price || 0,
       margin: product?.margin ?? 0,
       originalPrice: product?.originalPrice || 0,
@@ -364,7 +366,6 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
   useEffect(() => {
     reset({
       title: product?.title || '',
-      description: product?.description || '',
       price: product?.price || 0,
       margin: product?.margin ?? 0,
       originalPrice: product?.originalPrice || 0,
@@ -375,6 +376,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
       isPopular: product?.isPopular ?? false,
       categoryId: product?.categoryId || '',
     })
+    setDescription(product?.description || '')
     setExistingImages(product?.images || [])
     setNewImages([])
   }, [product, reset])
@@ -405,7 +407,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
         // Update existing product
         const result = await productsApi.update(product.id, {
           title: data.title,
-          description: data.description,
+          description: description,
           price: data.price,
           margin: data.margin,
           originalPrice: data.originalPrice || null,
@@ -423,7 +425,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
         // Create new product
         const result = await productsApi.create({
           title: data.title,
-          description: data.description,
+          description: description,
           price: data.price,
           margin: data.margin,
           originalPrice: data.originalPrice || null,
@@ -474,6 +476,15 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
       setUploadingImages(true)
 
       console.log(`📁 Selected ${files.length} file(s)`)
+
+      // ✅ Check total images count (existing + new + selected)
+      const totalImagesAfterUpload = existingImages.length + newImages.length + files.length
+      if (totalImagesAfterUpload > 15) {
+        toast.error(`Максимум 15 фото на товар. Зараз: ${existingImages.length + newImages.length}, вибрано: ${files.length}`)
+        setUploadingImages(false)
+        e.target.value = ''
+        return
+      }
 
       // Create FormData with ALL files at once
       const formData = new FormData()
@@ -598,15 +609,12 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
 
           <div>
             <label className="block text-sm font-medium mb-1">Опис *</label>
-            <textarea
-              {...register('description', { required: 'Опис обов\'язковий' })}
-              className="input-field"
-              rows={4}
-              placeholder="Детальний опис товару"
+            <RichTextEditor
+              value={description}
+              onChange={setDescription}
+              placeholder="Детальний опис товару. Використовуйте панель інструментів для форматування."
+              error={!description ? 'Опис обов\'язковий' : undefined}
             />
-            {errors.description && (
-              <p className="text-red-400 text-sm mt-1">{errors.description.message as string}</p>
-            )}
           </div>
 
           <div>
@@ -872,7 +880,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
                   >
                     Обрати файли
                   </button>
-                  <p className="text-xs text-muted mt-2">PNG, JPG до 5MB (можна декілька)</p>
+                  <p className="text-xs text-muted mt-2">PNG, JPG до 10MB (можна декілька, макс. 15 фото)</p>
                 </div>
               )}
             </div>

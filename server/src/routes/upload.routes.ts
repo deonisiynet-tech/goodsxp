@@ -21,6 +21,7 @@ const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'
 // SVG allowed but handled separately (text-based, needs extra validation)
 const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg'];
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+const MAX_FILES_COUNT = 15; // Maximum 15 images per product
 
 /**
  * 🔒 Validate file by magic bytes (file signature) — not just client-supplied MIME.
@@ -159,6 +160,13 @@ router.post('/', async (req, res) => {
       // 🔒 SECURITY: Don't leak internal field names
       return res.status(400).json({
         error: 'Файли не знайдено. Використовуйте formData.append("files", file)',
+      });
+    }
+
+    // ✅ Validate max files count
+    if (files.length > MAX_FILES_COUNT) {
+      return res.status(400).json({
+        error: `Занадто багато файлів. Максимум ${MAX_FILES_COUNT} зображень на товар`,
       });
     }
 

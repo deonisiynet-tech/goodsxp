@@ -1,6 +1,7 @@
 'use client';
 
 import { Search, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
 
 export interface ProductFilters {
   search: string;
@@ -16,6 +17,26 @@ interface ProductFiltersProps {
 }
 
 export default function ProductFiltersComponent({ filters, onChange, categories }: ProductFiltersProps) {
+  const [searchInput, setSearchInput] = useState(filters.search);
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchInput !== filters.search) {
+        onChange({ ...filters, search: searchInput });
+      }
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchInput]);
+
+  // Sync with external filter changes
+  useEffect(() => {
+    if (filters.search !== searchInput) {
+      setSearchInput(filters.search);
+    }
+  }, [filters.search]);
+
   const hasActiveFilters =
     filters.search ||
     filters.status !== 'all' ||
@@ -23,6 +44,7 @@ export default function ProductFiltersComponent({ filters, onChange, categories 
     filters.categoryId;
 
   const clearFilters = () => {
+    setSearchInput('');
     onChange({
       search: '',
       status: 'all',
@@ -53,8 +75,8 @@ export default function ProductFiltersComponent({ filters, onChange, categories 
           <input
             type="text"
             placeholder="Пошук по назві..."
-            value={filters.search}
-            onChange={(e) => onChange({ ...filters, search: e.target.value })}
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="input-field pl-10 text-sm"
           />
         </div>
