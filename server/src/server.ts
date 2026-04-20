@@ -13,6 +13,20 @@ import cookieParser from 'cookie-parser';
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
 // ==================================
+// Build-Time Detection
+// ==================================
+// Detect if we're in build phase to skip runtime operations
+const IS_BUILD_TIME = process.env.NEXT_PHASE === 'phase-production-build' ||
+                      process.env.npm_lifecycle_event === 'build' ||
+                      process.argv.includes('build');
+
+if (IS_BUILD_TIME) {
+  console.log('⏭️ BUILD MODE DETECTED - Skipping server initialization');
+  console.log('📦 This is expected during Docker build phase');
+  process.exit(0);
+}
+
+// ==================================
 // Startup Logging for Railway
 // ==================================
 console.log('='.repeat(60));

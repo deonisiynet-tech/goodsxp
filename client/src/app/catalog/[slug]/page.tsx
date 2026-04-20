@@ -39,14 +39,35 @@ async function fetchProductBySlug(
 ): Promise<{ product: Product | null; redirected?: boolean; newSlug?: string }> {
   const apiUrl = process.env.INTERNAL_API_URL || 'http://localhost:8080';
 
+  // Helper function to add timeout to fetch calls
+  const fetchWithTimeout = async (url: string, options: any = {}, timeout = 5000) => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+    try {
+      const response = await fetch(url, {
+        ...options,
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
+      return response;
+    } catch (error: any) {
+      clearTimeout(timeoutId);
+      if (error.name === 'AbortError') {
+        throw new Error('Request timeout');
+      }
+      throw error;
+    }
+  };
+
   try {
-    const res = await fetch(`${apiUrl}/api/products/${slug}`, {
+    const res = await fetchWithTimeout(`${apiUrl}/api/products/${slug}`, {
       next: {
         revalidate: 3600, // 1 година замість 60 секунд
         tags: [`product-${slug}`]
       },
       redirect: 'manual',
-    });
+    }, 5000);
 
     if (res.status === 301) {
       const data = await res.json();
@@ -60,18 +81,18 @@ async function fetchProductBySlug(
     const product = (await res.json()) as Product;
 
     const [variantsResult, specificationsResult] = await Promise.allSettled([
-      fetch(`${apiUrl}/api/products/${product.id}/variants`, {
+      fetchWithTimeout(`${apiUrl}/api/products/${product.id}/variants`, {
         next: {
           revalidate: 3600,
           tags: [`product-${slug}-variants`]
         },
-      }),
-      fetch(`${apiUrl}/api/products/${product.id}/specifications`, {
+      }, 5000),
+      fetchWithTimeout(`${apiUrl}/api/products/${product.id}/specifications`, {
         next: {
           revalidate: 3600,
           tags: [`product-${slug}-specs`]
         },
-      }),
+      }, 5000),
     ]);
 
     if (variantsResult.status === 'fulfilled' && variantsResult.value.ok) {
@@ -88,7 +109,8 @@ async function fetchProductBySlug(
     }
 
     return { product };
-  } catch {
+  } catch (error) {
+    console.error('Failed to fetch product:', error);
     return { product: null };
   }
 }

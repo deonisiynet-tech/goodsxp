@@ -74,7 +74,13 @@ const nextConfig = {
   // Experimental features for better SSR support
   experimental: {
     optimizePackageImports: ['lucide-react', 'react-hot-toast'],
+    // Reduce memory usage during build
+    workerThreads: false,
+    cpus: 1,
   },
+
+  // Add timeout for static generation to prevent hanging
+  staticPageGenerationTimeout: 60, // 60 seconds max per page
 
   // Fix for styled-jsx - transpile packages
   transpilePackages: ['styled-jsx'],

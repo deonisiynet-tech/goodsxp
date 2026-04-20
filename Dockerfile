@@ -73,10 +73,13 @@ COPY client/ .
 # These configure API URL and output format
 ENV NEXT_PUBLIC_API_URL="/api"
 ENV NODE_ENV=production
+ENV NEXT_BUILD_TIMEOUT=300000
+ENV NEXT_TELEMETRY_DISABLED=1
 
-# Build Next.js application
+# Build Next.js application with timeout protection
 # Creates standalone output in .next/standalone
-RUN npm run build
+# Timeout after 10 minutes to prevent hanging builds
+RUN timeout 600 npm run build || (echo "❌ Build timeout after 10 minutes" && exit 1)
 
 # Verify build artifacts exist
 RUN echo "✅ Client build complete" && \
