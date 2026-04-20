@@ -41,6 +41,7 @@ interface ProductFilters {
   sortOrder?: 'asc' | 'desc';
   category?: string;
   featured?: string;
+  popular?: string;
   minPrice?: number;
   maxPrice?: number;
 }
