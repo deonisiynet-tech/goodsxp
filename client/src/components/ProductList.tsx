@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo, memo } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { productsApi } from '@/lib/products-api';
@@ -34,6 +34,115 @@ interface ProductListProps {
   featured?: boolean;  // ✅ Фільтр хітів-продаж (isFeatured)
 }
 
+// Мемоізований компонент картки товару
+const ProductCard = memo(({ product, onAddToCart }: { product: Product; onAddToCart: (e: React.MouseEvent, product: Product) => void }) => (
+  <Link
+    href={`/catalog/${product.slug}`}
+    className="group card animate-fade-in"
+  >
+    <div className="aspect-square overflow-hidden bg-surfaceLight relative">
+      <img
+        src={normalizeImageUrl(product.imageUrl)}
+        alt={product.title}
+        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+        loading="lazy"
+        decoding="async"
+        onError={(e) => {
+          (e.target as HTMLImageElement).src =
+            'https://via.placeholder.com/500?text=No+Image';
+        }}
+      />
+
+      {/* Badges */}
+      <div className="absolute top-2 left-2 flex flex-col gap-1">
+        {product.isFeatured && (
+          <span className="px-2 py-1 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs sm:text-sm font-bold rounded-md shadow-lg">
+            🔥 Хіт-продаж
+          </span>
+        )}
+        {product.isPopular && (
+          <span className="px-2 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs sm:text-sm font-bold rounded-md shadow-lg">
+            ⭐ Популярний
+          </span>
+        )}
+        {product.discountPrice && product.originalPrice && (
+          <span className="px-2 py-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs sm:text-sm font-bold rounded-md shadow-lg">
+            -{Math.round((1 - product.discountPrice / product.originalPrice) * 100)}%
+          </span>
+        )}
+      </div>
+
+      {product.stock === 0 && (
+        <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
+          <span className="text-sm font-medium">Немає в наявності</span>
+        </div>
+      )}
+    </div>
+    <div className="p-4">
+      <h3 className="font-medium text-base mb-2 line-clamp-2 group-hover:text-secondary transition-colors">
+        {product.title}
+      </h3>
+
+      {/* Rating */}
+      {product.averageRating !== undefined && product.reviewCount !== undefined && (
+        <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-0.5">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <Star
+                key={star}
+                size={14}
+                className={`${
+                  star <= Math.round(product.averageRating!)
+                    ? 'fill-yellow-500 text-yellow-500'
+                    : 'text-gray-600'
+                }`}
+              />
+            ))}
+          </div>
+          <span className="text-xs sm:text-sm text-muted">
+            {product.reviewCount} відгуків
+          </span>
+        </div>
+      )}
+
+      {/* Price with discount */}
+      <div className="mb-3">
+        {product.discountPrice && product.originalPrice ? (
+          <div className="flex items-center gap-2">
+            <span className="text-lg font-bold text-white">
+              {Number(product.discountPrice).toLocaleString('uk-UA')} ₴
+            </span>
+            <span className="text-sm text-muted line-through">
+              {Number(product.originalPrice).toLocaleString('uk-UA')} ₴
+            </span>
+          </div>
+        ) : (
+          <span className="text-lg font-light">
+            {Number(product.price).toLocaleString('uk-UA')} ₴
+          </span>
+        )}
+      </div>
+
+      <div className="flex items-center justify-between">
+        {product.stock > 0 ? (
+          <button
+            onClick={(e) => onAddToCart(e, product)}
+            className="w-full px-4 py-2.5 min-h-[44px] flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 rounded-lg transition-all duration-300 shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 font-medium text-sm"
+            aria-label="Додати до кошика"
+          >
+            <ShoppingCart size={18} strokeWidth={2} />
+            <span>Купити</span>
+          </button>
+        ) : (
+          <span className="text-xs sm:text-sm text-muted">Недоступно</span>
+        )}
+      </div>
+    </div>
+  </Link>
+));
+
+ProductCard.displayName = 'ProductCard';
+
 export default function ProductList({ title = 'Каталог товарів', limit = 20, showAllLink = false, popular = false, featured = false }: ProductListProps) {
   const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
@@ -47,26 +156,13 @@ export default function ProductList({ title = 'Каталог товарів', l
   const loadProducts = async () => {
     try {
       setLoading(true);
-      const response = await productsApi.getAll({ limit });
-      let productsList = response.products || [];
+      // ✅ Передаємо фільтри на сервер замість клієнтської фільтрації
+      const params: Record<string, any> = { limit };
+      if (popular) params.popular = 'true';
+      if (featured) params.featured = 'true';
 
-      // ✅ Фільтрація популярних товарів
-      if (popular) {
-        productsList = productsList.filter((p: Product) => p.isPopular === true);
-        if (productsList.length > limit) {
-          productsList = productsList.slice(0, limit);
-        }
-      }
-
-      // ✅ Фільтрація хітів-продаж (isFeatured)
-      if (featured) {
-        productsList = productsList.filter((p: Product) => p.isFeatured === true);
-        if (productsList.length > limit) {
-          productsList = productsList.slice(0, limit);
-        }
-      }
-
-      setProducts(productsList);
+      const response = await productsApi.getAll(params);
+      setProducts(response.products || []);
     } catch (error) {
       console.error('Failed to load products:', error);
       toast.error('Помилка завантаження товарів');
@@ -99,6 +195,21 @@ export default function ProductList({ title = 'Каталог товарів', l
     toast.success('Товар додано до кошика');
   };
 
+  // Мемоізуємо скелетон для уникнення ререндерів
+  const skeletonItems = useMemo(() =>
+    Array.from({ length: limit > 5 ? 5 : limit }).map((_, i) => (
+      <div key={i} className="animate-pulse">
+        <div className="aspect-square bg-[#1f1f23] rounded-xl mb-4" />
+        <div className="h-4 bg-[#1f1f23] rounded mb-2" />
+        <div className="h-4 bg-[#1f1f23] rounded w-2/3 mb-4" />
+        <div className="flex justify-between">
+          <div className="h-6 bg-[#1f1f23] rounded w-1/3" />
+          <div className="h-8 bg-[#1f1f23] rounded w-8" />
+        </div>
+      </div>
+    )), [limit]
+  );
+
   if (loading) {
     return (
       <section className="py-10 md:py-16 lg:py-24">
@@ -112,17 +223,7 @@ export default function ProductList({ title = 'Каталог товарів', l
             </div>
           )}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-            {Array.from({ length: limit > 5 ? 5 : limit }).map((_, i) => (
-              <div key={i} className="animate-pulse">
-                <div className="aspect-square bg-[#1f1f23] rounded-xl mb-4" />
-                <div className="h-4 bg-[#1f1f23] rounded mb-2" />
-                <div className="h-4 bg-[#1f1f23] rounded w-2/3 mb-4" />
-                <div className="flex justify-between">
-                  <div className="h-6 bg-[#1f1f23] rounded w-1/3" />
-                  <div className="h-8 bg-[#1f1f23] rounded w-8" />
-                </div>
-              </div>
-            ))}
+            {skeletonItems}
           </div>
         </div>
       </section>
@@ -150,108 +251,11 @@ export default function ProductList({ title = 'Каталог товарів', l
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
             {products.map((product) => (
-              <Link
+              <ProductCard
                 key={product.id}
-                href={`/catalog/${product.slug}`}
-                className="group card animate-fade-in"
-              >
-                <div className="aspect-square overflow-hidden bg-surfaceLight relative">
-                  <img
-                    src={normalizeImageUrl(product.imageUrl)}
-                    alt={product.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src =
-                        'https://via.placeholder.com/500?text=No+Image';
-                    }}
-                  />
-
-                  {/* Badges */}
-                  <div className="absolute top-2 left-2 flex flex-col gap-1">
-                    {product.isFeatured && (
-                      <span className="px-2 py-1 bg-gradient-to-r from-orange-500 to-red-500 text-white text-xs sm:text-sm font-bold rounded-md shadow-lg">
-                        🔥 Хіт-продаж
-                      </span>
-                    )}
-                    {product.isPopular && (
-                      <span className="px-2 py-1 bg-gradient-to-r from-purple-500 to-pink-500 text-white text-xs sm:text-sm font-bold rounded-md shadow-lg">
-                        ⭐ Популярний
-                      </span>
-                    )}
-                    {product.discountPrice && product.originalPrice && (
-                      <span className="px-2 py-1 bg-gradient-to-r from-green-500 to-emerald-500 text-white text-xs sm:text-sm font-bold rounded-md shadow-lg">
-                        -{Math.round((1 - product.discountPrice / product.originalPrice) * 100)}%
-                      </span>
-                    )}
-                  </div>
-
-                  {product.stock === 0 && (
-                    <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
-                      <span className="text-sm font-medium">Немає в наявності</span>
-                    </div>
-                  )}
-                </div>
-                <div className="p-4">
-                  <h3 className="font-medium text-base mb-2 line-clamp-2 group-hover:text-secondary transition-colors">
-                    {product.title}
-                  </h3>
-
-                  {/* Rating */}
-                  {product.averageRating !== undefined && product.reviewCount !== undefined && (
-                    <div className="flex items-center gap-2 mb-3">
-                      <div className="flex items-center gap-0.5">
-                        {[1, 2, 3, 4, 5].map((star) => (
-                          <Star
-                            key={star}
-                            size={14}
-                            className={`${
-                              star <= Math.round(product.averageRating!)
-                                ? 'fill-yellow-500 text-yellow-500'
-                                : 'text-gray-600'
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <span className="text-xs sm:text-sm text-muted">
-                        {product.reviewCount} відгуків
-                      </span>
-                    </div>
-                  )}
-
-                  {/* Price with discount */}
-                  <div className="mb-3">
-                    {product.discountPrice && product.originalPrice ? (
-                      <div className="flex items-center gap-2">
-                        <span className="text-lg font-bold text-white">
-                          {Number(product.discountPrice).toLocaleString('uk-UA')} ₴
-                        </span>
-                        <span className="text-sm text-muted line-through">
-                          {Number(product.originalPrice).toLocaleString('uk-UA')} ₴
-                        </span>
-                      </div>
-                    ) : (
-                      <span className="text-lg font-light">
-                        {Number(product.price).toLocaleString('uk-UA')} ₴
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    {product.stock > 0 ? (
-                      <button
-                        onClick={(e) => handleAddToCart(e, product)}
-                        className="w-full px-4 py-2.5 min-h-[44px] flex items-center justify-center gap-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 rounded-lg transition-all duration-300 shadow-lg shadow-purple-500/20 hover:shadow-purple-500/40 font-medium text-sm"
-                        aria-label="Додати до кошика"
-                      >
-                        <ShoppingCart size={18} strokeWidth={2} />
-                        <span>Купити</span>
-                      </button>
-                    ) : (
-                      <span className="text-xs sm:text-sm text-muted">Недоступно</span>
-                    )}
-                  </div>
-                </div>
-              </Link>
+                product={product}
+                onAddToCart={handleAddToCart}
+              />
             ))}
           </div>
         )}

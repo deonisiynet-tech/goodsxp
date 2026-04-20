@@ -76,6 +76,11 @@ model Product {
   @@index([isPopular])
   @@index([categoryId])
   @@index([rating])
+  @@index([price])
+  @@index([isActive, isFeatured])
+  @@index([isActive, isPopular])
+  @@index([isActive, categoryId])
+  @@index([isActive, createdAt])
   slugRedirects ProductSlugRedirect[]
 }
 

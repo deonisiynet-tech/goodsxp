@@ -244,46 +244,50 @@ export class ProductController {
         return res.status(400).json({ error: 'Потрібен масив ID (1-100)' });
       }
 
-      const products = await prisma.product.findMany({
-        where: { id: { in: ids }, isActive: true },
-        select: {
-          id: true,
-          slug: true,
-          title: true,
-          price: true,
-          discountPrice: true,
-          imageUrl: true,
-          stock: true,
-          _count: {
-            select: { variants: true },
+      // ✅ Оптимізація: завантажуємо товари та варіанти одним запитом
+      const [products, variants] = await Promise.all([
+        prisma.product.findMany({
+          where: { id: { in: ids }, isActive: true },
+          select: {
+            id: true,
+            slug: true,
+            title: true,
+            price: true,
+            discountPrice: true,
+            imageUrl: true,
+            stock: true,
+            _count: {
+              select: { variants: true },
+            },
           },
-        },
+        }),
+        prisma.productVariant.findMany({
+          where: { productId: { in: ids } },
+          select: { productId: true, price: true },
+        }),
+      ]);
+
+      // Створюємо map мінімальних цін для кожного товару
+      const minPriceMap = new Map<string, number>();
+      variants.forEach((v) => {
+        const current = minPriceMap.get(v.productId);
+        const price = Number(v.price);
+        if (!current || price < current) {
+          minPriceMap.set(v.productId, price);
+        }
       });
 
-      // Додаємо hasVariants + мінімальну ціну з варіантів
-      const productsWithVariants = await Promise.all(
-        products.map(async (p) => {
-          const hasVariants = p._count.variants > 0;
-          let minPrice = Number(p.price);
-
-          if (hasVariants) {
-            const variants = await prisma.productVariant.findMany({
-              where: { productId: p.id },
-              select: { price: true },
-            });
-            if (variants.length > 0) {
-              minPrice = Math.min(...variants.map((v) => Number(v.price)));
-            }
-          }
-
-          const { _count, ...rest } = p;
-          return {
-            ...rest,
-            hasVariants,
-            minPrice: hasVariants ? minPrice : undefined,
-          };
-        })
-      );
+      // Формуємо результат
+      const productsWithVariants = products.map((p) => {
+        const hasVariants = p._count.variants > 0;
+        const minPrice = hasVariants ? minPriceMap.get(p.id) : undefined;
+        const { _count, ...rest } = p;
+        return {
+          ...rest,
+          hasVariants,
+          minPrice,
+        };
+      });
 
       res.json({ products: productsWithVariants });
     } catch (error) {

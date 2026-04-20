@@ -1,6 +1,7 @@
 import express, { Request, Response } from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
+import compression from 'compression';
 import dotenv from 'dotenv';
 import path from 'path';
 import fs from 'fs';
@@ -268,6 +269,17 @@ app.use((req, res, next) => {
 // Body parsing — 2mb достатньо для e-commerce API
 app.use(express.json({ limit: '2mb' }));
 app.use(express.urlencoded({ extended: true, limit: '2mb' }));
+
+// Compression middleware для gzip стиснення відповідей
+app.use(compression({
+  filter: (req, res) => {
+    if (req.headers['x-no-compression']) {
+      return false;
+    }
+    return compression.filter(req, res);
+  },
+  level: 6, // Баланс між швидкістю та розміром
+}));
 
 // Cookie parsing
 app.use(cookieParser());

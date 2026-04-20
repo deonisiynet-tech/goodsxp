@@ -2,6 +2,7 @@ import prisma from '../prisma/client.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { productSchema, productUpdateSchema, paginationSchema, sanitizeHtmlText } from '../utils/validators.js';
 import { Prisma } from '@prisma/client';
+import { CacheService } from './cache.service.js';
 
 /**
  * Обчислює відсоток знижки
@@ -100,7 +101,11 @@ interface ProductSpecificationInput {
 
 export class ProductService {
   async getAllCategories() {
-    return prisma.category.findMany({
+    // Перевіряємо кеш
+    const cached = await CacheService.getCategories();
+    if (cached) return cached;
+
+    const categories = await prisma.category.findMany({
       where: { parentId: null },
       orderBy: { name: 'asc' },
       include: {
@@ -109,6 +114,10 @@ export class ProductService {
         },
       },
     });
+
+    // Кешуємо результат
+    await CacheService.cacheCategories(categories);
+    return categories;
   }
 
   async getByCategory(categoryId: string, limit: number = 4, excludeId?: string) {
@@ -143,6 +152,15 @@ export class ProductService {
     const validated = paginationSchema.parse(filters);
     const { page, limit, search, sortBy, sortOrder } = validated;
 
+    // Генеруємо ключ кешу
+    const cacheKey = `products:${JSON.stringify({ page, limit, search, sortBy, sortOrder, featured: filters.featured, popular: filters.popular, category: filters.category, minPrice: filters.minPrice, maxPrice: filters.maxPrice })}`;
+
+    // Перевіряємо кеш (тільки якщо немає пошуку - пошук не кешуємо)
+    if (!search) {
+      const cached = await CacheService.get(cacheKey);
+      if (cached) return cached;
+    }
+
     const skip = (page - 1) * limit;
 
     const where: any = {
@@ -154,7 +172,8 @@ export class ProductService {
         ],
       }),
       ...(filters.featured && { isFeatured: true }),
-      ...(!filters.featured && filters.category && { categoryId: filters.category }),
+      ...(filters.popular && { isPopular: true }),
+      ...(!filters.featured && !filters.popular && filters.category && { categoryId: filters.category }),
       ...(filters.minPrice && { price: { gte: filters.minPrice } }),
       ...(filters.maxPrice && { price: { lte: filters.maxPrice } }),
     };
@@ -224,7 +243,7 @@ export class ProductService {
       };
     });
 
-    return {
+    const result = {
       products: productsWithRating.map(withDiscountPercent),
       pagination: {
         page,
@@ -233,6 +252,13 @@ export class ProductService {
         totalPages: Math.ceil(total / limit),
       },
     };
+
+    // Кешуємо результат (тільки якщо немає пошуку)
+    if (!search) {
+      await CacheService.cacheProducts(cacheKey, result);
+    }
+
+    return result;
   }
 
   async getById(id: string) {
@@ -521,6 +547,9 @@ export class ProductService {
       },
     });
 
+    // Інвалідуємо кеш
+    await CacheService.invalidateCatalog();
+
     return result;
   }
 
@@ -583,6 +612,9 @@ export class ProductService {
         data: updateData,
       });
 
+      // Інвалідуємо кеш
+      await CacheService.invalidateProduct(id, existing.slug);
+
       return result;
     } catch (error: any) {
       console.error('❌ Product update failed:', {
@@ -603,6 +635,10 @@ export class ProductService {
     }
 
     await prisma.product.delete({ where: { id } });
+
+    // Інвалідуємо кеш
+    await CacheService.invalidateProduct(id, existing.slug);
+
     return { message: 'Товар видалено' };
   }
 
