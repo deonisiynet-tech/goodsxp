@@ -22,7 +22,7 @@ export const uploadMiddleware = fileUpload({
   useTempFiles: true,
   tempFileDir: os.tmpdir(), // Крос-платформний тимчасовий каталог
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
+    fileSize: 15 * 1024 * 1024, // 15MB limit per file
   },
 });
 
@@ -38,8 +38,9 @@ export const uploadToCloudinary = async (filePath: string): Promise<string> => {
         {
           folder: 'goodsxp-products',
           transformation: [
-            { width: 800, height: 800, crop: 'limit' },
+            { width: 1200, height: 1200, crop: 'limit' },
             { quality: 'auto:good' },
+            { fetch_format: 'auto' }, // Auto-convert to WebP when supported
           ],
         },
         (error, result) => {

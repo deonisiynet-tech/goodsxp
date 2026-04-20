@@ -20,8 +20,9 @@ cloudinary.config({
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
 // SVG allowed but handled separately (text-based, needs extra validation)
 const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg'];
-const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
-const MAX_FILES_COUNT = 15; // Maximum 15 images per product
+const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB per file
+const MAX_FILES_COUNT = 20; // Maximum 20 images per product
+const MAX_TOTAL_SIZE = 50 * 1024 * 1024; // 50MB total per upload request
 
 /**
  * 🔒 Validate file by magic bytes (file signature) — not just client-supplied MIME.
@@ -126,32 +127,41 @@ router.post('/', async (req, res) => {
     }> = [];
 
     const fieldNames = ['files', 'file', 'image', 'images'];
+    const fileValidationErrors: string[] = [];
 
     for (const fieldName of fieldNames) {
       const fieldFiles = req.files?.[fieldName];
       if (fieldFiles) {
         const fileArray = Array.isArray(fieldFiles) ? fieldFiles : [fieldFiles];
         for (const f of fileArray as any[]) {
+          const fileName = f.name || `upload_${Date.now()}`;
+
           // ✅ Validate MIME type (client-supplied, additional check)
           if (!ALLOWED_MIME_TYPES.includes(f.mimetype) && f.mimetype !== 'image/svg+xml') {
-            return res.status(400).json({
-              error: `Непідтримуваний тип файлу: ${f.mimetype}. Дозволені: JPEG, PNG, WebP, GIF, SVG`,
-            });
+            fileValidationErrors.push(`${fileName}: непідтримуваний тип ${f.mimetype}. Дозволені: JPG, JPEG, PNG, WebP`);
+            continue;
           }
           // ✅ Validate file size
           if (f.size > MAX_FILE_SIZE) {
-            return res.status(400).json({
-              error: `Файл занадто великий: ${(f.size / 1024 / 1024).toFixed(1)}MB (макс. ${(MAX_FILE_SIZE / 1024 / 1024)}MB)`,
-            });
+            fileValidationErrors.push(`${fileName}: файл занадто великий (${(f.size / 1024 / 1024).toFixed(1)}MB, макс. ${(MAX_FILE_SIZE / 1024 / 1024)}MB)`);
+            continue;
           }
           files.push({
-            name: f.name || `upload_${Date.now()}`,
+            name: fileName,
             tempFilePath: f.tempFilePath,
             mimetype: f.mimetype,
             size: f.size,
           });
         }
       }
+    }
+
+    // Return validation errors if any files were rejected
+    if (fileValidationErrors.length > 0 && files.length === 0) {
+      return res.status(400).json({
+        error: 'Жоден файл не пройшов перевірку',
+        details: fileValidationErrors,
+      });
     }
 
     // Validate files
@@ -170,7 +180,15 @@ router.post('/', async (req, res) => {
       });
     }
 
-    console.log(`✅ Processing ${files.length} file(s)...`);
+    // ✅ Validate total upload size
+    const totalSize = files.reduce((sum, f) => sum + f.size, 0);
+    if (totalSize > MAX_TOTAL_SIZE) {
+      return res.status(400).json({
+        error: `Загальний розмір файлів занадто великий: ${(totalSize / 1024 / 1024).toFixed(1)}MB (макс. ${(MAX_TOTAL_SIZE / 1024 / 1024)}MB)`,
+      });
+    }
+
+    console.log(`✅ Processing ${files.length} file(s), total size: ${(totalSize / 1024 / 1024).toFixed(2)}MB...`);
 
     // Upload all files to Cloudinary
     const uploadResults: Array<{
@@ -202,7 +220,7 @@ router.post('/', async (req, res) => {
           throw new Error(`Тимчасовий файл не знайдено`);
         }
 
-        // Upload to Cloudinary
+        // Upload to Cloudinary with optimization
         const result = await new Promise<any>((resolve, reject) => {
           cloudinary.uploader.upload(
             file.tempFilePath,
@@ -213,7 +231,7 @@ router.post('/', async (req, res) => {
               transformation: [
                 { width: 1200, height: 1200, crop: 'limit' },
                 { quality: 'auto:good' },
-                { format: 'auto' },
+                { fetch_format: 'auto' }, // Auto-convert to WebP when supported
               ],
             },
             (error, result) => {
@@ -256,8 +274,8 @@ router.post('/', async (req, res) => {
 
     console.log(`🎉 Upload completed: ${uploadResults.length} success, ${errors.length} errors`);
 
-    // Return response
-    res.json({
+    // Return response with detailed error information
+    const response: any = {
       success: uploadResults.length > 0,
       urls: uploadResults.map(r => r.url),
       files: uploadResults.map(r => ({
@@ -266,8 +284,22 @@ router.post('/', async (req, res) => {
         originalName: r.originalName,
       })),
       count: uploadResults.length,
-      errors: errors.length > 0 ? errors : undefined,
-    });
+      total: files.length,
+      message: `Успішно завантажено ${uploadResults.length} з ${files.length} зображень`,
+    };
+
+    // Add validation errors if any
+    if (fileValidationErrors.length > 0) {
+      response.validationErrors = fileValidationErrors;
+    }
+
+    // Add upload errors if any
+    if (errors.length > 0) {
+      response.uploadErrors = errors;
+      response.message += `. Помилки: ${errors.length}`;
+    }
+
+    res.json(response);
 
   } catch (error: any) {
     console.error('❌ Upload error:', error.message);
