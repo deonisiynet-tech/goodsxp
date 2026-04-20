@@ -5,6 +5,10 @@ import Header from '@/components/Header';
 import Footer from '@/components/Footer';
 import ProductList from '@/components/ProductList';
 
+// Force dynamic rendering - ProductList робить API запити
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://goodsxp.store';
 
 export const metadata: Metadata = {
