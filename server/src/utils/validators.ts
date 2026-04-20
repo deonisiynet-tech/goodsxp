@@ -63,28 +63,46 @@ function sanitizeHtmlText(input: string): string {
 }
 
 /**
- * Санітизація опису товару — зберігає переноси рядків, видаляє HTML.
- * Форматування застосовується на фронтенді через formatDescription().
+ * Санітизація опису товару — дозволяє безпечні HTML теги для форматування.
+ * Підтримує жирний текст, курсив, списки, заголовки тощо.
  */
 function sanitizeProductDescription(input: string): string {
   if (!input || typeof input !== 'string') return '';
 
-  // Remove HTML tags but preserve line breaks
+  // Список дозволених тегів для форматування
+  const allowedTags = [
+    'p', 'br', 'strong', 'b', 'em', 'i', 'u',
+    'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
+    'ul', 'ol', 'li',
+    'blockquote', 'pre', 'code',
+  ];
+
+  // Створюємо regex для дозволених тегів
+  const allowedPattern = allowedTags.join('|');
+  const allowedRegex = new RegExp(`</?(?:${allowedPattern})(?:\\s[^>]*)?>`, 'gi');
+
+  // Видаляємо всі теги, крім дозволених
   let result = input;
+
+  // Спочатку зберігаємо дозволені теги, замінюючи їх на плейсхолдери
+  const savedTags: string[] = [];
+  result = result.replace(allowedRegex, (match) => {
+    const index = savedTags.length;
+    savedTags.push(match);
+    return `__TAG_${index}__`;
+  });
+
+  // Видаляємо всі інші HTML теги (потенційно небезпечні)
   for (let i = 0; i < 10; i++) {
     const prev = result;
     result = result.replace(/<[^>]*>/g, '');
     if (result === prev) break;
   }
 
-  // Convert <br> and </p> to actual newlines before stripping
-  result = result
-    .replace(/<br\s*\/?>/gi, '\n')
-    .replace(/<\/p>/gi, '\n\n')
-    .replace(/<p[^>]*>/gi, '');
-
-  // Strip any remaining tags
-  result = result.replace(/<[^>]*>/g, '');
+  // Повертаємо дозволені теги назад
+  savedTags.forEach((tag, index) => {
+    result = result.replace(`__TAG_${index}__`, tag);
+  });
 
   return result.trim();
 }

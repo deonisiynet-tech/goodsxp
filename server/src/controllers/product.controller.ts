@@ -388,7 +388,11 @@ export class ProductController {
 
       // ✅ Санітизація HTML для запобігання XSS
       if (title && typeof title === 'string') title = sanitizeHtml(title);
-      if (description && typeof description === 'string') description = sanitizeHtml(description);
+      if (description && typeof description === 'string') {
+        // Для опису використовуємо sanitizeProductDescription, який дозволяє безпечні HTML теги
+        const { sanitizeProductDescription } = await import('../utils/validators.js');
+        description = sanitizeProductDescription(description);
+      }
 
       let imageUrl: string | undefined = undefined;
       let imagesArray: string[] = [];
@@ -463,7 +467,11 @@ export class ProductController {
 
       // ✅ Санітизація HTML для запобігання XSS
       if (title && typeof title === 'string') title = sanitizeHtml(title);
-      if (description && typeof description === 'string') description = sanitizeHtml(description);
+      if (description && typeof description === 'string') {
+        // Для опису використовуємо sanitizeProductDescription, який дозволяє безпечні HTML теги
+        const { sanitizeProductDescription } = await import('../utils/validators.js');
+        description = sanitizeProductDescription(description);
+      }
 
       const updateData: any = {};
       if (title !== undefined) updateData.title = title;
