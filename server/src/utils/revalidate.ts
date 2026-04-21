@@ -10,7 +10,7 @@ export async function revalidateProduct(slug: string) {
   }
 
   try {
-    await axios.post(`${FRONTEND_URL}/api/revalidate`, {
+    await axios.post(`${FRONTEND_URL}/_revalidate`, {
       path: `/catalog/${slug}`,
       secret: REVALIDATION_SECRET,
     }, {
@@ -29,7 +29,7 @@ export async function revalidateCatalog() {
   }
 
   try {
-    await axios.post(`${FRONTEND_URL}/api/revalidate`, {
+    await axios.post(`${FRONTEND_URL}/_revalidate`, {
       path: '/catalog',
       secret: REVALIDATION_SECRET,
     }, {
