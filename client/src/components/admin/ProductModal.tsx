@@ -49,6 +49,8 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
   const [existingImages, setExistingImages] = useState<string[]>(product?.images || [])
   // New images being uploaded (Cloudinary URLs only - no File objects!)
   const [newImages, setNewImages] = useState<string[]>([])
+  // Image variant assignments: { imageUrl: variantValue | null }
+  const [imageVariants, setImageVariants] = useState<Record<string, string | null>>({})
   // Rich text description state
   const [description, setDescription] = useState(product?.description || '')
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -452,6 +454,22 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
         // Don't throw - product is already saved
       }
 
+      // Save image-variant assignments
+      try {
+        for (const imageUrl of allImageUrls) {
+          const variantValue = imageVariants[imageUrl] || null;
+          await fetch(`/api/product-images/${savedProductId}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ imageUrl, variantValue }),
+          });
+        }
+        console.log('✅ Image variants synced successfully')
+      } catch (imgError: any) {
+        console.error('❌ Image variants sync error:', imgError)
+        // Don't throw - product is already saved
+      }
+
       onClose()
     } catch (error: any) {
       console.error('❌ Submission error:', error)
@@ -788,15 +806,38 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
                       const isUploading = uploadingImages && isNew
 
                       return (
-                        <div key={index} className="relative group aspect-square rounded-xl overflow-hidden bg-surfaceLight border border-border">
-                          <img
-                            src={img}
-                            alt={`Image ${index + 1}`}
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = 'https://via.placeholder.com/500?text=No+Image'
-                            }}
-                          />
+                        <div key={index} className="relative group rounded-xl overflow-hidden bg-surfaceLight border border-border">
+                          <div className="aspect-square">
+                            <img
+                              src={img}
+                              alt={`Image ${index + 1}`}
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                (e.target as HTMLImageElement).src = 'https://via.placeholder.com/500?text=No+Image'
+                              }}
+                            />
+                          </div>
+
+                          {/* Variant selector dropdown */}
+                          <div className="p-2 bg-surface border-t border-border">
+                            <select
+                              value={imageVariants[img] || ''}
+                              onChange={(e) => {
+                                const value = e.target.value === '' ? null : e.target.value;
+                                setImageVariants(prev => ({ ...prev, [img]: value }));
+                              }}
+                              className="w-full text-xs bg-surfaceLight border border-border rounded px-2 py-1 text-white"
+                            >
+                              <option value="">Для всіх варіантів</option>
+                              {variantOptions.map((option) =>
+                                (option.values || []).map((val: any) => (
+                                  <option key={val.id} value={val.value}>
+                                    {option.name}: {val.value}
+                                  </option>
+                                ))
+                              )}
+                            </select>
+                          </div>
 
                           {/* Uploading indicator */}
                           {isUploading && (

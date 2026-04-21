@@ -49,6 +49,8 @@ export default function ProductClient({ product }: { product: Product }) {
 
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
+  const [productImages, setProductImages] = useState<any[]>([]);
+  const [filteredImages, setFilteredImages] = useState<string[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(true);
   const [showReviewForm, setShowReviewForm] = useState(false);
@@ -111,8 +113,6 @@ export default function ProductClient({ product }: { product: Product }) {
       ...prev,
       [optionId]: prev[optionId] === valueId ? '' : valueId,
     }));
-    // Reset image to main when options change
-    setSelectedImage(0);
   };
 
   // Effective price & stock
@@ -125,6 +125,7 @@ export default function ProductClient({ product }: { product: Product }) {
   useEffect(() => {
     loadReviews(product.slug);
     loadRelated(product.id);
+    loadProductImages(product.id);
 
     // Check if current user is admin
     if (typeof window !== 'undefined') {
@@ -137,6 +138,41 @@ export default function ProductClient({ product }: { product: Product }) {
       }
     }
   }, [product, sortBy]);
+
+  // Filter images when variant changes
+  useEffect(() => {
+    if (productImages.length === 0) {
+      // Fallback to product.images if no ProductImage records
+      setFilteredImages(product.images || []);
+      return;
+    }
+
+    // Get selected variant value (e.g., "black", "white")
+    const selectedVariantValue = selectedVariant
+      ? (selectedVariant.options as VariantOption[]).map(o => o.value).join('-')
+      : null;
+
+    // Filter images: show universal (variantValue=null) + variant-specific
+    const filtered = productImages
+      .filter(img => !img.variantValue || img.variantValue === selectedVariantValue)
+      .map(img => img.imageUrl);
+
+    setFilteredImages(filtered.length > 0 ? filtered : product.images || []);
+    setSelectedImage(0); // Reset to first image
+  }, [selectedVariant, productImages, product.images]);
+
+  const loadProductImages = async (productId: string) => {
+    try {
+      const response = await fetch(`/api/product-images/${productId}`);
+      const data = await response.json();
+      if (data.success && data.images) {
+        setProductImages(data.images);
+      }
+    } catch {
+      // Fallback to product.images
+      setProductImages([]);
+    }
+  };
 
   const loadRelated = async (productId: string) => {
     try {
@@ -385,9 +421,9 @@ export default function ProductClient({ product }: { product: Product }) {
     return imageUrls;
   };
 
-  // Effective image — variant image or product images
-  const effectiveImage = selectedVariant?.image
-    ? [normalizeImageUrl(selectedVariant.image)]
+  // Effective image — use filtered images based on selected variant
+  const effectiveImage = filteredImages.length > 0
+    ? filteredImages.map(normalizeImageUrl).filter(Boolean)
     : getImageList(product);
 
   const renderStars = (rating: number, size: number = 16) => {
