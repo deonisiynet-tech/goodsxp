@@ -6,6 +6,7 @@ import path from 'path';
 import os from 'os';
 import { v4 as uuidv4 } from 'uuid';
 import { LoggerService } from '../services/logger.service.js';
+import sharp from 'sharp';
 
 const logger = new LoggerService();
 
@@ -26,21 +27,53 @@ export const uploadMiddleware = fileUpload({
   },
 });
 
+/**
+ * Конвертує та оптимізує зображення через Sharp
+ * Приймає будь-який формат (JPEG, PNG, WebP, HEIC тощо)
+ * Повертає оптимізоване JPEG або WebP
+ */
+export const optimizeImage = async (inputPath: string): Promise<string> => {
+  const outputPath = `${inputPath}_optimized.jpg`;
+
+  try {
+    await sharp(inputPath)
+      .resize(2000, 2000, {
+        fit: 'inside',
+        withoutEnlargement: true
+      })
+      .jpeg({ quality: 85, progressive: true })
+      .toFile(outputPath);
+
+    return outputPath;
+  } catch (error) {
+    logger.error('Image optimization failed', {
+      message: 'Sharp optimization failed',
+      source: 'SYSTEM' as any,
+      metadata: { error: error instanceof Error ? error.message : String(error) },
+    });
+    throw new AppError('Помилка оптимізації зображення', 500);
+  }
+};
+
 export const uploadToCloudinary = async (filePath: string): Promise<string> => {
   if (!process.env.CLOUDINARY_CLOUD_NAME) {
     return '';
   }
 
+  let optimizedPath: string | null = null;
+
   try {
+    // Оптимізуємо зображення перед завантаженням
+    optimizedPath = await optimizeImage(filePath);
+
     const result = await new Promise<any>((resolve, reject) => {
       cloudinary.uploader.upload(
-        filePath,
+        optimizedPath!,
         {
           folder: 'goodsxp-products',
           transformation: [
-            { width: 1200, height: 1200, crop: 'limit' },
             { quality: 'auto:good' },
-            { fetch_format: 'auto' }, // Auto-convert to WebP when supported
+            { fetch_format: 'auto' },
           ],
         },
         (error, result) => {
@@ -58,83 +91,75 @@ export const uploadToCloudinary = async (filePath: string): Promise<string> => {
       metadata: { error: error instanceof Error ? error.message : String(error) },
     });
     return '';
+  } finally {
+    // Видаляємо оптимізований файл
+    if (optimizedPath && fs.existsSync(optimizedPath)) {
+      try {
+        fs.unlinkSync(optimizedPath);
+      } catch (e) {
+        // Ігноруємо помилки видалення
+      }
+    }
   }
 };
 
 export const saveImageLocally = async (file: any): Promise<string> => {
   const uploadsDir = path.join(process.cwd(), 'uploads');
 
-  // Create uploads directory if it doesn't exist
   if (!fs.existsSync(uploadsDir)) {
     fs.mkdirSync(uploadsDir, { recursive: true });
   }
 
-  // 🔒 SECURITY: Only allow safe image extensions — never .js, .php, .html etc.
-  const ext = path.extname(file.name).toLowerCase();
-  const ALLOWED_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.svg'];
-  if (!ALLOWED_EXTENSIONS.includes(ext)) {
-    throw new AppError('Непідтримуваний тип файлу', 400);
-  }
-
-  // 🔒 Use UUID + safe extension (ignore original filename to prevent path traversal)
-  const fileName = `${uuidv4()}${ext}`;
+  const fileName = `${uuidv4()}.jpg`;
   const filePath = path.join(uploadsDir, fileName);
 
-  // 🔒 Validate magic bytes before saving locally
-  const magicCheck = validateFileMagic(file.tempFilePath, file.name);
-  if (!magicCheck.valid) {
-    throw new AppError(magicCheck.error || 'Файл не пройшов перевірку', 400);
-  }
+  let optimizedPath: string | null = null;
 
-  return new Promise((resolve, reject) => {
-    file.mv(filePath, (err: any) => {
-      if (err) reject(err);
-      else resolve(`/uploads/${fileName}`);
-    });
-  });
+  try {
+    // Оптимізуємо зображення
+    optimizedPath = await optimizeImage(file.tempFilePath);
+
+    // Копіюємо оптимізоване зображення
+    fs.copyFileSync(optimizedPath, filePath);
+
+    return `/uploads/${fileName}`;
+  } finally {
+    // Видаляємо оптимізований тимчасовий файл
+    if (optimizedPath && fs.existsSync(optimizedPath)) {
+      try {
+        fs.unlinkSync(optimizedPath);
+      } catch (e) {
+        // Ігноруємо помилки
+      }
+    }
+  }
 };
 
 /**
- * 🔒 Magic bytes validator — reused from upload.routes.ts
+ * Перевіряє чи файл є зображенням через Sharp
+ * Sharp автоматично розпізнає всі підтримувані формати
  */
-function validateFileMagic(filePath: string, fileName: string): { valid: boolean; error?: string } {
+export const validateImageFile = async (filePath: string): Promise<{ valid: boolean; error?: string }> => {
   try {
     if (!filePath || !fs.existsSync(filePath)) {
       return { valid: false, error: 'Файл не знайдено' };
     }
 
-    const buffer = Buffer.alloc(16);
-    const fd = fs.openSync(filePath, 'r');
-    fs.readSync(fd, buffer, 0, 16, 0);
-    fs.closeSync(fd);
+    // Sharp автоматично перевірить чи це валідне зображення
+    const metadata = await sharp(filePath).metadata();
 
-    const ext = path.extname(fileName).toLowerCase();
-
-    if (ext === '.jpg' || ext === '.jpeg') {
-      if (buffer[0] !== 0xFF || buffer[1] !== 0xD8 || buffer[2] !== 0xFF) {
-        return { valid: false, error: 'Файл не є дійсним JPEG зображенням' };
-      }
-    } else if (ext === '.png') {
-      if (buffer[0] !== 0x89 || buffer[1] !== 0x50 || buffer[2] !== 0x4E || buffer[3] !== 0x47) {
-        return { valid: false, error: 'Файл не є дійсним PNG зображенням' };
-      }
-    } else if (ext === '.webp') {
-      const riff = buffer.toString('ascii', 0, 4);
-      const webp = buffer.toString('ascii', 8, 12);
-      if (riff !== 'RIFF' || webp !== 'WEBP') {
-        return { valid: false, error: 'Файл не є дійсним WebP зображенням' };
-      }
-    } else if (ext === '.gif') {
-      if (buffer[0] !== 0x47 || buffer[1] !== 0x49 || buffer[2] !== 0x46 || buffer[3] !== 0x38) {
-        return { valid: false, error: 'Файл не є дійсним GIF зображенням' };
-      }
+    if (!metadata.format) {
+      return { valid: false, error: 'Файл не є зображенням' };
     }
 
     return { valid: true };
-  } catch {
-    return { valid: false, error: 'Помилка перевірки файлу' };
+  } catch (error) {
+    return {
+      valid: false,
+      error: 'Файл не є валідним зображенням або формат не підтримується'
+    };
   }
-}
+};
 
 export const processImageUpload = async (file: any): Promise<string> => {
   if (!file) return '';
