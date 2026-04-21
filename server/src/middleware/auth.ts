@@ -75,8 +75,8 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
     // Step 1: Try Bearer token
     if (bearerToken) {
       decoded = tryVerify(bearerToken);
-      if (!decoded) {
-        console.warn(`⚠️ Auth: JWT Bearer token invalid, trying cookie fallback...`);
+      if (!decoded && process.env.NODE_ENV !== 'production') {
+        console.debug(`Auth: JWT Bearer token invalid, trying cookie fallback...`);
       }
     }
 
