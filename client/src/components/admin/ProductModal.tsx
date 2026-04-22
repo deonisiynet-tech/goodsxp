@@ -601,18 +601,18 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
   }
 
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4 overflow-y-auto">
-      <div className="bg-background border border-border max-w-4xl w-full my-8 rounded-2xl max-h-[90vh] overflow-y-auto">
-        <div className="flex justify-between items-center p-6 border-b border-border sticky top-0 bg-background z-10">
-          <h2 className="text-2xl font-light">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4 overflow-y-auto">
+      <div className="bg-background border border-border max-w-4xl w-full my-4 sm:my-8 rounded-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto">
+        <div className="flex justify-between items-center p-4 sm:p-6 border-b border-border sticky top-0 bg-background z-10">
+          <h2 className="text-xl sm:text-2xl font-light">
             {product ? 'Редагувати товар' : 'Новий товар'}
           </h2>
-          <button onClick={onClose} className="text-muted hover:text-primary transition-colors">
+          <button onClick={onClose} className="text-muted hover:text-primary transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center">
             <X size={24} />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="p-6 space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="p-4 sm:p-6 space-y-4">
           <div>
             <label className="block text-sm font-medium mb-1">Назва *</label>
             <input
@@ -637,7 +637,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
 
           <div>
             <h3 className="text-sm font-semibold text-white mb-3">💰 Ціноутворення</h3>
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Ціна продажу *</label>
                 <input
@@ -696,7 +696,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
           {/* Margin Block — окремий блок, не змішаний з цінами */}
           <div className="p-4 rounded-xl border border-green-500/20 bg-green-500/5">
             <h3 className="text-sm font-semibold text-green-400 mb-3">📊 Прибуток (маржа)</h3>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-medium mb-1">Маржа з 1 одиниці (₴)</label>
                 <input
@@ -725,7 +725,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
           </div>
 
           {/* Badges */}
-          <div className="grid grid-cols-2 gap-4 mt-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
             <label className="flex items-center gap-3 p-4 rounded-xl border border-border hover:border-purple-500/50 cursor-pointer transition-colors bg-surface/50">
               <input
                 type="checkbox"
@@ -800,7 +800,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
                   <p className="text-sm text-muted mb-4">
                     Перший елемент буде основним зображенням. Перетягуйте для зміни порядку.
                   </p>
-                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                     {allImages.map((img, index) => {
                       const isNew = index >= existingImages.length
                       const isUploading = uploadingImages && isNew
@@ -954,7 +954,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
                 {specifications.map((specification, index) => (
                   <div
                     key={specification.id || `specification-${index}`}
-                    className="grid gap-3 rounded-lg border border-border bg-[#1f1f23] p-3 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
+                    className="grid gap-3 rounded-lg border border-border bg-[#1f1f23] p-3 grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
                   >
                     <input
                       value={specification.key}
@@ -1170,7 +1170,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
             </label>
           </div>
 
-          <div className="flex gap-4 pt-4 border-t border-border">
+          <div className="flex flex-col-reverse sm:flex-row gap-4 pt-4 border-t border-border">
             <button type="button" onClick={onClose} className="btn-secondary flex-1 py-3">
               Скасувати
             </button>

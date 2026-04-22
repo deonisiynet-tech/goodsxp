@@ -189,9 +189,16 @@
 }
 
 /* Product description formatting */
+.description-content {
+  white-space: pre-line; /* ✅ Preserve line breaks and wrap text */
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
 .description-content p {
   margin-bottom: 0.75rem;
   line-height: 1.7;
+  white-space: pre-line;
 }
 
 .description-content p:last-child {

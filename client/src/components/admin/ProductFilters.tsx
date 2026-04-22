@@ -60,7 +60,7 @@ export default function ProductFiltersComponent({ filters, onChange, categories 
         {hasActiveFilters && (
           <button
             onClick={clearFilters}
-            className="text-xs text-muted hover:text-primary transition-colors flex items-center gap-1"
+            className="text-xs text-muted hover:text-primary transition-colors flex items-center gap-1 min-h-[32px]"
           >
             <X size={14} />
             Скинути
@@ -68,9 +68,9 @@ export default function ProductFiltersComponent({ filters, onChange, categories 
         )}
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Search */}
-        <div className="relative">
+        <div className="relative sm:col-span-2 lg:col-span-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted" size={18} />
           <input
             type="text"

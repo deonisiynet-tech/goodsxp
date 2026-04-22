@@ -170,13 +170,14 @@ export default function AdminProductList() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-light">Керування товарами</h1>
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+        <h1 className="text-2xl sm:text-3xl font-light">Керування товарами</h1>
+        <div className="flex items-center gap-2 sm:gap-4 w-full sm:w-auto">
           <ViewToggle mode={viewMode} onChange={handleViewModeChange} />
-          <button onClick={handleCreate} className="btn-primary flex items-center gap-2">
+          <button onClick={handleCreate} className="btn-primary flex items-center justify-center gap-2 flex-1 sm:flex-initial py-3 sm:py-2">
             <Plus size={20} />
-            Додати товар
+            <span className="hidden sm:inline">Додати товар</span>
+            <span className="sm:hidden">Додати</span>
           </button>
         </div>
       </div>
@@ -190,14 +191,14 @@ export default function AdminProductList() {
       </div>
 
       {!loading && filteredProducts.length > 0 && (
-        <div className="mb-4 text-sm text-muted">
+        <div className="mb-4 text-xs sm:text-sm text-muted">
           Показано {(currentPage - 1) * ITEMS_PER_PAGE + 1}–
           {Math.min(currentPage * ITEMS_PER_PAGE, totalProducts)} з {totalProducts} товарів
         </div>
       )}
 
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {[...Array(6)].map((_, i) => (
             <div key={i} className="card animate-pulse">
               <div className="h-48 bg-surfaceLight" />
@@ -209,9 +210,9 @@ export default function AdminProductList() {
           ))}
         </div>
       ) : filteredProducts.length === 0 ? (
-        <div className="text-center py-20 text-muted">
-          <p className="text-lg mb-2">Товари не знайдені</p>
-          <p className="text-sm">Спробуйте змінити фільтри або додати новий товар</p>
+        <div className="text-center py-12 sm:py-20 text-muted px-4">
+          <p className="text-base sm:text-lg mb-2">Товари не знайдені</p>
+          <p className="text-xs sm:text-sm">Спробуйте змінити фільтри або додати новий товар</p>
         </div>
       ) : viewMode === 'grid' ? (
         <ProductGridView

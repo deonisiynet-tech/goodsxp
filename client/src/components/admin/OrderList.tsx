@@ -120,14 +120,14 @@ export default function OrderList() {
 
   return (
     <div>
-      <h1 className="text-3xl font-light mb-6">Керування замовленнями</h1>
+      <h1 className="text-2xl sm:text-3xl font-light mb-6">Керування замовленнями</h1>
 
       <div className="card p-4 mb-6">
         <div className="flex gap-4">
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="input-field max-w-xs"
+            className="input-field w-full sm:max-w-xs"
           >
             <option value="">Всі статуси</option>
             <option value="NEW">Нові</option>
@@ -144,90 +144,159 @@ export default function OrderList() {
           <div className="w-12 h-12 border-2 border-primary border-t-transparent rounded-full animate-spin" />
         </div>
       ) : (
-        <div className="card overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-surfaceLight">
-              <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                  № замовлення
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                  Клієнт
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                  Сума
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                  Статус
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                  Оплата
-                </th>
-                <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                  Дата
-                </th>
-                <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">
-                  Дії
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-border">
-              {orders.map((order) => (
-                <tr key={order.id} className="hover:bg-surfaceLight">
-                  <td className="px-6 py-4 font-mono text-sm font-medium text-primary">
-                    {formatOrderNumber(order.orderNumber)}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div>
-                      <div className="font-medium">{order.name}</div>
-                      <div className="text-sm text-muted">{order.email}</div>
+        <>
+          {/* Desktop table view */}
+          <div className="hidden lg:block card overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-surfaceLight">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                    № замовлення
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                    Клієнт
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                    Сума
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                    Статус
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                    Оплата
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
+                    Дата
+                  </th>
+                  <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider">
+                    Дії
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border">
+                {orders.map((order) => (
+                  <tr key={order.id} className="hover:bg-surfaceLight">
+                    <td className="px-6 py-4 font-mono text-sm font-medium text-primary">
+                      {formatOrderNumber(order.orderNumber)}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div>
+                        <div className="font-medium">{order.name}</div>
+                        <div className="text-sm text-muted">{order.email}</div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 font-medium">
+                      {Number(order.totalPrice).toLocaleString('uk-UA')} ₴
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-1 text-xs rounded ${getStatusColor(order.status)}`}>
+                        {getStatusLabel(order.status)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-2 py-1 text-xs rounded ${getPaymentMethodColor(order.paymentMethod)}`}>
+                        {getPaymentMethodLabel(order.paymentMethod)}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-muted">
+                      {new Date(order.createdAt).toLocaleDateString('uk-UA')}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <div className="flex justify-end gap-2">
+                        <button
+                          onClick={() => handleView(order)}
+                          className="p-2 text-primary hover:bg-surfaceLight transition-colors rounded"
+                          title="Перегляд"
+                        >
+                          <Eye size={18} />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(order.id)}
+                          className="p-2 text-red-500 hover:bg-surfaceLight transition-colors rounded"
+                          title="Видалити"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+
+            {orders.length === 0 && (
+              <div className="text-center py-20 text-muted">
+                Замовлення не знайдені
+              </div>
+            )}
+          </div>
+
+          {/* Mobile card view */}
+          <div className="lg:hidden space-y-4">
+            {orders.map((order) => (
+              <div key={order.id} className="card p-4 space-y-3">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <div className="font-mono text-sm font-medium text-primary">
+                      {formatOrderNumber(order.orderNumber)}
                     </div>
-                  </td>
-                  <td className="px-6 py-4 font-medium">
-                    {Number(order.totalPrice).toLocaleString('uk-UA')} ₴
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 text-xs ${getStatusColor(order.status)}`}>
+                    <div className="text-sm text-muted mt-1">
+                      {new Date(order.createdAt).toLocaleDateString('uk-UA')}
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleView(order)}
+                      className="p-2 text-primary hover:bg-surfaceLight transition-colors rounded min-w-[44px] min-h-[44px] flex items-center justify-center"
+                      title="Перегляд"
+                    >
+                      <Eye size={18} />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(order.id)}
+                      className="p-2 text-red-500 hover:bg-surfaceLight transition-colors rounded min-w-[44px] min-h-[44px] flex items-center justify-center"
+                      title="Видалити"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <div>
+                    <div className="font-medium">{order.name}</div>
+                    <div className="text-sm text-muted">{order.email}</div>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-2 border-t border-border">
+                    <span className="text-sm text-muted">Сума:</span>
+                    <span className="font-medium">{Number(order.totalPrice).toLocaleString('uk-UA')} ₴</span>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted">Статус:</span>
+                    <span className={`px-2 py-1 text-xs rounded ${getStatusColor(order.status)}`}>
                       {getStatusLabel(order.status)}
                     </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`px-2 py-1 text-xs ${getPaymentMethodColor(order.paymentMethod)}`}>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted">Оплата:</span>
+                    <span className={`px-2 py-1 text-xs rounded ${getPaymentMethodColor(order.paymentMethod)}`}>
                       {getPaymentMethodLabel(order.paymentMethod)}
                     </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-muted">
-                    {new Date(order.createdAt).toLocaleDateString('uk-UA')}
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <div className="flex justify-end gap-2">
-                      <button
-                        onClick={() => handleView(order)}
-                        className="p-2 text-primary hover:bg-surfaceLight transition-colors"
-                        title="Перегляд"
-                      >
-                        <Eye size={18} />
-                      </button>
-                      <button
-                        onClick={() => handleDelete(order.id)}
-                        className="p-2 text-red-500 hover:bg-surfaceLight transition-colors"
-                        title="Видалити"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                  </div>
+                </div>
+              </div>
+            ))}
 
-          {orders.length === 0 && (
-            <div className="text-center py-20 text-muted">
-              Замовлення не знайдені
-            </div>
-          )}
-        </div>
+            {orders.length === 0 && (
+              <div className="card p-12 text-center text-muted">
+                Замовлення не знайдені
+              </div>
+            )}
+          </div>
+        </>
       )}
 
       {modalOpen && selectedOrder && (
