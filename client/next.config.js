@@ -80,7 +80,7 @@ const nextConfig = {
   },
 
   // Add timeout for static generation to prevent hanging
-  staticPageGenerationTimeout: 120, // 120 seconds max per page (збільшено для складних сторінок)
+  staticPageGenerationTimeout: 180, // 180 секунд (3 хвилини) для складних сторінок з багатьма API запитами
 
   // Fix for styled-jsx - transpile packages
   transpilePackages: ['styled-jsx'],

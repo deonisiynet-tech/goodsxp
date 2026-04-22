@@ -40,7 +40,7 @@ async function fetchProductBySlug(
   const apiUrl = process.env.INTERNAL_API_URL || 'http://localhost:8080';
 
   // Helper function to add timeout to fetch calls
-  const fetchWithTimeout = async (url: string, options: any = {}, timeout = 5000) => {
+  const fetchWithTimeout = async (url: string, options: any = {}, timeout = 30000) => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
@@ -54,6 +54,7 @@ async function fetchProductBySlug(
     } catch (error: any) {
       clearTimeout(timeoutId);
       if (error.name === 'AbortError') {
+        console.warn(`[Fetch Timeout] ${url} exceeded ${timeout}ms`);
         throw new Error('Request timeout');
       }
       throw error;
@@ -67,7 +68,7 @@ async function fetchProductBySlug(
         tags: [`product-${slug}`]
       },
       redirect: 'manual',
-    }, 5000);
+    }, 30000);
 
     if (res.status === 301) {
       const data = await res.json();
@@ -75,33 +76,44 @@ async function fetchProductBySlug(
     }
 
     if (!res.ok) {
+      console.warn(`[Product Fetch] Failed for ${slug}: ${res.status}`);
       return { product: null };
     }
 
     const product = (await res.json()) as Product;
 
+    // Fetch variants and specifications in parallel with error handling
     const [variantsResult, specificationsResult] = await Promise.allSettled([
       fetchWithTimeout(`${apiUrl}/api/products/${product.id}/variants`, {
         next: {
           revalidate: 3600,
           tags: [`product-${slug}-variants`]
         },
-      }, 5000),
+      }, 30000).catch(err => {
+        console.warn(`[Variants Fetch] Failed for ${product.id}:`, err.message);
+        return null;
+      }),
       fetchWithTimeout(`${apiUrl}/api/products/${product.id}/specifications`, {
         next: {
           revalidate: 3600,
           tags: [`product-${slug}-specs`]
         },
-      }, 5000),
+      }, 30000).catch(err => {
+        console.warn(`[Specifications Fetch] Failed for ${product.id}:`, err.message);
+        return null;
+      }),
     ]);
 
-    if (variantsResult.status === 'fulfilled' && variantsResult.value.ok) {
+    if (variantsResult.status === 'fulfilled' && variantsResult.value && variantsResult.value.ok) {
       const variantsData = await variantsResult.value.json();
       product.options = variantsData.options || [];
       product.variants = variantsData.variants || [];
+    } else {
+      product.options = [];
+      product.variants = [];
     }
 
-    if (specificationsResult.status === 'fulfilled' && specificationsResult.value.ok) {
+    if (specificationsResult.status === 'fulfilled' && specificationsResult.value && specificationsResult.value.ok) {
       const specificationsData = await specificationsResult.value.json();
       product.specifications = specificationsData.specifications || [];
     } else {
@@ -109,8 +121,8 @@ async function fetchProductBySlug(
     }
 
     return { product };
-  } catch (error) {
-    console.error('Failed to fetch product:', error);
+  } catch (error: any) {
+    console.error(`[Product Fetch] Error for ${slug}:`, error.message);
     return { product: null };
   }
 }
