@@ -2,84 +2,60 @@ import axios, { AxiosError } from 'axios';
 
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 const REVALIDATION_SECRET = process.env.REVALIDATION_SECRET;
-const REVALIDATE_TIMEOUT = 10000; // Зменшено до 10 секунд
-const MAX_RETRIES = 1; // Тільки 1 спроба замість 3
+const REVALIDATE_TIMEOUT = 5000; // 5 секунд максимум
+const MAX_RETRIES = 1; // Тільки 1 спроба
 
-async function revalidateWithRetry(path: string, maxRetries = MAX_RETRIES): Promise<void> {
+// ✅ SAFE WRAPPER - запускає revalidate у фоні через setTimeout
+function safeRevalidate(path: string): void {
   if (!REVALIDATION_SECRET) {
-    console.warn('⚠️ REVALIDATION_SECRET not set, skipping cache revalidation');
+    console.warn('⚠️ REVALIDATION_SECRET not set, skipping revalidation');
     return;
   }
 
-  const startTime = Date.now();
-  let lastError: Error | null = null;
-
-  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+  // Запускаємо у наступному tick event loop - повністю неблокуюче
+  setTimeout(async () => {
     try {
-      console.log(`[Revalidate] Attempt ${attempt}/${maxRetries} for ${path}`);
+      console.log(`[Revalidate] Starting background revalidation for ${path}`);
 
-      await axios.post(`${FRONTEND_URL}/revalidate`, {
+      const response = await axios.post(`${FRONTEND_URL}/revalidate`, {
         path,
         secret: REVALIDATION_SECRET,
       }, {
         timeout: REVALIDATE_TIMEOUT,
       });
 
-      const duration = Date.now() - startTime;
-      console.log(`✅ [Revalidate] Success for ${path} (${duration}ms)`);
-      return;
+      console.log(`✅ [Revalidate] Success for ${path}`);
     } catch (error) {
-      lastError = error as Error;
-      const duration = Date.now() - startTime;
-
+      // Просто логуємо - не кидаємо помилку
       if (axios.isAxiosError(error)) {
         const axiosError = error as AxiosError;
-
         if (axiosError.code === 'ECONNABORTED' || axiosError.message.includes('timeout')) {
-          console.warn(`⚠️ [Revalidate] Timeout for ${path} (${duration}ms) - continuing anyway`);
+          console.warn(`⚠️ [Revalidate] Timeout for ${path} - continuing anyway`);
         } else {
-          console.warn(`⚠️ [Revalidate] Error for ${path}: ${axiosError.message} - continuing anyway`);
+          console.warn(`⚠️ [Revalidate] Error for ${path}: ${axiosError.message}`);
         }
       } else {
-        console.warn(`⚠️ [Revalidate] Unknown error for ${path} - continuing anyway`);
+        console.warn(`⚠️ [Revalidate] Unknown error for ${path}`);
       }
-
-      // Не робимо retry - одразу виходимо
-      break;
     }
-  }
-
-  // Не кидаємо помилку - просто логуємо
-  if (lastError) {
-    console.warn(`⚠️ [Revalidate] Failed for ${path}, but operation continues`);
-  }
+  }, 0);
 }
 
-// ✅ НЕБЛОКУЮЧА версія - запускає revalidate у фоні
-export function revalidateProductAsync(slug: string): void {
-  // Запускаємо у фоні без await
-  revalidateWithRetry(`/catalog/${slug}`)
-    .catch(error => {
-      console.warn(`[Revalidate] Background revalidation failed for ${slug}:`, error.message);
-    });
+// ✅ Revalidate для конкретного товару - НЕБЛОКУЮЧЕ
+export function revalidateProduct(slug: string): void {
+  safeRevalidate(`/catalog/${slug}`);
 }
 
-// ✅ НЕБЛОКУЮЧА версія - запускає revalidate у фоні
-export function revalidateCatalogAsync(): void {
-  // Запускаємо у фоні без await
-  revalidateWithRetry('/catalog')
-    .catch(error => {
-      console.warn(`[Revalidate] Background catalog revalidation failed:`, error.message);
-    });
+// ✅ Revalidate для каталогу - НЕБЛОКУЮЧЕ
+export function revalidateCatalog(): void {
+  safeRevalidate('/catalog');
 }
 
-// Залишаємо старі функції для зворотної сумісності, але робимо їх неблокуючими
-export async function revalidateProduct(slug: string): Promise<void> {
-  // Просто викликаємо async версію і одразу повертаємось
-  revalidateProductAsync(slug);
+// Експортуємо async версії для зворотної сумісності (але вони теж неблокуючі)
+export async function revalidateProductAsync(slug: string): Promise<void> {
+  revalidateProduct(slug);
 }
 
-export async function revalidateCatalog(): Promise<void> {
-  // Просто викликаємо async версію і одразу повертаємось
-  revalidateCatalogAsync();
+export async function revalidateCatalogAsync(): Promise<void> {
+  revalidateCatalog();
 }

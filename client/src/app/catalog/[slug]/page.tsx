@@ -61,11 +61,14 @@ async function fetchProductBySlug(
     }
   };
 
+  // ✅ Створюємо безпечні теги - тільки базові, без динамічних значень
+  const safeTags = ['products', 'catalog'].filter(Boolean);
+
   try {
     const res = await fetchWithTimeout(`${apiUrl}/api/products/${slug}`, {
       next: {
-        revalidate: 3600, // 1 година замість 60 секунд
-        tags: [`product-${slug}`]
+        revalidate: 3600,
+        tags: safeTags
       },
       redirect: 'manual',
     }, 30000);
@@ -87,7 +90,7 @@ async function fetchProductBySlug(
       fetchWithTimeout(`${apiUrl}/api/products/${product.id}/variants`, {
         next: {
           revalidate: 3600,
-          tags: [`product-${slug}-variants`]
+          tags: safeTags
         },
       }, 30000).catch(err => {
         console.warn(`[Variants Fetch] Failed for ${product.id}:`, err.message);
@@ -96,7 +99,7 @@ async function fetchProductBySlug(
       fetchWithTimeout(`${apiUrl}/api/products/${product.id}/specifications`, {
         next: {
           revalidate: 3600,
-          tags: [`product-${slug}-specs`]
+          tags: safeTags
         },
       }, 30000).catch(err => {
         console.warn(`[Specifications Fetch] Failed for ${product.id}:`, err.message);

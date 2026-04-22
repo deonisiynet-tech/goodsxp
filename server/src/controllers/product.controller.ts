@@ -454,8 +454,8 @@ export class ProductController {
         ipAddress: req.ip,
       });
 
-      // Revalidate catalog cache
-      await revalidateCatalog();
+      // ✅ Revalidate тільки каталог (покриває всі сторінки)
+      revalidateCatalog();
 
       res.status(201).json(product);
     } catch (error) {
@@ -531,9 +531,8 @@ export class ProductController {
         ipAddress: req.ip,
       });
 
-      // Revalidate product and catalog cache
-      await revalidateProduct(product.slug);
-      await revalidateCatalog();
+      // ✅ Revalidate тільки каталог (покриває всі сторінки)
+      revalidateCatalog();
 
       res.json(product);
     } catch (error: any) {
@@ -563,9 +562,8 @@ export class ProductController {
         ipAddress: req.ip,
       });
 
-      // Revalidate product and catalog cache
-      await revalidateProduct(product.slug);
-      await revalidateCatalog();
+      // ✅ Revalidate тільки каталог (покриває всі сторінки)
+      revalidateCatalog();
 
       res.json(result);
     } catch (error) {
