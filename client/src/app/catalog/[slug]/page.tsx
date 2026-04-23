@@ -35,7 +35,8 @@ interface Product {
 }
 
 async function fetchProductBySlug(
-  slug: string
+  slug: string,
+  isPreview: boolean = false
 ): Promise<{ product: Product | null; redirected?: boolean; newSlug?: string }> {
   const apiUrl = process.env.INTERNAL_API_URL || 'http://localhost:8080';
 
@@ -66,8 +67,11 @@ async function fetchProductBySlug(
 
   try {
     const res = await fetchWithTimeout(`${apiUrl}/api/products/${slug}`, {
-      next: {
-        revalidate: 3600,
+      next: isPreview ? {
+        revalidate: 0, // ✅ No cache for preview - always fresh data
+        tags: safeTags
+      } : {
+        revalidate: 60, // ✅ 1 minute for normal view
         tags: safeTags
       },
       redirect: 'manual',
@@ -88,8 +92,11 @@ async function fetchProductBySlug(
     // Fetch variants and specifications in parallel with error handling
     const [variantsResult, specificationsResult] = await Promise.allSettled([
       fetchWithTimeout(`${apiUrl}/api/products/${product.id}/variants`, {
-        next: {
-          revalidate: 3600,
+        next: isPreview ? {
+          revalidate: 0, // ✅ No cache for preview
+          tags: safeTags
+        } : {
+          revalidate: 60, // ✅ 1 minute for normal view
           tags: safeTags
         },
       }, 30000).catch(err => {
@@ -97,8 +104,11 @@ async function fetchProductBySlug(
         return null;
       }),
       fetchWithTimeout(`${apiUrl}/api/products/${product.id}/specifications`, {
-        next: {
-          revalidate: 3600,
+        next: isPreview ? {
+          revalidate: 0, // ✅ No cache for preview
+          tags: safeTags
+        } : {
+          revalidate: 60, // ✅ 1 minute for normal view
           tags: safeTags
         },
       }, 30000).catch(err => {
@@ -132,10 +142,13 @@ async function fetchProductBySlug(
 
 export async function generateMetadata({
   params,
+  searchParams,
 }: {
   params: { slug: string };
+  searchParams: { preview?: string };
 }): Promise<Metadata> {
-  const { product, redirected, newSlug } = await fetchProductBySlug(params.slug);
+  const isPreview = searchParams?.preview === 'true';
+  const { product, redirected, newSlug } = await fetchProductBySlug(params.slug, isPreview);
 
   if (redirected && newSlug) {
     redirect(`/catalog/${newSlug}`);
@@ -179,8 +192,15 @@ export async function generateMetadata({
   };
 }
 
-export default async function ProductPage({ params }: { params: { slug: string } }) {
-  const { product, redirected, newSlug } = await fetchProductBySlug(params.slug);
+export default async function ProductPage({
+  params,
+  searchParams,
+}: {
+  params: { slug: string };
+  searchParams: { preview?: string };
+}) {
+  const isPreview = searchParams?.preview === 'true';
+  const { product, redirected, newSlug } = await fetchProductBySlug(params.slug, isPreview);
 
   if (redirected && newSlug) {
     redirect(`/catalog/${newSlug}`);

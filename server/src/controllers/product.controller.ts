@@ -454,8 +454,8 @@ export class ProductController {
         ipAddress: req.ip,
       });
 
-      // ✅ Revalidate тільки каталог (покриває всі сторінки)
-      revalidateCatalog();
+      // ✅ REMOVED: No revalidation - admin gets fresh data via cache: 'no-store'
+      // Frontend will refresh immediately after save
 
       res.status(201).json(product);
     } catch (error) {
@@ -531,8 +531,8 @@ export class ProductController {
         ipAddress: req.ip,
       });
 
-      // ✅ Revalidate тільки каталог (покриває всі сторінки)
-      revalidateCatalog();
+      // ✅ REMOVED: No revalidation - admin gets fresh data via cache: 'no-store'
+      // Frontend will refresh immediately after save
 
       res.json(product);
     } catch (error: any) {
@@ -562,8 +562,8 @@ export class ProductController {
         ipAddress: req.ip,
       });
 
-      // ✅ Revalidate тільки каталог (покриває всі сторінки)
-      revalidateCatalog();
+      // ✅ REMOVED: No revalidation - admin gets fresh data via cache: 'no-store'
+      // Frontend will refresh immediately after delete
 
       res.json(result);
     } catch (error) {

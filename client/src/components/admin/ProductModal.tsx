@@ -422,7 +422,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
           images: allImageUrls,
         })
         savedProductId = result.id
-        toast.success('Товар оновлено')
+        toast.success('✅ Товар оновлено')
       } else {
         // Create new product
         const result = await productsApi.create({
@@ -441,7 +441,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
         })
         savedProductId = result.id
         console.log('📦 Create result:', result)
-        toast.success('Товар створено')
+        toast.success('✅ Товар створено')
       }
 
       // ✅ FIX: Separate specifications sync with detailed error handling
@@ -470,6 +470,7 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
         // Don't throw - product is already saved
       }
 
+      // ✅ INSTANT UPDATE: Close modal immediately - parent will refresh
       onClose()
     } catch (error: any) {
       console.error('❌ Submission error:', error)

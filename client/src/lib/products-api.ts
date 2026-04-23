@@ -132,11 +132,16 @@ async function fetchAPI(endpoint: string, options: RequestInit = {}) {
     headers['Authorization'] = `Bearer ${token}`
   }
 
+  // ✅ FIX: Disable cache for admin endpoints to get fresh data immediately
+  const isAdminEndpoint = endpoint.includes('/admin') || endpoint.includes('/products/')
+
   // IMPORTANT: Always include credentials for cookie-based auth (admin)
   const response = await fetchWithRetry(`${API_BASE}${endpoint}`, {
     ...options,
     headers,
     credentials: 'include',
+    // ✅ Disable cache for admin to always get fresh data
+    cache: isAdminEndpoint ? 'no-store' : options.cache,
   })
 
   const data = await response.json()

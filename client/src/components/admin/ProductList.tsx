@@ -144,11 +144,18 @@ export default function AdminProductList() {
     if (!confirm('Ви впевнені, що хочете видалити цей товар?')) return;
 
     try {
+      // ✅ OPTIMISTIC UPDATE: Remove from UI immediately
+      setProducts(prev => prev.filter(p => p.id !== id));
+
       await productsApi.delete(id);
-      toast.success('Товар видалено');
+      toast.success('✅ Товар видалено');
+
+      // Refresh to get accurate data
       loadProducts();
     } catch (error) {
       toast.error('Помилка при видаленні');
+      // Reload on error to restore correct state
+      loadProducts();
     }
   };
 
@@ -165,6 +172,7 @@ export default function AdminProductList() {
   const handleModalClose = () => {
     setModalOpen(false);
     setEditingProduct(null);
+    // ✅ INSTANT REFRESH: Reload products immediately after modal closes
     loadProducts();
   };
 
