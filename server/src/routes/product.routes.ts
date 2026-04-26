@@ -35,6 +35,9 @@ router.post('/:id/reviews', validateUuid('id'), reviewRateLimiter, uploadMiddlew
 router.get('/slug/:slug/reviews', controller.getReviewsBySlug);
 router.post('/slug/:slug/reviews', reviewRateLimiter, uploadMiddleware, controller.createReviewBySlug);
 
+// Review delete (admin only) — ✅ MUST be before admin middleware to avoid conflicts
+router.delete('/reviews/:reviewId', authenticate, authorize(Role.ADMIN), validateUuid('reviewId'), controller.deleteReview);
+
 // Admin routes
 router.use(authenticate, authorize(Role.ADMIN));
 router.get('/admin/all', controller.getAllAdmin);
@@ -50,9 +53,6 @@ router.delete('/option-values/:valueId', validateUuid('valueId'), controller.del
 router.post('/:productId/variants', validateUuid('productId'), controller.createVariant);
 router.put('/variants/:variantId', validateUuid('variantId'), controller.updateVariant);
 router.delete('/variants/:variantId', validateUuid('variantId'), controller.deleteVariant);
-
-// Review delete (admin only — MUST be before /:id to avoid conflicts)
-router.delete('/reviews/:reviewId', validateUuid('reviewId'), controller.deleteReview);
 
 // Product CRUD — MUST be after variant routes to avoid conflicts
 router.put('/:id', validateUuid('id'), uploadMiddleware, controller.update);

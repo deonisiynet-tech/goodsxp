@@ -20,6 +20,7 @@ const CSRF_EXEMPT_PATHS = [
   '/api/auth/forgot-password',
   '/api/auth/reset-password',
   '/api/orders',
+  '/api/reviews',
   '/api/admin-x8k2p9-panel/stats',
   '/api/admin-x8k2p9-panel/stats/sales',
   '/api/admin-x8k2p9-panel/products/top',
