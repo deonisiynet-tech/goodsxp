@@ -79,6 +79,7 @@ export default function ProductClient({ product }: { product: Product }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const reviewPreviewUrlsRef = useRef<string[]>([]);
   const thumbnailsRef = useRef<HTMLDivElement>(null);
+  const imagesLoadedRef = useRef<string | null>(null);
 
   const addItem = useCartStore((state) => state.addItem);
   const setLastAddedPosition = useCartStore((state) => state.setLastAddedPosition);
@@ -122,10 +123,11 @@ export default function ProductClient({ product }: { product: Product }) {
 
   const effectiveStock = selectedVariant ? selectedVariant.stock : product.stock;
 
+  // Load initial data when product changes
   useEffect(() => {
-    loadReviews(product.slug);
     loadRelated(product.id);
     loadProductImages(product.id);
+    loadReviews(product.slug);
 
     // Check if current user is admin
     if (typeof window !== 'undefined') {
@@ -137,12 +139,18 @@ export default function ProductClient({ product }: { product: Product }) {
         } catch { /* ignore */ }
       }
     }
-  }, [product, sortBy]);
+  }, [product.id, product.slug]);
+
+  // Reload reviews when sortBy changes
+  useEffect(() => {
+    loadReviews(product.slug);
+  }, [sortBy, product.slug]);
 
   // Filter images when variant changes
   useEffect(() => {
     if (productImages.length === 0) {
       // Fallback to product.images if no ProductImage records
+      console.log('[FilteredImages] Using fallback product.images:', product.images?.length || 0);
       setFilteredImages(product.images || []);
       return;
     }
@@ -157,19 +165,40 @@ export default function ProductClient({ product }: { product: Product }) {
       .filter(img => !img.variantValue || img.variantValue === selectedVariantValue)
       .map(img => img.imageUrl);
 
+    console.log('[FilteredImages] Filtered for variant:', selectedVariantValue, 'count:', filtered.length);
     setFilteredImages(filtered.length > 0 ? filtered : product.images || []);
     setSelectedImage(0); // Reset to first image
   }, [selectedVariant, productImages, product.images]);
 
   const loadProductImages = async (productId: string) => {
+    // ✅ Захист від повторних викликів
+    if (imagesLoadedRef.current === productId) {
+      console.log('[ProductImages] Already loaded for', productId);
+      return;
+    }
+
     try {
       const response = await fetch(`/api/product-images/${productId}`);
       const data = await response.json();
       if (data.success && data.images) {
-        setProductImages(data.images);
+        // ✅ Фільтруємо унікальні зображення по URL для захисту від дублів
+        const uniqueImages = data.images.filter(
+          (img: any, index: number, self: any[]) =>
+            index === self.findIndex((i) => i.imageUrl === img.imageUrl)
+        );
+
+        console.log('[ProductImages] Setting images:', uniqueImages.length, 'unique images');
+
+        // ✅ Hard reset: спочатку очищаємо, потім встановлюємо нові
+        setProductImages([]);
+        setProductImages(uniqueImages);
+
+        // ✅ Позначаємо що завантажили
+        imagesLoadedRef.current = productId;
       }
     } catch {
       // Fallback to product.images
+      console.log('[ProductImages] Fetch failed, using fallback');
       setProductImages([]);
     }
   };
@@ -308,11 +337,24 @@ export default function ProductClient({ product }: { product: Product }) {
     }
 
     if (validFiles.length > 0) {
-      setNewReviewImages((prev) => [...prev, ...validFiles]);
+      setNewReviewImages((prev) => {
+        const combined = [...prev, ...validFiles];
+        // ✅ Фільтруємо дублі по name + size
+        const unique = combined.filter((file, index, self) =>
+          index === self.findIndex(f => f.name === file.name && f.size === file.size)
+        );
+        console.log('[ReviewImages] Adding files:', validFiles.length, 'total unique:', unique.length);
+        return unique;
+      });
       setNewReviewImagePreviews((prev) => {
         const nextPreviews = [...prev, ...validPreviews];
-        reviewPreviewUrlsRef.current = nextPreviews;
-        return nextPreviews;
+        // ✅ Фільтруємо дублі preview URLs
+        const uniquePreviews = nextPreviews.filter((url, index, self) =>
+          index === self.indexOf(url)
+        );
+        reviewPreviewUrlsRef.current = uniquePreviews;
+        console.log('[ReviewImages] Preview URLs:', uniquePreviews.length);
+        return uniquePreviews;
       });
     }
 
@@ -339,6 +381,8 @@ export default function ProductClient({ product }: { product: Product }) {
   useEffect(() => {
     return () => {
       reviewPreviewUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
+      // Reset images loaded ref
+      imagesLoadedRef.current = null;
     };
   }, []);
 

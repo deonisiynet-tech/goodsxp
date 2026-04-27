@@ -36,12 +36,13 @@ export const optimizeImage = async (inputPath: string): Promise<string> => {
   const outputPath = `${inputPath}_optimized.jpg`;
 
   try {
+    // ✅ Оптимізація: max 1200px, quality 80, progressive JPEG
     await sharp(inputPath)
-      .resize(2000, 2000, {
+      .resize(1200, 1200, {
         fit: 'inside',
         withoutEnlargement: true
       })
-      .jpeg({ quality: 85, progressive: true })
+      .jpeg({ quality: 80, progressive: true, mozjpeg: true })
       .toFile(outputPath);
 
     return outputPath;
