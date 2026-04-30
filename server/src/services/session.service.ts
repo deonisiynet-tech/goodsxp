@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import prisma from '../prisma/client.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { getClientIp } from '../utils/getClientIp.js';
+import { geoService } from './geo.service.js';
 
 interface SessionData {
   id: string;
@@ -70,28 +71,35 @@ export class SessionService {
 
   /**
    * Create a new session record on login
+   * Returns sessionId for inclusion in JWT
    */
-  async createSession(userId: string, token: string, req: Request): Promise<void> {
+  async createSession(userId: string, token: string, req: Request): Promise<string> {
     const tokenHash = this.hashToken(token);
     const ipAddress = getClientIp(req);
     const userAgent = req.headers['user-agent'];
     const device = this.parseDevice(userAgent);
 
+    // Отримати геолокацію
+    const geo = await geoService.getLocation(ipAddress);
+    const location = geoService.formatLocation(geo);
+
     // Calculate expiry (7 days to match JWT)
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
 
-    await prisma.adminSession.create({
+    const session = await prisma.adminSession.create({
       data: {
         userId,
         sessionToken: tokenHash,
         ipAddress,
         userAgent: userAgent || null,
         device,
-        location: null, // Can be enhanced with IP geolocation service
+        location,  // Зберегти геолокацію
         expiresAt,
       },
     });
+
+    return session.id;  // Повернути sessionId
   }
 
   /**

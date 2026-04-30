@@ -3,6 +3,7 @@ import { authenticate, AuthRequest } from '../middleware/auth.js';
 import { csrfProtection } from '../middleware/csrf.js';
 import { sessionService } from '../services/session.service.js';
 import { twoFAService } from '../services/twoFA.service.js';
+import { geoService } from '../services/geo.service.js';
 
 const router = Router();
 
@@ -130,6 +131,28 @@ router.delete('/', authenticate, csrfProtection, async (req: AuthRequest, res: R
   } catch (error: any) {
     console.error('Delete all sessions error:', error);
     res.status(500).json({ error: 'Помилка сервера' });
+  }
+});
+
+/**
+ * GET /api/admin/sessions/geo/:ip
+ * Get geolocation for IP (для тестування та перевірки)
+ */
+router.get('/geo/:ip', authenticate, async (req: AuthRequest, res: Response) => {
+  try {
+    const { ip } = req.params;
+    const geo = await geoService.getLocation(ip);
+    const formatted = geoService.formatLocation(geo);
+
+    res.json({
+      success: true,
+      ip,
+      geo,
+      formatted,
+    });
+  } catch (error: any) {
+    console.error('Geo lookup error:', error);
+    res.status(500).json({ error: 'Помилка геолокації' });
   }
 });
 

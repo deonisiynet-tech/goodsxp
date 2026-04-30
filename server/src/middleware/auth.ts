@@ -15,6 +15,14 @@ export interface AuthRequest extends Request {
   };
 }
 
+interface JWTPayload {
+  id: string;
+  email: string;
+  role: Role;
+  v?: number;
+  sid?: string;  // sessionId
+}
+
 /**
  * Authenticate user - supports both Bearer token and Cookie
  * Strategy:
@@ -49,16 +57,11 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
     /**
      * 🔒 Try to verify a token with enforced HS256 algorithm and token version check.
      */
-    const tryVerify = (t: string | undefined): { id: string; email: string; role: Role; v?: number } | null => {
+    const tryVerify = (t: string | undefined): JWTPayload | null => {
       if (!t) return null;
       try {
         // 🔒 Enforce HS256 — prevents algorithm confusion / "none" algorithm attacks
-        const decoded = jwt.verify(t, secret, { algorithms: [JWT_ALGORITHM] }) as {
-          id: string;
-          email: string;
-          role: Role;
-          v?: number;
-        };
+        const decoded = jwt.verify(t, secret, { algorithms: [JWT_ALGORITHM] }) as JWTPayload;
 
         // 🔒 Token version check — if server version > token version, token is revoked
         if (decoded.v !== undefined && decoded.v < serverTokenVersion) {
@@ -72,7 +75,7 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
       }
     };
 
-    let decoded: { id: string; email: string; role: Role; v?: number } | null = null;
+    let decoded: JWTPayload | null = null;
 
     // Step 1: Try Bearer token
     if (bearerToken) {
@@ -99,6 +102,64 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
         });
       }
       return res.status(401).json({ error: 'Невірний токен авторизації' });
+    }
+
+    // 🔒 SECURITY: Check if session exists in DB (for admin sessions with sessionId)
+    if (decoded.sid) {
+      try {
+        const session = await prisma.adminSession.findUnique({
+          where: { id: decoded.sid },
+          select: { id: true, expiresAt: true },
+        });
+
+        if (!session) {
+          console.warn(`⚠️ Auth: Session ${decoded.sid} not found — token invalidated`);
+
+          // Clear cookie
+          if (cookieToken) {
+            res.clearCookie('admin_session', {
+              httpOnly: true,
+              secure: process.env.NODE_ENV === 'production',
+              sameSite: 'strict',
+              path: '/',
+            });
+          }
+
+          return res.status(401).json({
+            error: 'Session expired',
+            code: 'SESSION_DELETED'
+          });
+        }
+
+        // Check if session expired
+        if (session.expiresAt < new Date()) {
+          console.warn(`⚠️ Auth: Session ${decoded.sid} expired`);
+
+          // Delete expired session
+          await prisma.adminSession.delete({
+            where: { id: decoded.sid },
+          }).catch(() => {});
+
+          // Clear cookie
+          if (cookieToken) {
+            res.clearCookie('admin_session', {
+              httpOnly: true,
+              secure: process.env.NODE_ENV === 'production',
+              sameSite: 'strict',
+              path: '/',
+            });
+          }
+
+          return res.status(401).json({
+            error: 'Session expired',
+            code: 'SESSION_EXPIRED'
+          });
+        }
+      } catch (sessionError: any) {
+        console.error('❌ Session check error:', sessionError.message);
+        // Don't block request on session check error (DB might be down)
+        // But log it for monitoring
+      }
     }
 
     // Check if user exists (validate on every request for security)

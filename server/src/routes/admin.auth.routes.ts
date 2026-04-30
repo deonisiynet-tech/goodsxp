@@ -9,7 +9,7 @@ import { csrfProtection } from '../middleware/csrf.js';
 import { loginLogService } from '../services/login-log.service.js';
 import { twoFAService } from '../services/twoFA.service.js';
 import { sessionService } from '../services/session.service.js';
-import { getJwtSecret, getJwtExpiresIn } from '../utils/jwt.js';
+import { getJwtSecret, getJwtExpiresIn, getTokenVersion } from '../utils/jwt.js';
 import { getClientIp } from '../utils/getClientIp.js';
 
 const router = Router();
@@ -148,13 +148,33 @@ router.post('/login', limitLoginAttempts, async (req: Request, res: Response) =>
       }
     }
 
-    // Generate JWT token
+    // Generate JWT token with sessionId
+    // First create session to get sessionId
+    let sessionId: string | undefined;
+
+    // Create temporary token without sessionId for session creation
     const secret = getJwtSecret();
     const expiresIn = getJwtExpiresIn();
-    const token = jwt.sign(
-      { id: user.id, email: user.email, role: user.role },
+    const tokenVersion = getTokenVersion();
+    const tempToken = jwt.sign(
+      { id: user.id, email: user.email, role: user.role, v: tokenVersion },
       secret,
-      { expiresIn } as jwt.SignOptions
+      { expiresIn, algorithm: 'HS256' } as jwt.SignOptions
+    );
+
+    // Create session record and get sessionId
+    try {
+      sessionId = await sessionService.createSession(user.id, tempToken, req);
+      console.log(`✅ Session created: ${sessionId}`);
+    } catch (sessionError: any) {
+      console.warn('⚠️ Failed to create session record:', sessionError.message);
+    }
+
+    // Generate final JWT with sessionId
+    const token = jwt.sign(
+      { id: user.id, email: user.email, role: user.role, v: tokenVersion, sid: sessionId },
+      secret,
+      { expiresIn, algorithm: 'HS256' } as jwt.SignOptions
     );
 
     // Set secure cookie with improved security settings
@@ -182,13 +202,6 @@ router.post('/login', limitLoginAttempts, async (req: Request, res: Response) =>
       ipAddress: ip,
       userAgent,
     });
-
-    // Create session record
-    try {
-      await sessionService.createSession(user.id, token, req);
-    } catch (sessionError: any) {
-      console.warn('⚠️ Failed to create session record:', sessionError.message);
-    }
 
     // Also log to AdminLog for backwards compatibility
     try {

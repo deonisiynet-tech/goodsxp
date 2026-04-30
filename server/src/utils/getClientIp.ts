@@ -5,12 +5,19 @@ import { Request } from 'express';
  * Handles proxies, CDN, and load balancers correctly
  *
  * Priority:
- * 1. X-Forwarded-For (first IP in the chain)
- * 2. X-Real-IP
- * 3. Socket remote address
+ * 1. CF-Connecting-IP (Cloudflare CDN - most accurate)
+ * 2. X-Forwarded-For (first IP in the chain)
+ * 3. X-Real-IP (nginx proxy)
+ * 4. Socket remote address
  */
 export function getClientIp(req: Request): string {
-  // X-Forwarded-For can contain multiple IPs: "client, proxy1, proxy2"
+  // 1. Cloudflare CDN (якщо використовується)
+  const cfIp = req.headers['cf-connecting-ip'];
+  if (cfIp && typeof cfIp === 'string') {
+    return normalizeIp(cfIp);
+  }
+
+  // 2. X-Forwarded-For can contain multiple IPs: "client, proxy1, proxy2"
   // We want the FIRST one (the original client)
   const forwarded = req.headers['x-forwarded-for'];
   if (forwarded) {
@@ -21,13 +28,13 @@ export function getClientIp(req: Request): string {
     return normalizeIp(clientIp);
   }
 
-  // X-Real-IP is set by some proxies (nginx)
+  // 3. X-Real-IP is set by some proxies (nginx)
   const realIp = req.headers['x-real-ip'];
   if (realIp && typeof realIp === 'string') {
     return normalizeIp(realIp);
   }
 
-  // Fallback to socket address
+  // 4. Fallback to socket address
   const socketIp = req.socket.remoteAddress || req.connection?.remoteAddress;
   if (socketIp) {
     return normalizeIp(socketIp);

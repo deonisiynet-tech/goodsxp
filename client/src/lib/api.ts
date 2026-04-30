@@ -32,9 +32,18 @@ api.interceptors.response.use(
   (error) => {
     // Тільки на клієнті робимо редірект
     if (error.response?.status === 401 && typeof window !== 'undefined') {
+      const isAdminPath = window.location.pathname.startsWith('/admin');
+
+      // Очистити auth state
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      window.location.href = '/login';
+
+      // Редірект залежно від контексту
+      if (isAdminPath) {
+        window.location.href = '/admin-x8k2p9-panel/login';
+      } else {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

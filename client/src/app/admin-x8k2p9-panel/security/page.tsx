@@ -238,7 +238,14 @@ export default function SecurityPage() {
                       {session.ipAddress && (
                         <div className="flex items-center gap-2">
                           <MapPin size={16} />
-                          <span>{session.ipAddress}</span>
+                          <span>
+                            {session.ipAddress}
+                            {session.location && (
+                              <span className="text-slate-400 ml-1">
+                                ({session.location})
+                              </span>
+                            )}
+                          </span>
                         </div>
                       )}
                       <div className="flex items-center gap-2">
@@ -293,7 +300,14 @@ export default function SecurityPage() {
                         {session.ipAddress && (
                           <div className="flex items-center gap-2">
                             <MapPin size={16} />
-                            <span>{session.ipAddress}</span>
+                            <span>
+                              {session.ipAddress}
+                              {session.location && (
+                                <span className="text-slate-400 ml-1">
+                                  ({session.location})
+                                </span>
+                              )}
+                            </span>
                           </div>
                         )}
                         <div className="flex items-center gap-2">

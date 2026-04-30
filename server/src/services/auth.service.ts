@@ -69,13 +69,19 @@ export class AuthService {
     };
   }
 
-  private generateToken(id: string, email: string, role: string) {
+  private generateToken(id: string, email: string, role: string, sessionId?: string) {
     const secret = getJwtSecret();
     const expiresIn = getJwtExpiresIn();
     const tokenVersion = getTokenVersion();
 
     // 🔒 Include token version `v` for revocation support
-    return jwt.sign({ id, email, role, v: tokenVersion }, secret, {
+    // 🔒 Include sessionId `sid` for session validation
+    const payload: any = { id, email, role, v: tokenVersion };
+    if (sessionId) {
+      payload.sid = sessionId;
+    }
+
+    return jwt.sign(payload, secret, {
       expiresIn,
       algorithm: 'HS256', // 🔒 Explicitly enforce HS256
     } as jwt.SignOptions);
