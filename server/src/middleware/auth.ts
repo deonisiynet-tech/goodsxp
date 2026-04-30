@@ -4,6 +4,7 @@ import { Role } from '@prisma/client';
 import prisma from '../prisma/client.js';
 import { ActionType } from '@prisma/client';
 import { getJwtSecret, JWT_ALGORITHM, getTokenVersion } from '../utils/jwt.js';
+import { sessionService } from '../services/session.service.js';
 
 export interface AuthRequest extends Request {
   user?: {
@@ -115,6 +116,14 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
         });
       }
       return res.status(401).json({ error: 'Користувача не знайдено' });
+    }
+
+    // Update session activity (async, don't block request)
+    const activeToken = cookieToken || bearerToken;
+    if (activeToken) {
+      sessionService.updateLastActive(activeToken).catch((err) => {
+        console.debug('Failed to update session activity:', err.message);
+      });
     }
 
     // Attach user to request

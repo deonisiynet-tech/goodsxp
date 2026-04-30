@@ -97,6 +97,7 @@ import adminRoutes from './routes/admin.routes.js';
 import uploadRoutes from './routes/upload.routes.js';
 import specificationRoutes from './routes/specification.routes.js';
 import adminAuthRoutes from './routes/admin.auth.routes.js';
+import adminSessionRoutes from './routes/admin.session.routes.js';
 import novaPoshtaRoutes from './routes/nova-poshta.routes.js';
 import analyticsRoutes from './routes/analytics.routes.js';
 import promoCodeRoutes from './routes/promo-code.routes.js';
@@ -360,6 +361,8 @@ app.use(`${adminApiPrefix}/auth/2fa/generate`, csrfProtection);
 app.use(`${adminApiPrefix}/auth/2fa/enable`, csrfProtection);
 app.use(`${adminApiPrefix}/auth/2fa/disable`, csrfProtection);
 app.use(`${adminApiPrefix}/auth`, adminRateLimiter, adminAuthRoutes);  // Admin auth with hidden path
+// Admin session management (protected, requires CSRF)
+app.use(`${adminApiPrefix}/sessions`, csrfProtection, adminRateLimiter, adminSessionRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/product-images', productImageRoutes);

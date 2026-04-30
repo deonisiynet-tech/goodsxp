@@ -8,6 +8,7 @@ import { strictRateLimiter } from '../middleware/rateLimiter.js';
 import { csrfProtection } from '../middleware/csrf.js';
 import { loginLogService } from '../services/login-log.service.js';
 import { twoFAService } from '../services/twoFA.service.js';
+import { sessionService } from '../services/session.service.js';
 import { getJwtSecret, getJwtExpiresIn } from '../utils/jwt.js';
 
 const router = Router();
@@ -181,6 +182,13 @@ router.post('/login', limitLoginAttempts, async (req: Request, res: Response) =>
       userAgent,
     });
 
+    // Create session record
+    try {
+      await sessionService.createSession(user.id, token, req);
+    } catch (sessionError: any) {
+      console.warn('⚠️ Failed to create session record:', sessionError.message);
+    }
+
     // Also log to AdminLog for backwards compatibility
     try {
       await prisma.adminLog.create({
@@ -230,6 +238,15 @@ router.post('/logout', async (req: Request, res: Response) => {
         adminId = decoded.id;
       } catch (e) {
         // Token invalid, just proceed with logout
+      }
+    }
+
+    // Delete session record
+    if (token) {
+      try {
+        await sessionService.deleteSessionByToken(token);
+      } catch (sessionError: any) {
+        console.warn('⚠️ Failed to delete session record:', sessionError.message);
       }
     }
 

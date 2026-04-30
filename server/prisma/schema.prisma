@@ -22,9 +22,28 @@ model User {
   logs                 AdminLog[]
   orders               Order[]
   systemLogs           SystemLog[]
+  sessions             AdminSession[]
 
   @@index([email])
   @@index([role])
+}
+
+model AdminSession {
+  id           String   @id @default(uuid())
+  userId       String
+  sessionToken String   @unique
+  ipAddress    String?
+  userAgent    String?
+  device       String?
+  location     String?
+  lastActive   DateTime @default(now()) @db.Timestamptz(6)
+  createdAt    DateTime @default(now()) @db.Timestamptz(6)
+  expiresAt    DateTime @db.Timestamptz(6)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([sessionToken])
+  @@index([lastActive])
 }
 
 model Category {
