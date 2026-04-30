@@ -57,8 +57,17 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     try {
       setLoggingOut(true);
 
+      // Get CSRF token from cookies
+      const csrfToken = document.cookie
+        .split('; ')
+        .find(row => row.startsWith('csrf_token='))
+        ?.split('=')[1];
+
       const response = await fetch(getAdminApiFullPath('/auth/logout'), {
         method: 'POST',
+        headers: {
+          'X-CSRF-Token': csrfToken || '',
+        },
         credentials: 'include',
       });
 
