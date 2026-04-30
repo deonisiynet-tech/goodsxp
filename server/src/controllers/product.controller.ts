@@ -10,6 +10,7 @@ import { AppError } from '../middleware/errorHandler.js';
 import { sanitizeHtml } from '../utils/validators.js';
 import { revalidateProduct, revalidateCatalog } from '../utils/revalidate.js';
 import path from 'path';
+import { getClientIp } from '../utils/getClientIp.js';
 
 const productService = new ProductService();
 const variantService = new VariantService();
@@ -377,7 +378,7 @@ export class ProductController {
         entity: 'ProductSpecification',
         entityId: specification.id,
         details: `${req.body.id ? 'Updated' : 'Created'} specification "${specification.key}" for product ${id}`,
-        ipAddress: req.ip,
+        ipAddress: getClientIp(req),
       });
 
       res.status(req.body.id ? 200 : 201).json(specification);
@@ -451,7 +452,7 @@ export class ProductController {
         entity: 'Product',
         entityId: product.id,
         details: `Created product: ${title}`,
-        ipAddress: req.ip,
+        ipAddress: getClientIp(req),
       });
 
       // ✅ REMOVED: No revalidation - admin gets fresh data via cache: 'no-store'
@@ -528,7 +529,7 @@ export class ProductController {
         entity: 'Product',
         entityId: id,
         details: `Updated product: ${title || id}`,
-        ipAddress: req.ip,
+        ipAddress: getClientIp(req),
       });
 
       // ✅ REMOVED: No revalidation - admin gets fresh data via cache: 'no-store'
@@ -559,7 +560,7 @@ export class ProductController {
         entity: 'Product',
         entityId: req.params.id,
         details: `Deleted product: ${product.title}`,
-        ipAddress: req.ip,
+        ipAddress: getClientIp(req),
       });
 
       // ✅ REMOVED: No revalidation - admin gets fresh data via cache: 'no-store'
@@ -786,7 +787,7 @@ export class ProductController {
         entity: 'ProductSpecification',
         entityId: id,
         details: `Deleted specification ${id}`,
-        ipAddress: req.ip,
+        ipAddress: getClientIp(req),
       });
 
       res.json(result);

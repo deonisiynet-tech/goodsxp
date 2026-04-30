@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { loginAttemptService } from '../services/login-attempt.service.js';
+import { getClientIp } from '../utils/getClientIp.js';
 
 /**
  * Middleware для ограничения попыток входа
@@ -9,7 +10,7 @@ import { loginAttemptService } from '../services/login-attempt.service.js';
  * Це запобігає brute-force під час Redis outage.
  */
 export const limitLoginAttempts = async (req: Request, res: Response, next: NextFunction) => {
-  const ip = req.ip || req.connection.remoteAddress || 'unknown';
+  const ip = getClientIp(req);
 
   try {
     const { blocked, remainingTime } = await loginAttemptService.isBlocked(ip);

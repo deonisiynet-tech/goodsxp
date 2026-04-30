@@ -10,6 +10,7 @@ import { loginLogService } from '../services/login-log.service.js';
 import { twoFAService } from '../services/twoFA.service.js';
 import { sessionService } from '../services/session.service.js';
 import { getJwtSecret, getJwtExpiresIn } from '../utils/jwt.js';
+import { getClientIp } from '../utils/getClientIp.js';
 
 const router = Router();
 
@@ -33,7 +34,7 @@ interface AdminLoginRequest {
 router.post('/login', limitLoginAttempts, async (req: Request, res: Response) => {
   try {
     const { email, password, twoFAToken } = req.body as AdminLoginRequest;
-    const ip = req.ip || req.connection.remoteAddress || 'unknown';
+    const ip = getClientIp(req);
     const userAgent = req.headers['user-agent'];
 
     // Validate input
@@ -265,7 +266,7 @@ router.post('/logout', async (req: Request, res: Response) => {
           data: {
             adminId,
             action: 'LOGOUT',
-            ipAddress: req.ip,
+            ipAddress: getClientIp(req),
             userAgent: req.headers['user-agent'],
             details: 'Admin logout',
           },

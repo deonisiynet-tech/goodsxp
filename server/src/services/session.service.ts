@@ -2,6 +2,7 @@ import { Request } from 'express';
 import crypto from 'crypto';
 import prisma from '../prisma/client.js';
 import { AppError } from '../middleware/errorHandler.js';
+import { getClientIp } from '../utils/getClientIp.js';
 
 interface SessionData {
   id: string;
@@ -72,7 +73,7 @@ export class SessionService {
    */
   async createSession(userId: string, token: string, req: Request): Promise<void> {
     const tokenHash = this.hashToken(token);
-    const ipAddress = req.ip || req.connection.remoteAddress || null;
+    const ipAddress = getClientIp(req);
     const userAgent = req.headers['user-agent'];
     const device = this.parseDevice(userAgent);
 

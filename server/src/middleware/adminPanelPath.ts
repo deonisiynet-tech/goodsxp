@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { getClientIp } from '../utils/getClientIp.js';
 
 /**
  * Получаем скрытый путь админки из переменных окружения
@@ -46,7 +47,7 @@ export const blockAdminScanning = (req: Request, res: Response, next: NextFuncti
   // Проверяем, не совпадает ли путь с заблокированными
   if (blockedPaths.includes(pathname)) {
     // Логируем попытку сканирования
-    console.warn(`🚨 Admin scanning attempt blocked: ${pathname} from ${req.ip}`);
+    console.warn(`🚨 Admin scanning attempt blocked: ${pathname} from ${getClientIp(req)}`);
 
     // Возвращаем 404 - как будто такой страницы не существует
     return res.status(404).json({

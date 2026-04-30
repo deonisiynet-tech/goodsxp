@@ -3,6 +3,7 @@ import { AuthService } from '../services/auth.service.js';
 import { AuthRequest } from '../middleware/auth.js';
 import { loginAttemptService } from '../services/login-attempt.service.js';
 import { loginLogService } from '../services/login-log.service.js';
+import { getClientIp } from '../utils/getClientIp.js';
 
 const authService = new AuthService();
 
@@ -20,7 +21,7 @@ export class AuthController {
   async login(req: Request, res: Response, next: NextFunction) {
     try {
       const { email, password } = req.body;
-      const ip = req.ip || req.connection.remoteAddress || 'unknown';
+      const ip = getClientIp(req);
       const userAgent = req.headers['user-agent'];
 
       const result = await authService.login(email, password);
@@ -39,7 +40,7 @@ export class AuthController {
 
       res.json(result);
     } catch (error: any) {
-      const ip = req.ip || req.connection.remoteAddress || 'unknown';
+      const ip = getClientIp(req);
       const userAgent = req.headers['user-agent'];
       const { email } = req.body || {};
 

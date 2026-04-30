@@ -1,4 +1,5 @@
 import rateLimit from 'express-rate-limit';
+import { getClientIp } from '../utils/getClientIp.js';
 
 /**
  * Rate limiter для админских маршрутов
@@ -15,7 +16,7 @@ export const adminRateLimiter = rateLimit({
   standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
   legacyHeaders: false, // Disable the `X-RateLimit-*` headers
   keyGenerator: (req) => {
-    return req.ip || req.connection.remoteAddress || 'unknown';
+    return getClientIp(req);
   },
   handler: (req, res) => {
     res.status(429).json({
@@ -55,7 +56,7 @@ export const strictRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => {
-    return req.ip || req.connection.remoteAddress || 'unknown';
+    return getClientIp(req);
   },
 });
 
@@ -74,7 +75,7 @@ export const orderRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => {
-    return req.ip || req.connection.remoteAddress || 'unknown';
+    return getClientIp(req);
   },
   handler: (req, res) => {
     res.status(429).json({
@@ -98,6 +99,6 @@ export const reviewRateLimiter = rateLimit({
   standardHeaders: true,
   legacyHeaders: false,
   keyGenerator: (req) => {
-    return req.ip || req.connection.remoteAddress || 'unknown';
+    return getClientIp(req);
   },
 });

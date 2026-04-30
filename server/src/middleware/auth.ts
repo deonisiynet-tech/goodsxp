@@ -5,6 +5,7 @@ import prisma from '../prisma/client.js';
 import { ActionType } from '@prisma/client';
 import { getJwtSecret, JWT_ALGORITHM, getTokenVersion } from '../utils/jwt.js';
 import { sessionService } from '../services/session.service.js';
+import { getClientIp } from '../utils/getClientIp.js';
 
 export interface AuthRequest extends Request {
   user?: {
@@ -163,7 +164,7 @@ export const logAdminAction = (action: ActionType, entity: string) => {
               entity,
               entityId: req.params.id,
               details: `${req.method} ${req.path}`,
-              ipAddress: req.ip,
+              ipAddress: getClientIp(req),
               userAgent: req.headers['user-agent'],
             },
           });

@@ -3,6 +3,7 @@ import { OrderService } from '../services/order.service.js';
 import { AuthRequest } from '../middleware/auth.js';
 import { AdminService } from '../services/admin.service.js';
 import { ActionType } from '@prisma/client';
+import { getClientIp } from '../utils/getClientIp.js';
 
 const orderService = new OrderService();
 const adminService = new AdminService();
@@ -159,7 +160,7 @@ export class OrderController {
         entity: 'Order',
         entityId: id,
         details: `Updated order status to ${status}`,
-        ipAddress: req.ip,
+        ipAddress: getClientIp(req),
       });
 
       res.json(order);
@@ -178,7 +179,7 @@ export class OrderController {
         action: ActionType.DELETE,
         entity: 'Order',
         entityId: req.params.id,
-        ipAddress: req.ip,
+        ipAddress: getClientIp(req),
       });
 
       res.json(result);

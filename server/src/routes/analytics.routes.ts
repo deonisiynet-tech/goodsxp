@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { Request, Response } from 'express';
 import { prisma } from '../prisma/config.js';
+import { getClientIp } from '../utils/getClientIp.js';
 
 const router = Router();
 
@@ -52,7 +53,7 @@ router.post('/heartbeat', async (req: Request, res: Response) => {
   try {
     const { visitorId, fingerprint, page, referrer } = req.body;
     const userAgent = req.headers['user-agent'] || '';
-    const ipAddress = req.ip || req.socket.remoteAddress || '';
+    const ipAddress = getClientIp(req);
 
     if (!visitorId) {
       return res.status(400).json({ error: 'visitorId is required' });

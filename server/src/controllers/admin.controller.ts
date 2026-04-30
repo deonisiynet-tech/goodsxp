@@ -4,6 +4,7 @@ import { LoggerService } from '../services/logger.service.js';
 import { AuthRequest } from '../middleware/auth.js';
 import { ActionType, LogLevel, LogSource } from '@prisma/client';
 import { prisma } from '../prisma/config.js';
+import { getClientIp } from '../utils/getClientIp.js';
 
 const adminService = new AdminService();
 const loggerService = new LoggerService();
@@ -48,7 +49,7 @@ export class AdminController {
         entity: 'User',
         entityId: id,
         details: `Role changed to ${role}`,
-        ipAddress: req.ip,
+        ipAddress: getClientIp(req),
       });
 
       res.json(user);
@@ -69,7 +70,7 @@ export class AdminController {
         action: ActionType.PASSWORD_RESET,
         entity: 'User',
         entityId: id,
-        ipAddress: req.ip,
+        ipAddress: getClientIp(req),
       });
 
       res.json({ message: 'Пароль скинуто', user });
@@ -96,7 +97,7 @@ export class AdminController {
         action: ActionType.DELETE,
         entity: 'User',
         entityId: req.params.id,
-        ipAddress: req.ip,
+        ipAddress: getClientIp(req),
       });
 
       res.json(result);
@@ -210,7 +211,7 @@ export class AdminController {
       await loggerService.adminAction(
         'Admin cleared all system logs',
         req.user?.id,
-        req.ip as string
+        getClientIp(req)
       );
 
       res.json({ success: true, message: 'Logs cleaned up with retention policy' });
@@ -269,7 +270,7 @@ export class AdminController {
         action: ActionType.SETTINGS_UPDATE,
         entity: 'SiteSettings',
         entityId: key,
-        ipAddress: req.ip,
+        ipAddress: getClientIp(req),
       });
 
       res.json(setting);
@@ -307,7 +308,7 @@ export class AdminController {
         message: `Store ${stringValue === 'true' ? 'enabled' : 'disabled'}`,
         source: LogSource.ADMIN_PANEL,
         userId: adminId,
-        ipAddress: req.ip,
+        ipAddress: getClientIp(req),
       });
 
       // ✅ ЛОГУВАННЯ ДІЇ
@@ -319,7 +320,7 @@ export class AdminController {
             entity: 'SiteSettings',
             entityId: 'storeEnabled',
             details: `Store ${stringValue === 'true' ? 'enabled' : 'disabled'}`,
-            ipAddress: req.ip,
+            ipAddress: getClientIp(req),
           });
         } catch (logError: any) {
           loggerService.log({
