@@ -28,16 +28,25 @@ function handleUnauthorized(path: string): never {
     throw new Error('Unauthorized');
   }
 
-  // Clear any auth state
-  localStorage.removeItem('token');
-  localStorage.removeItem('user');
+  console.warn('🚨 401 Unauthorized - forcing logout');
 
-  // Clear admin session cookie by setting it to expire
-  document.cookie = 'admin_session=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+  // Clear ALL auth state
+  localStorage.clear(); // Clear everything, not just token/user
+  sessionStorage.clear();
 
-  // Redirect to login with return URL
+  // Clear ALL cookies (admin_session, csrf_token, etc.)
+  document.cookie.split(';').forEach(cookie => {
+    const name = cookie.split('=')[0].trim();
+    document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+  });
+
+  // Dispatch custom event for other components to react
+  window.dispatchEvent(new CustomEvent('admin:unauthorized'));
+
+  // Force redirect (use replace to prevent back button)
   const currentPath = window.location.pathname;
-  window.location.href = getAdminLoginUrl(currentPath);
+  const loginUrl = getAdminLoginUrl(currentPath);
+  window.location.replace(loginUrl); // Use replace instead of href
 
   // This will never return, but TypeScript needs it
   throw new Error('Unauthorized - redirecting to login');
@@ -78,6 +87,7 @@ export async function adminFetch<T = any>(
     ...fetchOptions,
     headers,
     credentials: 'include',
+    cache: 'no-store', // Prevent caching - ensures fresh session checks
   };
 
   try {

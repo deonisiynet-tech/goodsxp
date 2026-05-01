@@ -105,7 +105,10 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
     }
 
     // 🔒 SECURITY: Check if session exists in DB (for admin sessions with sessionId)
+    // CRITICAL: This check MUST block the request if session is not found
     if (decoded.sid) {
+      console.debug(`🔍 Checking session: ${decoded.sid} for user: ${decoded.id}`);
+
       try {
         const session = await prisma.adminSession.findUnique({
           where: { id: decoded.sid },
@@ -113,7 +116,7 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
         });
 
         if (!session) {
-          console.warn(`⚠️ Auth: Session ${decoded.sid} not found — token invalidated`);
+          console.warn(`⚠️ Auth: Session ${decoded.sid} not found in DB — token invalidated`);
 
           // Clear cookie
           if (cookieToken) {
@@ -131,9 +134,11 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
           });
         }
 
+        console.debug(`✅ Session ${decoded.sid} found, expires: ${session.expiresAt.toISOString()}`);
+
         // Check if session expired
         if (session.expiresAt < new Date()) {
-          console.warn(`⚠️ Auth: Session ${decoded.sid} expired`);
+          console.warn(`⚠️ Auth: Session ${decoded.sid} expired at ${session.expiresAt.toISOString()}`);
 
           // Delete expired session
           await prisma.adminSession.delete({
@@ -156,9 +161,23 @@ export const authenticate = async (req: AuthRequest, res: Response, next: NextFu
           });
         }
       } catch (sessionError: any) {
-        console.error('❌ Session check error:', sessionError.message);
-        // Don't block request on session check error (DB might be down)
-        // But log it for monitoring
+        console.error('❌ CRITICAL: Session check failed:', sessionError.message);
+
+        // 🔒 SECURITY FIX: BLOCK request if we can't verify session
+        // If DB is down, fail closed (deny access) rather than fail open (allow access)
+        if (cookieToken) {
+          res.clearCookie('admin_session', {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'strict',
+            path: '/',
+          });
+        }
+
+        return res.status(503).json({
+          error: 'Service temporarily unavailable',
+          code: 'SESSION_CHECK_FAILED'
+        });
       }
     }
 

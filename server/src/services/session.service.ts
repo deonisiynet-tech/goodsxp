@@ -161,22 +161,28 @@ export class SessionService {
    * Delete a specific session (with ownership check)
    */
   async deleteSession(sessionId: string, userId: string): Promise<void> {
+    console.log(`🔍 Attempting to delete session: ${sessionId} for user: ${userId}`);
+
     const session = await prisma.adminSession.findUnique({
       where: { id: sessionId },
       select: { userId: true },
     });
 
     if (!session) {
+      console.warn(`⚠️ Session not found: ${sessionId}`);
       throw new AppError('Сесію не знайдено', 404);
     }
 
     if (session.userId !== userId) {
+      console.warn(`⚠️ Unauthorized session deletion attempt: ${sessionId} by user: ${userId}`);
       throw new AppError('Доступ заборонено', 403);
     }
 
     await prisma.adminSession.delete({
       where: { id: sessionId },
     });
+
+    console.log(`✅ Session deleted: ${sessionId}`);
   }
 
   /**

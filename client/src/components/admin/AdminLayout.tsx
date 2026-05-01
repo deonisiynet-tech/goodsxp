@@ -1,6 +1,6 @@
 'use client';
 
-import { ReactNode, useState } from 'react';
+import { ReactNode, useState, useEffect } from 'react';
 import { usePathname, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -18,7 +18,8 @@ import {
   Shield,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { getAdminPagePath, getAdminApiFullPath, getAdminBasePath } from '@/lib/admin-paths';
+import { getAdminPagePath, getAdminBasePath } from '@/lib/admin-paths';
+import { adminFetch, adminApi } from '@/lib/adminFetch';
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -32,6 +33,55 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
 
   // Отримуємо базовий шлях адмінки
   const adminPath = getAdminBasePath();
+
+  // 🔒 SECURITY: Background session validation
+  // Check session every 5 seconds to detect deleted sessions immediately
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        // Use /auth/me for lightweight health check (no session list query)
+        await adminFetch('/auth/me');
+      } catch (error: any) {
+        // adminFetch automatically handles 401 and redirects to login
+        console.debug('Session check failed:', error.message);
+      }
+    };
+
+    // Initial check
+    checkSession();
+
+    // Check every 5 seconds
+    const interval = setInterval(checkSession, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // 🔒 SECURITY: Global unauthorized event listener
+  // Ensures logout happens even if adminFetch isn't called directly
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      console.warn('🚨 Unauthorized event received - forcing logout');
+
+      // Clear state
+      localStorage.clear();
+      sessionStorage.clear();
+
+      // Clear cookies
+      document.cookie.split(';').forEach(cookie => {
+        const name = cookie.split('=')[0].trim();
+        document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
+      });
+
+      // Force redirect
+      window.location.replace(getAdminPagePath('/login'));
+    };
+
+    window.addEventListener('admin:unauthorized', handleUnauthorized);
+
+    return () => {
+      window.removeEventListener('admin:unauthorized', handleUnauthorized);
+    };
+  }, []);
 
   const menuItems = [
     { href: getAdminPagePath(''), icon: Home, label: 'Dashboard' },
@@ -57,23 +107,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     try {
       setLoggingOut(true);
 
-      // Get CSRF token from cookies
-      const csrfToken = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('csrf_token='))
-        ?.split('=')[1];
-
-      const response = await fetch(getAdminApiFullPath('/auth/logout'), {
-        method: 'POST',
-        headers: {
-          'X-CSRF-Token': csrfToken || '',
-        },
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        throw new Error('Помилка виходу');
-      }
+      await adminApi.post('/auth/logout');
 
       toast.success('Вихід виконано успішно');
       router.push(getAdminPagePath('/login'));

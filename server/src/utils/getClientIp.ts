@@ -40,6 +40,21 @@ export function getClientIp(req: Request): string {
     return normalizeIp(socketIp);
   }
 
+  // 🔍 DEBUG: Log when IP cannot be determined
+  console.warn('⚠️ IP Detection Failed:', {
+    path: req.path,
+    method: req.method,
+    headers: {
+      'cf-connecting-ip': req.headers['cf-connecting-ip'],
+      'x-forwarded-for': req.headers['x-forwarded-for'],
+      'x-real-ip': req.headers['x-real-ip'],
+    },
+    socket: {
+      remoteAddress: req.socket.remoteAddress,
+      connectionRemoteAddress: req.connection?.remoteAddress,
+    },
+  });
+
   return 'unknown';
 }
 

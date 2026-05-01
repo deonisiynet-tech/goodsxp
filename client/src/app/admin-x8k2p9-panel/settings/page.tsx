@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import StoreDisableConfirmModal from '@/components/admin/StoreDisableConfirmModal'
 import { getAdminApiFullPath, getAdminPagePath } from '@/lib/admin-paths'
+import { adminApi } from '@/lib/adminFetch'
 
 interface Settings {
   storeName: string
@@ -66,15 +67,8 @@ export default function SettingsPage() {
   const loadSettings = async () => {
     try {
       setLoading(true)
-      const response = await fetch(getAdminApiFullPath('/settings'), {
-        credentials: 'include',
-      })
+      const settings = await adminApi.get('/settings')
 
-      if (!response.ok) {
-        throw new Error('Failed to load settings')
-      }
-
-      const settings = await response.json()
       setForm({
         storeName: settings.storeName || 'GoodsXP',
         contactEmail: settings.contactEmail || '',
@@ -91,14 +85,8 @@ export default function SettingsPage() {
 
   const load2FAStatus = async () => {
     try {
-      const response = await fetch(getAdminApiFullPath('/auth/2fa/status'), {
-        credentials: 'include',
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        setTwoFAEnabled(data.twoFAEnabled)
-      }
+      const data = await adminApi.get('/auth/2fa/status')
+      setTwoFAEnabled(data.twoFAEnabled)
     } catch (error) {
       console.error('Error loading 2FA status:', error)
     }
@@ -121,21 +109,9 @@ export default function SettingsPage() {
           throw new Error(`Значення для ${setting.key} не може бути пустим`)
         }
 
-        const response = await fetch(getAdminApiFullPath(`/settings/${setting.key}`), {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            value: String(setting.value),
-          }),
-          credentials: 'include',
+        await adminApi.put(`/settings/${setting.key}`, {
+          value: String(setting.value),
         })
-
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}))
-          throw new Error(errorData.message || `Failed to save ${setting.key}`)
-        }
       }
 
       toast.success('Налаштування збережено')
@@ -150,37 +126,21 @@ export default function SettingsPage() {
   const handleGenerate2FA = async () => {
     try {
       setTwoFALoading(true)
-      // Отримуємо CSRF токен з cookies
-      const csrfToken = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('csrf_token='))
-        ?.split('=')[1]
 
-      const response = await fetch(getAdminApiFullPath('/auth/2fa/generate'), {
-        method: 'POST',
-        headers: {
-          'X-CSRF-Token': csrfToken || '',
-        },
-        credentials: 'include',
-      })
+      const data = await adminApi.post('/auth/2fa/generate')
 
-      if (!response.ok) {
-        const error = await response.json()
-        // ✅ FIX: More detailed error messages
-        if (error.error?.includes('вже увімкнено')) {
-          throw new Error('2FA вже увімкнено. Спочатку вимкніть поточний 2FA.')
-        }
-        throw new Error(error.error || 'Помилка генерації 2FA')
-      }
-
-      const data = await response.json()
       setQrCode(data.qrCode)
       setTwoFASecret(data.secret)
       setShowQR(true)
       toast.success('Секрет 2FA згенеровано. Відскануйте QR-код.')
     } catch (error: any) {
       console.error('❌ 2FA generation error:', error)
-      toast.error(error.message || 'Помилка генерації 2FA')
+      // More detailed error messages
+      if (error.message?.includes('вже увімкнено')) {
+        toast.error('2FA вже увімкнено. Спочатку вимкніть поточний 2FA.')
+      } else {
+        toast.error(error.message || 'Помилка генерації 2FA')
+      }
     } finally {
       setTwoFALoading(false)
     }
@@ -194,30 +154,8 @@ export default function SettingsPage() {
 
     try {
       setTwoFALoading(true)
-      // Отримуємо CSRF токен з cookies
-      const csrfToken = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('csrf_token='))
-        ?.split('=')[1]
 
-      const response = await fetch(getAdminApiFullPath('/auth/2fa/enable'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfToken || '',
-        },
-        body: JSON.stringify({ token: twoFAToken }),
-        credentials: 'include',
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        // ✅ FIX: More detailed error messages
-        if (error.error?.includes('Невірний')) {
-          throw new Error('Невірний код. Перевірте код у Google Authenticator і спробуйте ще раз.')
-        }
-        throw new Error(error.error || 'Помилка активації 2FA')
-      }
+      await adminApi.post('/auth/2fa/enable', { token: twoFAToken })
 
       setTwoFAEnabled(true)
       setShowQR(false)
@@ -225,7 +163,12 @@ export default function SettingsPage() {
       toast.success('✅ 2FA успішно увімкнено! Тепер при вході потрібен код з додатку.')
     } catch (error: any) {
       console.error('❌ 2FA enable error:', error)
-      toast.error(error.message || 'Помилка активації 2FA')
+      // More detailed error messages
+      if (error.message?.includes('Невірний')) {
+        toast.error('Невірний код. Перевірте код у Google Authenticator і спробуйте ще раз.')
+      } else {
+        toast.error(error.message || 'Помилка активації 2FA')
+      }
     } finally {
       setTwoFALoading(false)
     }
@@ -244,33 +187,7 @@ export default function SettingsPage() {
     try {
       setTwoFALoading(true)
 
-      // Отримуємо CSRF токен з cookies
-      const csrfToken = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('csrf_token='))
-        ?.split('=')[1]
-
-      const response = await fetch(getAdminApiFullPath('/auth/2fa/disable'), {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfToken || '',
-        },
-        body: JSON.stringify({ token: twoFAToken }),
-        credentials: 'include',
-      })
-
-      if (!response.ok) {
-        const error = await response.json()
-        // ✅ FIX: More detailed error messages
-        if (error.error?.includes('Невірний')) {
-          throw new Error('Невірний код. Перевірте код у Google Authenticator і спробуйте ще раз.')
-        }
-        if (error.error?.includes('не увімкнено')) {
-          throw new Error('2FA вже вимкнено.')
-        }
-        throw new Error(error.error || 'Помилка вимкнення 2FA')
-      }
+      await adminApi.post('/auth/2fa/disable', { token: twoFAToken })
 
       setTwoFAEnabled(false)
       setShowQR(false)
@@ -280,7 +197,14 @@ export default function SettingsPage() {
       toast.success('✅ 2FA успішно вимкнено. Секретний ключ видалено.')
     } catch (error: any) {
       console.error('❌ 2FA disable error:', error)
-      toast.error(error.message || 'Помилка вимкнення 2FA')
+      // More detailed error messages
+      if (error.message?.includes('Невірний')) {
+        toast.error('Невірний код. Перевірте код у Google Authenticator і спробуйте ще раз.')
+      } else if (error.message?.includes('не увімкнено')) {
+        toast.error('2FA вже вимкнено.')
+      } else {
+        toast.error(error.message || 'Помилка вимкнення 2FA')
+      }
     } finally {
       setTwoFALoading(false)
     }
@@ -296,18 +220,7 @@ export default function SettingsPage() {
   const handleStoreEnabledToggle = async (enable: boolean) => {
     try {
       if (enable) {
-        const response = await fetch(getAdminApiFullPath('/settings/storeEnabled'), {
-          method: 'PUT',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ value: 'true' }),
-          credentials: 'include',
-        })
-
-        if (!response.ok) {
-          throw new Error('Failed to enable store')
-        }
+        await adminApi.put('/settings/storeEnabled', { value: 'true' })
 
         setForm({ ...form, storeEnabled: true })
         toast.success('Магазин включено')
@@ -323,18 +236,7 @@ export default function SettingsPage() {
 
   const handleDisableConfirm = async () => {
     try {
-      const response = await fetch(getAdminApiFullPath('/settings/storeEnabled'), {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ value: 'false' }),
-        credentials: 'include',
-      })
-
-      if (!response.ok) {
-        throw new Error('Failed to disable store')
-      }
+      await adminApi.put('/settings/storeEnabled', { value: 'false' })
 
       setForm({ ...form, storeEnabled: false })
       setShowDisableModal(false)

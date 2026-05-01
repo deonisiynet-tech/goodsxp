@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { X } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { getAdminApiFullPath } from '@/lib/admin-paths';
+import { adminApi } from '@/lib/adminFetch';
 
 interface PromoCode {
   id: string;
@@ -106,32 +106,14 @@ export default function PromoCodeModal({ promoCode, onClose }: PromoCodeModalPro
         isActive,
       };
 
-      const url = promoCode
-        ? getAdminApiFullPath(`/promo-codes/${promoCode.id}`)
-        : getAdminApiFullPath('/promo-codes');
-
-      // Get CSRF token from cookies
-      const csrfToken = document.cookie
-        .split('; ')
-        .find(row => row.startsWith('csrf_token='))
-        ?.split('=')[1];
-
-      const response = await fetch(url, {
-        method: promoCode ? 'PUT' : 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-CSRF-Token': csrfToken || '',
-        },
-        credentials: 'include',
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Помилка збереження промокоду');
+      if (promoCode) {
+        await adminApi.put(`/promo-codes/${promoCode.id}`, data);
+        toast.success('Промокод оновлено');
+      } else {
+        await adminApi.post('/promo-codes', data);
+        toast.success('Промокод створено');
       }
 
-      toast.success(promoCode ? 'Промокод оновлено' : 'Промокод створено');
       onClose();
     } catch (error: any) {
       toast.error(error.message || 'Помилка збереження');

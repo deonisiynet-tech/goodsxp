@@ -370,6 +370,16 @@ app.use('/api/specifications', specificationRoutes);
 app.use('/api/orders', orderRoutes);
 // Public promo code validation endpoint (for checkout)
 app.use('/api/promo-codes', apiRateLimiter, promoCodeRoutes);
+
+// 🔒 SECURITY: Disable caching for all admin API routes
+// Prevents browser from caching admin responses, ensuring immediate logout on session deletion
+app.use(`${adminApiPrefix}`, (req, res, next) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+  next();
+});
+
 // CSRF для адмінських маршрутів (cookie-based auth)
 app.use(`${adminApiPrefix}`, csrfProtection);
 // ✅ Rate limiting для admin CRUD — запобігає спаму
