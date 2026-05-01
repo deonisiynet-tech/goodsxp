@@ -13,7 +13,7 @@ import {
   LogOut,
   RefreshCw,
 } from 'lucide-react';
-import { getAdminApiFullPath } from '@/lib/admin-paths';
+import { adminApi } from '@/lib/adminFetch';
 
 interface Session {
   id: string;
@@ -43,15 +43,7 @@ export default function SecurityPage() {
   const loadSessions = async () => {
     try {
       setLoading(true);
-      const response = await fetch(getAdminApiFullPath('/sessions'), {
-        credentials: 'include',
-      });
-
-      if (!response.ok) {
-        throw new Error('Помилка завантаження сесій');
-      }
-
-      const data = await response.json();
+      const data = await adminApi.get<{ sessions: Session[] }>('/sessions');
       setSessions(data.sessions || []);
     } catch (error: any) {
       console.error('Error loading sessions:', error);
@@ -74,32 +66,11 @@ export default function SecurityPage() {
   const executeAction = async (twoFAToken: string) => {
     if (!pendingAction) return;
 
-    const csrfToken = document.cookie
-      .split('; ')
-      .find((row) => row.startsWith('csrf_token='))
-      ?.split('=')[1];
-
     try {
       if (pendingAction.type === 'delete' && pendingAction.sessionId) {
         setActionLoading(pendingAction.sessionId);
 
-        const response = await fetch(
-          getAdminApiFullPath(`/sessions/${pendingAction.sessionId}`),
-          {
-            method: 'DELETE',
-            headers: {
-              'Content-Type': 'application/json',
-              'X-CSRF-Token': csrfToken || '',
-            },
-            body: JSON.stringify({ twoFAToken }),
-            credentials: 'include',
-          }
-        );
-
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || 'Помилка видалення сесії');
-        }
+        await adminApi.delete(`/sessions/${pendingAction.sessionId}`, { twoFAToken });
 
         setSessions((prev) =>
           prev.filter((s) => s.id !== pendingAction.sessionId)
@@ -108,22 +79,11 @@ export default function SecurityPage() {
       } else if (pendingAction.type === 'deleteAll') {
         setActionLoading('all');
 
-        const response = await fetch(getAdminApiFullPath('/sessions'), {
-          method: 'DELETE',
-          headers: {
-            'Content-Type': 'application/json',
-            'X-CSRF-Token': csrfToken || '',
-          },
-          body: JSON.stringify({ twoFAToken }),
-          credentials: 'include',
-        });
+        const data = await adminApi.delete<{ message: string; deletedCount: number }>(
+          '/sessions',
+          { twoFAToken }
+        );
 
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || 'Помилка видалення сесій');
-        }
-
-        const data = await response.json();
         setSessions((prev) => prev.filter((s) => s.isCurrent));
         toast.success(data.message || 'Сесії видалено');
       }

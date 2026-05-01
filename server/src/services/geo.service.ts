@@ -36,7 +36,7 @@ export class GeoService {
 
       // ip-api.com безкоштовний API
       const response = await fetch(
-        `http://ip-api.com/json/${ip}?fields=country,city,regionName,org,status`,
+        `https://ip-api.com/json/${ip}?fields=country,city,regionName,org,status`,
         { timeout: 5000 } as any
       );
 
