@@ -7,6 +7,7 @@ import StoreStatusChecker from '@/components/StoreStatusChecker';
 import ScrollToTop from '@/components/ScrollToTop';
 import PWAInstallPrompt from '@/components/PWAInstallPrompt';
 import CartResumePopup from '@/components/CartResumePopup';
+import AdminClassGuard from '@/components/AdminClassGuard';
 import { generateOrganizationJsonLd, generateWebSiteJsonLd } from '@/lib/schema';
 
 const inter = Inter({
@@ -112,6 +113,7 @@ export default function RootLayout({
           }}
         />
         <Providers>
+          <AdminClassGuard />
           <AnalyticsTracker />
           <StoreStatusChecker />
           {children}

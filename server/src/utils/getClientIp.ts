@@ -11,10 +11,23 @@ import { Request } from 'express';
  * 4. Socket remote address
  */
 export function getClientIp(req: Request): string {
+  // 🔍 DEBUG: Log all IP sources for diagnostics
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('🔍 IP Detection Debug:', {
+      'cf-connecting-ip': req.headers['cf-connecting-ip'],
+      'x-forwarded-for': req.headers['x-forwarded-for'],
+      'x-real-ip': req.headers['x-real-ip'],
+      'socket.remoteAddress': req.socket?.remoteAddress,
+      'connection.remoteAddress': req.connection?.remoteAddress,
+    });
+  }
+
   // 1. Cloudflare CDN (якщо використовується)
   const cfIp = req.headers['cf-connecting-ip'];
   if (cfIp && typeof cfIp === 'string') {
-    return normalizeIp(cfIp);
+    const normalized = normalizeIp(cfIp);
+    console.log(`✅ IP from cf-connecting-ip: ${normalized}`);
+    return normalized;
   }
 
   // 2. X-Forwarded-For can contain multiple IPs: "client, proxy1, proxy2"
@@ -25,19 +38,25 @@ export function getClientIp(req: Request): string {
       ? forwarded.split(',')
       : forwarded;
     const clientIp = ips[0].trim();
-    return normalizeIp(clientIp);
+    const normalized = normalizeIp(clientIp);
+    console.log(`✅ IP from x-forwarded-for: ${normalized} (from chain: ${forwarded})`);
+    return normalized;
   }
 
   // 3. X-Real-IP is set by some proxies (nginx)
   const realIp = req.headers['x-real-ip'];
   if (realIp && typeof realIp === 'string') {
-    return normalizeIp(realIp);
+    const normalized = normalizeIp(realIp);
+    console.log(`✅ IP from x-real-ip: ${normalized}`);
+    return normalized;
   }
 
   // 4. Fallback to socket address
-  const socketIp = req.socket.remoteAddress || req.connection?.remoteAddress;
+  const socketIp = req.socket?.remoteAddress || req.connection?.remoteAddress;
   if (socketIp) {
-    return normalizeIp(socketIp);
+    const normalized = normalizeIp(socketIp);
+    console.log(`✅ IP from socket: ${normalized}`);
+    return normalized;
   }
 
   // 🔍 DEBUG: Log when IP cannot be determined
@@ -50,7 +69,7 @@ export function getClientIp(req: Request): string {
       'x-real-ip': req.headers['x-real-ip'],
     },
     socket: {
-      remoteAddress: req.socket.remoteAddress,
+      remoteAddress: req.socket?.remoteAddress,
       connectionRemoteAddress: req.connection?.remoteAddress,
     },
   });

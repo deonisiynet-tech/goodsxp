@@ -40,6 +40,16 @@ function handleUnauthorized(path: string): never {
     document.cookie = `${name}=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT`;
   });
 
+  // 🔒 CRITICAL: Remove admin CSS classes to prevent UI breaking
+  document.body.classList.remove('admin');
+  document.body.classList.remove('debug');
+  document.body.classList.remove('auth');
+  document.body.classList.remove('admin-mode');
+
+  // Remove any focus/outline styles
+  document.body.style.outline = '';
+  document.documentElement.classList.remove('admin');
+
   // Dispatch custom event for other components to react
   window.dispatchEvent(new CustomEvent('admin:unauthorized'));
 
