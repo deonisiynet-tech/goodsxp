@@ -1,6 +1,6 @@
 import { Request } from 'express';
 import crypto from 'crypto';
-import UAParser from 'ua-parser-js';
+import { UAParser } from 'ua-parser-js';
 import prisma from '../prisma/client.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { getClientIp } from '../utils/getClientIp.js';
