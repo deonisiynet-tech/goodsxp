@@ -185,9 +185,8 @@ export default function SecurityPage() {
                 <div className="flex items-start justify-between gap-4">
                   <div className="space-y-3 flex-1">
                     <div className="flex items-center gap-2">
-                      <Smartphone size={18} className="text-primary" />
-                      <span className="text-white font-medium">
-                        {session.device || 'Unknown Device'}
+                      <span className="text-white font-medium text-lg">
+                        {session.device || '❓ Unknown Device'}
                       </span>
                       <span className="px-2 py-0.5 bg-primary/20 border border-primary/30 rounded-full text-primary text-xs font-medium">
                         Це ви
@@ -202,7 +201,7 @@ export default function SecurityPage() {
                             {session.ipAddress}
                             {session.location && (
                               <span className="text-slate-400 ml-1">
-                                ({session.location})
+                                • {session.location}
                               </span>
                             )}
                           </span>
@@ -211,7 +210,7 @@ export default function SecurityPage() {
                       <div className="flex items-center gap-2">
                         <Clock size={16} />
                         <span>
-                          Остання активність: {formatDate(session.lastActive)}
+                          {formatDate(session.lastActive)}
                         </span>
                       </div>
                     </div>
@@ -250,9 +249,8 @@ export default function SecurityPage() {
                   <div className="flex items-start justify-between gap-4">
                     <div className="space-y-3 flex-1">
                       <div className="flex items-center gap-2">
-                        <Smartphone size={18} className="text-slate-400" />
-                        <span className="text-white font-medium">
-                          {session.device || 'Unknown Device'}
+                        <span className="text-white font-medium text-lg">
+                          {session.device || '❓ Unknown Device'}
                         </span>
                       </div>
 
@@ -264,7 +262,7 @@ export default function SecurityPage() {
                               {session.ipAddress}
                               {session.location && (
                                 <span className="text-slate-400 ml-1">
-                                  ({session.location})
+                                  • {session.location}
                                 </span>
                               )}
                             </span>
@@ -273,7 +271,6 @@ export default function SecurityPage() {
                         <div className="flex items-center gap-2">
                           <Clock size={16} />
                           <span>
-                            Остання активність:{' '}
                             {formatDate(session.lastActive)}
                           </span>
                         </div>

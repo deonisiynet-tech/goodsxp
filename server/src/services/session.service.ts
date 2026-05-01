@@ -1,5 +1,6 @@
 import { Request } from 'express';
 import crypto from 'crypto';
+import UAParser from 'ua-parser-js';
 import prisma from '../prisma/client.js';
 import { AppError } from '../middleware/errorHandler.js';
 import { getClientIp } from '../utils/getClientIp.js';
@@ -25,48 +26,69 @@ export class SessionService {
   }
 
   /**
-   * Parse user-agent string to extract device info
+   * Parse user-agent string to extract device info using ua-parser-js
+   * Returns formatted device string with icon and details
    */
   private parseDevice(userAgent: string | undefined): string {
-    if (!userAgent) return 'Unknown Device';
+    if (!userAgent) return '❓ Unknown Device';
 
-    // Extract browser
-    let browser = 'Unknown Browser';
-    if (userAgent.includes('Chrome') && !userAgent.includes('Edg')) {
-      browser = 'Chrome';
-    } else if (userAgent.includes('Firefox')) {
-      browser = 'Firefox';
-    } else if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) {
-      browser = 'Safari';
-    } else if (userAgent.includes('Edg')) {
-      browser = 'Edge';
-    } else if (userAgent.includes('Opera') || userAgent.includes('OPR')) {
-      browser = 'Opera';
-    }
+    const parser = new UAParser(userAgent);
+    const result = parser.getResult();
 
-    // Extract OS
-    let os = 'Unknown OS';
-    if (userAgent.includes('Windows NT 10.0')) {
-      os = 'Windows 10/11';
-    } else if (userAgent.includes('Windows NT 6.3')) {
-      os = 'Windows 8.1';
-    } else if (userAgent.includes('Windows NT 6.2')) {
-      os = 'Windows 8';
-    } else if (userAgent.includes('Windows NT 6.1')) {
-      os = 'Windows 7';
-    } else if (userAgent.includes('Windows')) {
-      os = 'Windows';
-    } else if (userAgent.includes('Mac OS X')) {
-      os = 'macOS';
-    } else if (userAgent.includes('Linux')) {
-      os = 'Linux';
-    } else if (userAgent.includes('Android')) {
+    const browser = result.browser.name || 'Unknown Browser';
+    const browserVersion = result.browser.version ? ` ${result.browser.version.split('.')[0]}` : '';
+    let os = result.os.name || 'Unknown OS';
+    const osVersion = result.os.version || '';
+    const deviceType = result.device.type; // 'mobile', 'tablet', 'desktop', undefined
+    const deviceModel = result.device.model || '';
+    const deviceVendor = result.device.vendor || '';
+
+    // 🔧 FIX: Android devices often show as "Linux" - correct this
+    if (os === 'Linux' && deviceType === 'mobile') {
       os = 'Android';
-    } else if (userAgent.includes('iOS') || userAgent.includes('iPhone') || userAgent.includes('iPad')) {
-      os = 'iOS';
     }
 
-    return `${browser} on ${os}`;
+    // Format device name based on type
+    let deviceIcon = '💻'; // Default desktop
+    let deviceName = '';
+
+    if (deviceType === 'mobile') {
+      deviceIcon = '📱';
+
+      // Try to show model if available
+      if (deviceModel) {
+        // Clean up model name (remove vendor if it's duplicate)
+        const cleanModel = deviceModel.replace(deviceVendor, '').trim();
+        deviceName = cleanModel || deviceModel;
+      } else if (deviceVendor) {
+        deviceName = `${deviceVendor} Phone`;
+      } else {
+        deviceName = `${os} Phone`;
+      }
+    } else if (deviceType === 'tablet') {
+      deviceIcon = '📱';
+      deviceName = deviceModel || `${os} Tablet`;
+    } else {
+      // Desktop
+      deviceIcon = '💻';
+      deviceName = os;
+      if (osVersion) {
+        // Show major version only (e.g., "Windows 10" not "Windows 10.0.19041")
+        const majorVersion = osVersion.split('.')[0];
+        if (majorVersion && majorVersion !== os) {
+          deviceName += ` ${majorVersion}`;
+        }
+      }
+    }
+
+    // Format: "📱 Redmi Note 12 (Chrome, Android)" or "💻 Windows 10 (Chrome)"
+    const browserInfo = `${browser}${browserVersion}`;
+
+    if (deviceType === 'mobile' || deviceType === 'tablet') {
+      return `${deviceIcon} ${deviceName} (${browserInfo}, ${os})`;
+    } else {
+      return `${deviceIcon} ${deviceName} (${browserInfo})`;
+    }
   }
 
   /**
