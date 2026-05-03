@@ -71,7 +71,7 @@ async function fetchProductBySlug(
         revalidate: 0, // ✅ No cache for preview - always fresh data
         tags: safeTags
       } : {
-        revalidate: 60, // ✅ 1 minute for normal view
+        revalidate: 10, // ✅ 10 seconds - faster updates after admin changes
         tags: safeTags
       },
       redirect: 'manual',
@@ -96,7 +96,7 @@ async function fetchProductBySlug(
           revalidate: 0, // ✅ No cache for preview
           tags: safeTags
         } : {
-          revalidate: 60, // ✅ 1 minute for normal view
+          revalidate: 10, // ✅ 10 seconds - match product cache
           tags: safeTags
         },
       }, 30000).catch(err => {
@@ -108,7 +108,7 @@ async function fetchProductBySlug(
           revalidate: 0, // ✅ No cache for preview
           tags: safeTags
         } : {
-          revalidate: 60, // ✅ 1 minute for normal view
+          revalidate: 10, // ✅ 10 seconds - match product cache
           tags: safeTags
         },
       }, 30000).catch(err => {

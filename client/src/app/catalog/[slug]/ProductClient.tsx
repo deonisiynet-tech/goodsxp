@@ -81,6 +81,9 @@ export default function ProductClient({ product }: { product: Product }) {
   const thumbnailsRef = useRef<HTMLDivElement>(null);
   const imagesLoadedRef = useRef<string | null>(null);
 
+  // ✅ Track if images have been loaded from API (not from SSR props)
+  const [imagesFullyLoaded, setImagesFullyLoaded] = useState(false);
+
   const addItem = useCartStore((state) => state.addItem);
   const setLastAddedPosition = useCartStore((state) => state.setLastAddedPosition);
   const wishlistToggle = useWishlistStore((state) => state.toggleItem);
@@ -125,6 +128,10 @@ export default function ProductClient({ product }: { product: Product }) {
 
   // Load initial data when product changes
   useEffect(() => {
+    // ✅ Скидаємо прапорець при зміні товару
+    setImagesFullyLoaded(false);
+    imagesLoadedRef.current = null;
+
     loadRelated(product.id);
     loadProductImages(product.id);
     loadReviews(product.slug);
@@ -148,12 +155,16 @@ export default function ProductClient({ product }: { product: Product }) {
 
   // Filter images when variant changes
   useEffect(() => {
+    // ✅ Якщо ще не завантажили з API — чекаємо
+    if (!imagesFullyLoaded) {
+      console.log('[FilteredImages] Waiting for API load...');
+      return;
+    }
+
     if (productImages.length === 0) {
-      // Fallback to product.images if no ProductImage records
-      // ✅ Дедуплікація: видаляємо повторювані URL
-      const uniqueProductImages = Array.from(new Set(product.images || []));
-      console.log('[FilteredImages] Using fallback product.images:', product.images?.length || 0, '→ unique:', uniqueProductImages.length);
-      setFilteredImages(uniqueProductImages);
+      // ✅ Якщо API повернув порожній масив — показуємо порожній список
+      console.log('[FilteredImages] No images from API');
+      setFilteredImages([]);
       return;
     }
 
@@ -169,12 +180,11 @@ export default function ProductClient({ product }: { product: Product }) {
 
     // ✅ Дедуплікація відфільтрованих зображень
     const uniqueFiltered = Array.from(new Set(filtered));
-    const uniqueProductImages = Array.from(new Set(product.images || []));
 
-    console.log('[FilteredImages] Filtered for variant:', selectedVariantValue, 'count:', filtered.length, '→ unique:', uniqueFiltered.length);
-    setFilteredImages(uniqueFiltered.length > 0 ? uniqueFiltered : uniqueProductImages);
+    console.log('[FilteredImages] Filtered for variant:', selectedVariantValue, 'count:', uniqueFiltered.length);
+    setFilteredImages(uniqueFiltered);
     setSelectedImage(0); // Reset to first image
-  }, [selectedVariant, productImages, product.images]);
+  }, [selectedVariant, productImages, imagesFullyLoaded]); // ✅ Видалено product.images з dependencies
 
   const loadProductImages = async (productId: string) => {
     // ✅ Захист від повторних викликів
@@ -198,6 +208,7 @@ export default function ProductClient({ product }: { product: Product }) {
         // ✅ Hard reset: спочатку очищаємо, потім встановлюємо нові
         setProductImages([]);
         setProductImages(uniqueImages);
+        setImagesFullyLoaded(true); // ✅ Позначаємо що завантажили з API
 
         // ✅ Позначаємо що завантажили
         imagesLoadedRef.current = productId;
@@ -206,6 +217,7 @@ export default function ProductClient({ product }: { product: Product }) {
       // Fallback to product.images
       console.log('[ProductImages] Fetch failed, using fallback');
       setProductImages([]);
+      setImagesFullyLoaded(true); // ✅ Навіть при помилці не використовуємо старі дані
     }
   };
 
