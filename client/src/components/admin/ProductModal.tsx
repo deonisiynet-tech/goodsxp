@@ -454,8 +454,16 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
         // Don't throw - product is already saved
       }
 
-      // Save image-variant assignments
+      // ✅ Sync image-variant assignments with ProductImage table
       try {
+        // 1️⃣ Спочатку видаляємо ВСІ старі записи ProductImage для цього товару
+        console.log('🗑️ Deleting old ProductImage records...');
+        await fetch(`/api/product-images/${savedProductId}/clear`, {
+          method: 'DELETE',
+        });
+
+        // 2️⃣ Потім додаємо нові записи для кожного зображення
+        console.log('➕ Adding new ProductImage records:', allImageUrls.length);
         for (const imageUrl of allImageUrls) {
           const variantValue = imageVariants[imageUrl] || null;
           await fetch(`/api/product-images/${savedProductId}`, {
@@ -464,9 +472,9 @@ export default function ProductModal({ product, onClose }: ProductModalProps) {
             body: JSON.stringify({ imageUrl, variantValue }),
           });
         }
-        console.log('✅ Image variants synced successfully')
+        console.log('✅ Image variants synced successfully');
       } catch (imgError: any) {
-        console.error('❌ Image variants sync error:', imgError)
+        console.error('❌ Image variants sync error:', imgError);
         // Don't throw - product is already saved
       }
 

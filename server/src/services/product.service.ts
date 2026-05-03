@@ -611,6 +611,7 @@ export class ProductService {
       productId: id,
       imagesCount: data.images?.length,
       images: data.images,
+      note: 'This updates Product.images field only, not ProductImage table'
     });
 
     try {
@@ -623,6 +624,7 @@ export class ProductService {
         productId: result.id,
         imagesCount: result.images.length,
         images: result.images,
+        note: 'ProductImage table will be synced separately by frontend'
       });
 
       // Інвалідуємо кеш

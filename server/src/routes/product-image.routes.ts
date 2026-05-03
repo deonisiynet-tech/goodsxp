@@ -13,6 +13,9 @@ router.get('/:productId/variant', productImageController.getImagesForVariant);
 // Додати фото (тільки адмін)
 router.post('/:productId', authenticate, authorize('ADMIN'), productImageController.addImage);
 
+// Очистити всі фото товару (тільки адмін) - для синхронізації
+router.delete('/:productId/clear', authenticate, authorize('ADMIN'), productImageController.clearProductImages);
+
 // Оновити прив'язку фото до варіанту (тільки адмін)
 router.patch('/:imageId/variant', authenticate, authorize('ADMIN'), productImageController.updateImageVariant);
 

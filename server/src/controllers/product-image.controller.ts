@@ -55,6 +55,16 @@ export class ProductImageController {
     }
   }
 
+  async clearProductImages(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { productId } = req.params;
+      const result = await productImageService.clearProductImages(productId);
+      res.json(result);
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async deleteImage(req: Request, res: Response, next: NextFunction) {
     try {
       const { imageId } = req.params;

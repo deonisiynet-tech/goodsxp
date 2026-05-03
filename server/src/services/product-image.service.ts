@@ -81,6 +81,23 @@ export class ProductImageService {
   }
 
   /**
+   * Видалити всі фото товару (для синхронізації)
+   */
+  async clearProductImages(productId: string) {
+    const product = await prisma.product.findUnique({ where: { id: productId } });
+    if (!product) {
+      throw new AppError('Товар не знайдено', 404);
+    }
+
+    const deleted = await prisma.productImage.deleteMany({
+      where: { productId },
+    });
+
+    console.log(`🗑️ Cleared ${deleted.count} ProductImage records for product ${productId}`);
+    return { success: true, deleted: deleted.count };
+  }
+
+  /**
    * Видалити фото
    */
   async deleteImage(imageId: string) {
