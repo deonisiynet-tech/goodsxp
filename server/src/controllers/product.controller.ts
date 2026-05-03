@@ -455,8 +455,9 @@ export class ProductController {
         ipAddress: getClientIp(req),
       });
 
-      // ✅ REMOVED: No revalidation - admin gets fresh data via cache: 'no-store'
-      // Frontend will refresh immediately after save
+      // ✅ Revalidate product page and catalog after creation
+      revalidateProduct(product.slug);
+      revalidateCatalog();
 
       res.status(201).json(product);
     } catch (error) {
@@ -532,8 +533,9 @@ export class ProductController {
         ipAddress: getClientIp(req),
       });
 
-      // ✅ REMOVED: No revalidation - admin gets fresh data via cache: 'no-store'
-      // Frontend will refresh immediately after save
+      // ✅ Revalidate product page and catalog after update
+      revalidateProduct(product.slug);
+      revalidateCatalog();
 
       res.json(product);
     } catch (error: any) {
@@ -563,8 +565,9 @@ export class ProductController {
         ipAddress: getClientIp(req),
       });
 
-      // ✅ REMOVED: No revalidation - admin gets fresh data via cache: 'no-store'
-      // Frontend will refresh immediately after delete
+      // ✅ Revalidate product page and catalog after deletion
+      revalidateProduct(product.slug);
+      revalidateCatalog();
 
       res.json(result);
     } catch (error) {

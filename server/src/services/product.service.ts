@@ -607,10 +607,22 @@ export class ProductService {
     if (data.stock !== undefined) updateData.stock = data.stock;
     if (data.isActive !== undefined) updateData.isActive = data.isActive;
 
+    console.log('📝 Product update:', {
+      productId: id,
+      imagesCount: data.images?.length,
+      images: data.images,
+    });
+
     try {
       const result = await prisma.product.update({
         where: { id },
         data: updateData,
+      });
+
+      console.log('✅ Product updated:', {
+        productId: result.id,
+        imagesCount: result.images.length,
+        images: result.images,
       });
 
       // Інвалідуємо кеш

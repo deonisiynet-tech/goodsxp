@@ -150,8 +150,10 @@ export default function ProductClient({ product }: { product: Product }) {
   useEffect(() => {
     if (productImages.length === 0) {
       // Fallback to product.images if no ProductImage records
-      console.log('[FilteredImages] Using fallback product.images:', product.images?.length || 0);
-      setFilteredImages(product.images || []);
+      // ✅ Дедуплікація: видаляємо повторювані URL
+      const uniqueProductImages = Array.from(new Set(product.images || []));
+      console.log('[FilteredImages] Using fallback product.images:', product.images?.length || 0, '→ unique:', uniqueProductImages.length);
+      setFilteredImages(uniqueProductImages);
       return;
     }
 
@@ -165,8 +167,12 @@ export default function ProductClient({ product }: { product: Product }) {
       .filter(img => !img.variantValue || img.variantValue === selectedVariantValue)
       .map(img => img.imageUrl);
 
-    console.log('[FilteredImages] Filtered for variant:', selectedVariantValue, 'count:', filtered.length);
-    setFilteredImages(filtered.length > 0 ? filtered : product.images || []);
+    // ✅ Дедуплікація відфільтрованих зображень
+    const uniqueFiltered = Array.from(new Set(filtered));
+    const uniqueProductImages = Array.from(new Set(product.images || []));
+
+    console.log('[FilteredImages] Filtered for variant:', selectedVariantValue, 'count:', filtered.length, '→ unique:', uniqueFiltered.length);
+    setFilteredImages(uniqueFiltered.length > 0 ? uniqueFiltered : uniqueProductImages);
     setSelectedImage(0); // Reset to first image
   }, [selectedVariant, productImages, product.images]);
 
