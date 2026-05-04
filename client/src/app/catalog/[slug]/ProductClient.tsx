@@ -989,7 +989,7 @@ export default function ProductClient({ product }: { product: Product }) {
                               day: 'numeric', month: 'numeric', year: 'numeric',
                             })}
                           </span>
-                          {isPreviewMode && isAdmin && (
+                          {isAdmin && (
                             <button
                               onClick={() => handleDeleteReview(review.id)}
                               className="p-1 text-[#6b7280] hover:text-red-400 transition-colors"
