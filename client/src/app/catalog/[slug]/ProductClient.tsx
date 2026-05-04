@@ -296,7 +296,8 @@ export default function ProductClient({ product }: { product: Product }) {
     if (!confirm('Видалити цей відгук?')) return;
     try {
       await productsApi.deleteReview(reviewId);
-      setReviews((prev) => prev.filter((r) => r.id !== reviewId));
+      // ✅ Reload reviews from server to sync across all devices
+      await loadReviews(product.slug);
       toast.success('Відгук видалено');
     } catch (error: any) {
       toast.error(error.message || 'Помилка видалення відгуку');
