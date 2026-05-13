@@ -6,6 +6,7 @@ import { productsApi, ProductSpecification, Review } from '@/lib/products-api';
 import { useCartStore } from '@/lib/store';
 import { useWishlistStore } from '@/lib/wishlist';
 import { normalizeImageUrl } from '@/lib/image-utils';
+import { hasAdminSession } from '@/lib/auth-utils';
 import VariantSelector, { ProductOption, ProductVariant, VariantOption } from '@/components/VariantSelector';
 import DescriptionRenderer from '@/components/DescriptionRenderer';
 import BuyPopup from '@/components/BuyPopup';
@@ -136,35 +137,20 @@ export default function ProductClient({ product }: { product: Product }) {
     loadProductImages(product.id);
     loadReviews(product.slug);
 
-    // ✅ FIX: Check admin role from backend API instead of localStorage
-    // This ensures role is always up-to-date and works across all devices
-    const checkAdminRole = async () => {
-      try {
-        const response = await fetch('/api/auth/profile', {
-          credentials: 'include', // Include cookies for session auth
-          cache: 'no-store', // Always get fresh data
-        });
+    // ✅ FIX: Check admin session cookie for UI decisions
+    // Actual authorization happens on backend via authenticate + authorize middleware
+    const checkAdminStatus = () => {
+      const hasSession = hasAdminSession();
 
-        if (response.ok) {
-          const user = await response.json();
-          const isAdminUser = user?.role === 'ADMIN';
+      console.log('🔍 ADMIN CHECK:', {
+        hasAdminCookie: hasSession,
+        cookies: document.cookie.split(';').map(c => c.trim().split('=')[0]),
+      });
 
-          console.log('🔍 USER ROLE:', user?.role);
-          console.log('🔍 ADMIN PERMISSION:', isAdminUser);
-          console.log('🔍 SESSION:', response.headers.get('set-cookie') ? 'Active' : 'Cookie-based');
-
-          setIsAdmin(isAdminUser);
-        } else {
-          // Not authenticated or session expired
-          setIsAdmin(false);
-        }
-      } catch (error) {
-        console.error('❌ Failed to check admin role:', error);
-        setIsAdmin(false);
-      }
+      setIsAdmin(hasSession);
     };
 
-    checkAdminRole();
+    checkAdminStatus();
   }, [product.id, product.slug]);
 
   // Reload reviews when sortBy changes
