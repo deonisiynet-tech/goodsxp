@@ -71,19 +71,22 @@ export default function CheckoutClient() {
     formState: { errors },
     watch,
     setValue,
+    reset,
   } = useForm<CheckoutForm>();
 
   const { savedData, isLoaded, saveData } = useCheckoutStorage();
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Load saved data
+  // Load saved data — ✅ OPTIMIZATION: використати reset() замість множинних setValue()
   useEffect(() => {
     if (isLoaded && savedData) {
-      if (savedData.surname) setValue('surname', savedData.surname);
-      if (savedData.firstName) setValue('firstName', savedData.firstName);
-      if (savedData.phone) setValue('phone', savedData.phone);
+      reset({
+        surname: savedData.surname || '',
+        firstName: savedData.firstName || '',
+        phone: savedData.phone || '',
+      });
     }
-  }, [isLoaded, savedData, setValue]);
+  }, [isLoaded, savedData, reset]);
 
   // Save form data with debounce
   const saveFormData = useCallback((data: CheckoutData) => {

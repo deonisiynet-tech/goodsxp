@@ -2,7 +2,7 @@ import axios, { AxiosError } from 'axios';
 
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 const REVALIDATION_SECRET = process.env.REVALIDATION_SECRET;
-const REVALIDATE_TIMEOUT = 5000; // 5 секунд максимум
+const REVALIDATE_TIMEOUT = 10000; // ✅ OPTIMIZATION: 10 секунд замість 5 — менше timeout errors
 const MAX_RETRIES = 1; // Тільки 1 спроба
 
 // ✅ SAFE WRAPPER - запускає revalidate у фоні через setTimeout

@@ -132,7 +132,7 @@ export default function NovaPoshtaSelector({
   }, [deliveryType, onDeliveryTypeChange]);
 
   /**
-   * ✅ ПОШУК МІСТ - API ЗАПИТ
+   * ✅ OPTIMIZATION: ПОШУК МІСТ - API ЗАПИТ з useCallback
    */
   const searchCities = useCallback(async (query: string) => {
     setIsLoadingCities(true);

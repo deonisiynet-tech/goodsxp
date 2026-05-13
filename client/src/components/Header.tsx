@@ -36,15 +36,20 @@ export default function Header() {
       setUser(JSON.parse(storedUser));
     }
 
+    // ✅ OPTIMIZATION: Throttle scroll listener — тільки setState якщо значення змінилось
     const handleScroll = () => {
-      setScrolled(window.scrollY > 20);
+      const scrollY = window.scrollY;
+      const shouldBeScrolled = scrollY > 20;
+      if (scrolled !== shouldBeScrolled) {
+        setScrolled(shouldBeScrolled);
+      }
     };
     window.addEventListener('scroll', handleScroll);
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
     };
-  }, []);
+  }, [scrolled]); // ✅ Додано scrolled в dependencies для перевірки
 
   useEffect(() => {
     if (lastAddedPosition) {

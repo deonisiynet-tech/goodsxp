@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { productsApi } from '@/lib/products-api';
 import toast from 'react-hot-toast';
 import { Plus } from 'lucide-react';
@@ -70,10 +70,6 @@ export default function AdminProductList() {
   });
 
   useEffect(() => {
-    loadProducts();
-  }, [filters.search, currentPage]);
-
-  useEffect(() => {
     loadCategories();
   }, []);
 
@@ -86,7 +82,8 @@ export default function AdminProductList() {
     }
   };
 
-  const loadProducts = async () => {
+  // ✅ OPTIMIZATION: useCallback для loadProducts
+  const loadProducts = useCallback(async () => {
     try {
       setLoading(true);
       const response = await productsApi.getAllAdmin({
@@ -103,7 +100,12 @@ export default function AdminProductList() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [filters.search, currentPage]); // ✅ Правильні dependencies
+
+  // ✅ OPTIMIZATION: useEffect з loadProducts в dependencies
+  useEffect(() => {
+    loadProducts();
+  }, [loadProducts]);
 
   // Handle view mode change with localStorage
   const handleViewModeChange = (mode: ViewMode) => {
