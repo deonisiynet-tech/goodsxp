@@ -512,4 +512,66 @@ router.get('/logs', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * GET /api/admin-x8k2p9-panel/auth/check
+ * Check if user has valid admin session (for UI decisions)
+ * Returns 200 with { isAdmin: true } if valid admin session exists
+ * Returns 200 with { isAdmin: false } if no session or not admin
+ * Never returns 401 to avoid errors in logs for public pages
+ */
+router.get('/check', async (req: Request, res: Response) => {
+  try {
+    const token = req.cookies?.admin_session;
+
+    // No cookie - not admin
+    if (!token) {
+      return res.json({ isAdmin: false });
+    }
+
+    // Verify token
+    try {
+      const secret = getJwtSecret();
+      const decoded = jwt.verify(token, secret) as { id: string; email: string; role: string; sid?: string };
+
+      // Check token version
+      const serverTokenVersion = getTokenVersion();
+      if ((decoded as any).v !== undefined && (decoded as any).v < serverTokenVersion) {
+        return res.json({ isAdmin: false });
+      }
+
+      // Check if session exists in DB (if sessionId present)
+      if (decoded.sid) {
+        const session = await prisma.adminSession.findUnique({
+          where: { id: decoded.sid },
+          select: { id: true, expiresAt: true },
+        });
+
+        if (!session || session.expiresAt < new Date()) {
+          return res.json({ isAdmin: false });
+        }
+      }
+
+      // Check if user exists and is admin
+      const user = await prisma.user.findUnique({
+        where: { id: decoded.id },
+        select: { id: true, role: true },
+      });
+
+      if (!user || user.role !== Role.ADMIN) {
+        return res.json({ isAdmin: false });
+      }
+
+      // Valid admin session
+      return res.json({ isAdmin: true, userId: user.id });
+    } catch (jwtError) {
+      // Invalid token - not admin
+      return res.json({ isAdmin: false });
+    }
+  } catch (error: any) {
+    console.error('Admin check error:', error);
+    // Return false instead of error to avoid breaking public pages
+    return res.json({ isAdmin: false });
+  }
+});
+
 export default router;

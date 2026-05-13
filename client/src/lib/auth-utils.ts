@@ -6,12 +6,40 @@
  */
 
 /**
- * Check if user has admin session cookie
+ * Check if user has admin session via backend API
  *
  * This is safe for UI decisions because:
- * - Cookie is set only after successful admin login
- * - Backend always validates session in DB before allowing actions
- * - Even if cookie is forged, backend will reject unauthorized requests
+ * - Backend validates session in DB before responding
+ * - Returns { isAdmin: false } instead of 401 for non-admins (no errors in logs)
+ * - Even if response is forged, backend will reject unauthorized actions
+ *
+ * @returns Promise<boolean> - true if valid admin session exists
+ */
+export async function checkAdminSession(): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
+
+  try {
+    const response = await fetch('/api/admin-x8k2p9-panel/auth/check', {
+      credentials: 'include', // Include httpOnly cookies
+      cache: 'no-store', // Always get fresh data
+    });
+
+    if (!response.ok) {
+      return false;
+    }
+
+    const data = await response.json();
+    return data.isAdmin === true;
+  } catch (error) {
+    console.debug('Admin check failed:', error);
+    return false;
+  }
+}
+
+/**
+ * Check if user has admin session cookie (legacy - use checkAdminSession instead)
+ *
+ * Note: This doesn't work with httpOnly cookies, kept for compatibility
  *
  * @returns true if admin_session cookie exists
  */
@@ -22,6 +50,8 @@ export function hasAdminSession(): boolean {
 
 /**
  * Get cookie value by name
+ *
+ * Note: This doesn't work with httpOnly cookies
  *
  * @param name - Cookie name to retrieve
  * @returns Cookie value or null if not found

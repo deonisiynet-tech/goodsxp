@@ -6,7 +6,7 @@ import { productsApi, ProductSpecification, Review } from '@/lib/products-api';
 import { useCartStore } from '@/lib/store';
 import { useWishlistStore } from '@/lib/wishlist';
 import { normalizeImageUrl } from '@/lib/image-utils';
-import { hasAdminSession } from '@/lib/auth-utils';
+import { hasAdminSession, checkAdminSession } from '@/lib/auth-utils';
 import VariantSelector, { ProductOption, ProductVariant, VariantOption } from '@/components/VariantSelector';
 import DescriptionRenderer from '@/components/DescriptionRenderer';
 import BuyPopup from '@/components/BuyPopup';
@@ -137,17 +137,17 @@ export default function ProductClient({ product }: { product: Product }) {
     loadProductImages(product.id);
     loadReviews(product.slug);
 
-    // ✅ FIX: Check admin session cookie for UI decisions
-    // Actual authorization happens on backend via authenticate + authorize middleware
-    const checkAdminStatus = () => {
-      const hasSession = hasAdminSession();
+    // ✅ FIX: Check admin session via backend API
+    // This works with httpOnly cookies and doesn't create errors for non-admin users
+    const checkAdminStatus = async () => {
+      const isAdminUser = await checkAdminSession();
 
       console.log('🔍 ADMIN CHECK:', {
-        hasAdminCookie: hasSession,
-        cookies: document.cookie.split(';').map(c => c.trim().split('=')[0]),
+        isAdmin: isAdminUser,
+        timestamp: new Date().toISOString(),
       });
 
-      setIsAdmin(hasSession);
+      setIsAdmin(isAdminUser);
     };
 
     checkAdminStatus();
